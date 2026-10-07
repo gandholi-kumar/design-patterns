@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "GoF Design Patterns Masterclass"
+description = "An interactive guide to the Gang of Four software design patterns, with searchable explanations, Java and TypeScript examples, decision guidance, simulations, quizzes, and local progress backup."
+version = "1.0.0"
+id = "artifacts/pattern-masterclass"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20312
+
+[services.development]
+run = "pnpm --filter @workspace/pattern-masterclass run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pattern-masterclass", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/pattern-masterclass/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20312"
+BASE_PATH = "/"
