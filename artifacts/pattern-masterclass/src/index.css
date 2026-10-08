@@ -595,3 +595,12 @@ kbd { font:9px var(--app-font-mono);border:1px solid hsl(var(--border));padding:
     inset: -1px;
   }
 }
+
+.pattern-diagrams { display:grid;gap:10px; }.diagram-intro { display:flex;align-items:flex-end;justify-content:space-between;gap:12px; }.diagram-intro .eyebrow { color:hsl(var(--muted-foreground)); }.diagram-intro p { margin:0;color:hsl(var(--muted-foreground));font-size:9px; }.diagram-tabs { display:flex;gap:6px;border-bottom:1px solid hsl(var(--border)); }.diagram-tabs button { display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid transparent;border-bottom:0;background:transparent;color:hsl(var(--muted-foreground));font-size:9px;cursor:pointer; }.diagram-tabs button.active { border-color:hsl(var(--border));background:hsl(var(--card));color:hsl(var(--foreground)); }.diagram-card { overflow:hidden;border:1px solid hsl(var(--border));background:hsl(var(--card)); }.diagram-toolbar { display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid hsl(var(--border));color:hsl(var(--muted-foreground));font:8px var(--app-font-mono); }.diagram-toolbar>div { display:flex;gap:6px; }.diagram-toolbar button { display:flex;align-items:center;gap:4px;padding:5px 7px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));font-size:8px;cursor:pointer; }.diagram-canvas { min-height:210px;display:flex;align-items:center;justify-content:center;overflow:auto;padding:14px;background:hsl(var(--background)); }.diagram-svg { min-width:0; }.diagram-svg svg { display:block;max-width:100%;height:auto;margin:auto; }.diagram-canvas>span { color:hsl(var(--muted-foreground));font-size:9px; }.diagram-source { max-height:240px;overflow:auto;margin:0;padding:12px;border-top:1px solid hsl(var(--border));background:hsl(var(--card));color:hsl(var(--foreground));white-space:pre;font:9px/1.6 var(--app-font-mono); }.diagram-render-error,.diagram-error { margin:0;padding:9px 11px;border:1px solid rgba(184,113,98,.4);background:rgba(184,113,98,.08);color:#ad6253;font-size:9px;line-height:1.5; }
+@media (max-width:767px) {
+  .diagram-intro { align-items:flex-start;flex-direction:column;gap:4px; }
+  .diagram-tabs button { flex:1;justify-content:center;padding:8px 5px;font-size:8px; }
+  .diagram-toolbar { align-items:flex-start;flex-direction:column; }
+  .diagram-canvas { justify-content:flex-start; }
+  .diagram-svg svg { max-width:none; }
+}

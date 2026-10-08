@@ -7,6 +7,7 @@ import {
   ShieldCheck, Sun, Terminal, X, Zap,
 } from 'lucide-react';
 import { PATTERNS, QUIZ, type Pattern } from './data';
+import { PatternDiagrams } from './PatternDiagrams';
 
 type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz';
 type Progress = { attempts: number; correct: number; bookmarked: boolean; note: string; box: number };
@@ -241,11 +242,86 @@ function QuizLab({ saved, setSaved }: { saved: Saved; setSaved: React.Dispatch<R
 function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode }: { pattern: Pattern; saved: Saved; onClose: () => void; onBookmark: (id: string) => void; goCode: () => void }) {
   const [tab, setTab] = useState('overview');
   useEffect(() => { const listener = (e: KeyboardEvent) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', listener); return () => window.removeEventListener('keydown', listener); }, [onClose]);
-  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><section className="pattern-modal" role="dialog" aria-modal="true" aria-labelledby="pattern-title"><div className="modal-accent"/><div className="modal-head"><span className={`category-tag ${categoryStyle[p.category]}`}>{p.category}</span><div><button className={`bookmark-btn ${saved.bookmarks.includes(p.id)?'saved':''}`} onClick={() => onBookmark(p.id)} aria-label="Save pattern" data-testid="detail-bookmark">{saved.bookmarks.includes(p.id)?<BookmarkCheck size={17}/>:<Bookmark size={17}/>}</button><button className="icon-btn" onClick={onClose} aria-label="Close details" data-testid="close-pattern-details"><X size={19}/></button></div></div><span className="eyebrow">PATTERN NOTES / {p.category.toUpperCase()}</span><h2 id="pattern-title">{p.name}<span>.</span></h2><p className="modal-tagline">{p.tagline}</p><div className="modal-memory"><Lightbulb size={16}/><span>{p.memoryHook}</span><i>MEMORY HOOK</i></div><div className="detail-tabs" role="tablist">{['overview','code','trade-offs'].map(t=><button role="tab" aria-selected={tab===t} className={tab===t?'active':''} key={t} onClick={() => setTab(t)} data-testid={`detail-tab-${t}`}>{t}</button>)}</div><div className="detail-scroll">{tab==='overview'?<><div className="detail-block"><span className="eyebrow">THE INTENT</span><p className="intent-quote">{p.intent}</p></div><div className="detail-pair"><div><span className="eyebrow">THE PROBLEM</span><p>{p.problem}</p></div><div><span className="eyebrow">THE SOLUTION</span><p>{p.solution}</p></div></div><div className="detail-block"><span className="eyebrow">IN THE WILD</span><p>{p.realWorldEnterpriseScenario}</p></div><div className="detail-pair usage-pair"><div><span className="eyebrow">USE IT WHEN</span>{p.whenToUse.map(v=><p className="bullet" key={v}><Check size={13}/>{v}</p>)}</div><div><span className="eyebrow">THINK TWICE WHEN</span>{p.whenNotToUse.map(v=><p className="bullet no" key={v}><X size={13}/>{v}</p>)}</div></div><div className="detail-block diagram"><span className="eyebrow">COLLABORATION SHAPE</span><pre>{p.asciiShape}</pre></div></>:tab==='code'?<><p className="code-explanation">{p.typeScriptImplementation.explanation}</p><div className="detail-code"><div><span className="file-dot"/> {p.typeScriptImplementation.fileName}</div><pre>{p.typeScriptImplementation.code}</pre></div><button className="primary-btn modal-run" onClick={goCode}><Code2 size={15}/> Open in playground <ArrowRight size={15}/></button></>:<><div className="detail-block"><span className="eyebrow">WHAT IT SUPPORTS</span>{p.solidPrinciples.map(x=><div className="solid-row" key={x.principle}><span className={`impact ${x.impact}`}>{x.impact}</span><div><b>{x.principle}</b><p>{x.explanation}</p></div></div>)}</div><div className="detail-block"><span className="eyebrow">EASY TO CONFUSE WITH</span>{p.confusedWith.map(x=><div className="confused-row" key={x.targetPattern}><b>{x.targetPattern}</b><p>{x.keyDifference}</p><small>DECISION RULE · {x.decisionRule}</small></div>)}</div><div className="detail-block traps"><span className="eyebrow">INTERVIEW TRAPS</span>{p.interviewTraps.map(t=><p key={t}><span>!</span>{t}</p>)}</div></>}</div><div className="modal-foot"><span><kbd>ESC</kbd> to close</span><button className="text-button" onClick={onClose}>Back to library <ArrowRight size={14}/></button></div></section></div>;
+  const tabs = ['overview', 'code', 'diagrams', 'trade-offs'];
+  return (
+    <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+      <section className="pattern-modal" role="dialog" aria-modal="true" aria-labelledby="pattern-title">
+        <div className="modal-accent"/>
+        <div className="modal-head">
+          <span className={`category-tag ${categoryStyle[p.category]}`}>{p.category}</span>
+          <div>
+            <button className={`bookmark-btn ${saved.bookmarks.includes(p.id) ? 'saved' : ''}`} onClick={() => onBookmark(p.id)} aria-label="Save pattern" data-testid="detail-bookmark">
+              {saved.bookmarks.includes(p.id) ? <BookmarkCheck size={17}/> : <Bookmark size={17}/>}
+            </button>
+            <button className="icon-btn" onClick={onClose} aria-label="Close details" data-testid="close-pattern-details"><X size={19}/></button>
+          </div>
+        </div>
+        <span className="eyebrow">PATTERN NOTES / {p.category.toUpperCase()}</span>
+        <h2 id="pattern-title">{p.name}<span>.</span></h2>
+        <p className="modal-tagline">{p.tagline}</p>
+        <div className="modal-memory"><Lightbulb size={16}/><span>{p.memoryHook}</span><i>MEMORY HOOK</i></div>
+        <div className="detail-tabs" role="tablist" aria-label="Pattern details">
+          {tabs.map(t => (
+            <button role="tab" aria-selected={tab === t} className={tab === t ? 'active' : ''} key={t} onClick={() => setTab(t)} data-testid={`detail-tab-${t}`}>
+              {t}
+            </button>
+          ))}
+        </div>
+        <div className="detail-scroll">
+          {tab === 'overview' && <PatternOverview pattern={p}/>}
+          {tab === 'code' && <PatternCode pattern={p} goCode={goCode}/>}
+          {tab === 'diagrams' && <PatternDiagrams patternId={p.id} patternName={p.name} theme={saved.theme}/>}
+          {tab === 'trade-offs' && <PatternTradeoffs pattern={p}/>}
+        </div>
+        <div className="modal-foot">
+          <span><kbd>ESC</kbd> to close</span>
+          <button className="text-button" onClick={onClose}>Back to library <ArrowRight size={14}/></button>
+        </div>
+      </section>
+    </div>
+  );
+}
+function PatternOverview({ pattern: p }: { pattern: Pattern }) {
+  return <>
+    <div className="detail-block"><span className="eyebrow">THE INTENT</span><p className="intent-quote">{p.intent}</p></div>
+    <div className="detail-pair">
+      <div><span className="eyebrow">THE PROBLEM</span><p>{p.problem}</p></div>
+      <div><span className="eyebrow">THE SOLUTION</span><p>{p.solution}</p></div>
+    </div>
+    <div className="detail-block"><span className="eyebrow">IN THE WILD</span><p>{p.realWorldEnterpriseScenario}</p></div>
+    <div className="detail-pair usage-pair">
+      <div><span className="eyebrow">USE IT WHEN</span>{p.whenToUse.map(v => <p className="bullet" key={v}><Check size={13}/>{v}</p>)}</div>
+      <div><span className="eyebrow">THINK TWICE WHEN</span>{p.whenNotToUse.map(v => <p className="bullet no" key={v}><X size={13}/>{v}</p>)}</div>
+    </div>
+    <div className="detail-block diagram"><span className="eyebrow">COLLABORATION SHAPE</span><pre>{p.asciiShape}</pre></div>
+  </>;
+}
+function PatternCode({ pattern: p, goCode }: { pattern: Pattern; goCode: () => void }) {
+  return <>
+    <p className="code-explanation">{p.typeScriptImplementation.explanation}</p>
+    <div className="detail-code">
+      <div><span className="file-dot"/> {p.typeScriptImplementation.fileName}</div>
+      <pre>{p.typeScriptImplementation.code}</pre>
+    </div>
+    <button className="primary-btn modal-run" onClick={goCode}><Code2 size={15}/> Open in playground <ArrowRight size={15}/></button>
+  </>;
+}
+function PatternTradeoffs({ pattern: p }: { pattern: Pattern }) {
+  return <>
+    <div className="detail-block">
+      <span className="eyebrow">WHAT IT SUPPORTS</span>
+      {p.solidPrinciples.map(x => <div className="solid-row" key={x.principle}><span className={`impact ${x.impact}`}>{x.impact}</span><div><b>{x.principle}</b><p>{x.explanation}</p></div></div>)}
+    </div>
+    <div className="detail-block">
+      <span className="eyebrow">EASY TO CONFUSE WITH</span>
+      {p.confusedWith.map(x => <div className="confused-row" key={x.targetPattern}><b>{x.targetPattern}</b><p>{x.keyDifference}</p><small>DECISION RULE · {x.decisionRule}</small></div>)}
+    </div>
+    <div className="detail-block traps"><span className="eyebrow">INTERVIEW TRAPS</span>{p.interviewTraps.map(t => <p key={t}><span>!</span>{t}</p>)}</div>
+  </>;
 }
 function PageIntro({ index, title, text }: { index: string; title: React.ReactNode; text: string }) { return <section className="page-intro"><span className="eyebrow"><i className="eyebrow-line"/>{index}</span><h1>{title}</h1><p>{text}</p><div className="intro-stamp"><Layers3 size={17}/><span>THE FIELD<br/>GUIDE</span></div></section>; }
 function BackupDialog({ onClose, onExport, onRestore, onZip, onDownloadSource, zipBusy, theme, toggleTheme }: { onClose: () => void; onExport: () => void; onRestore: (f?: File) => void; onZip: () => void; onDownloadSource: () => void; zipBusy: boolean; theme: string; toggleTheme: () => void }) {
-  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><section className="backup-modal" role="dialog" aria-modal="true" aria-labelledby="backup-title"><div className="modal-head"><span className="eyebrow">YOUR WORKSPACE</span><button className="icon-btn" onClick={onClose} aria-label="Close settings"><X size={18}/></button></div><h2 id="backup-title">Keep your<br/><em>work close.</em></h2><p className="backup-intro">Everything stays in this browser. Carry your notes and learning history with you whenever you need.</p><div className="setting-row"><div className="setting-icon"><Settings2 size={17}/></div><div><b>Appearance</b><small>Choose the tone of your workspace</small></div><button className="theme-toggle" onClick={toggleTheme} data-testid="settings-theme">{theme==='light'?<Moon size={15}/>:<Sun size={15}/>} {theme==='light'?'Light':'Dark'}</button></div><div className="backup-actions"><button onClick={onExport} data-testid="export-json"><FileJson2 size={17}/><span><b>Export learning state</b><small>Bookmarks, notes, settings · JSON</small></span><Download size={16}/></button><label className="restore-action"><FileJson2 size={17}/><span><b>Restore from backup</b><small>Replace this browser's saved state</small></span><ArrowUpRight size={16}/><input type="file" accept=".json,application/json" onChange={e => onRestore(e.target.files?.[0])} aria-label="Choose backup file" data-testid="restore-json"/></label><button onClick={onZip} disabled={zipBusy} data-testid="download-project"><Download size={17}/><span><b>{zipBusy?'Preparing archive…':'Download project ZIP'}</b><small>Pattern catalog, scenarios & local state</small></span><ArrowUpRight size={16}/></button><button onClick={onDownloadSource} data-testid="download-source"><Code2 size={17}/><span><b>Download full workspace source</b><small>Tracked project code and setup files · ZIP</small></span><Download size={16}/></button></div><div className="privacy-note"><ShieldCheck size={16}/><span><b>Private by design</b><br/>No account or sync. Learning data stays in this browser; the source ZIP contains tracked project files only.</span></div></section></div>;
+  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><section className="backup-modal" role="dialog" aria-modal="true" aria-labelledby="backup-title"><div className="modal-head"><span className="eyebrow">YOUR WORKSPACE</span><button className="icon-btn" onClick={onClose} aria-label="Close settings"><X size={18}/></button></div><h2 id="backup-title">Keep your<br/><em>work close.</em></h2><p className="backup-intro">Everything stays in this browser. Carry your notes and learning history with you whenever you need.</p><div className="setting-row"><div className="setting-icon"><Settings2 size={17}/></div><div><b>Appearance</b><small>Choose the tone of your workspace</small></div><button className="theme-toggle" onClick={toggleTheme} data-testid="settings-theme">{theme==='light'?<Moon size={15}/>:<Sun size={15}/>} {theme==='light'?'Light':'Dark'}</button></div><div className="backup-actions"><button onClick={onExport} data-testid="export-json"><FileJson2 size={17}/><span><b>Export learning state</b><small>Bookmarks, notes, settings · JSON</small></span><Download size={16}/></button><label className="restore-action"><FileJson2 size={17}/><span><b>Restore from backup</b><small>Replace this browser's saved state</small></span><ArrowUpRight size={16}/><input type="file" accept=".json,application/json" onChange={e => onRestore(e.target.files?.[0])} aria-label="Choose backup file" data-testid="restore-json"/></label><button onClick={onZip} disabled={zipBusy} data-testid="download-project"><Download size={17}/><span><b>{zipBusy?'Preparing archive…':'Download project ZIP'}</b><small>Pattern catalog, scenarios & local state</small></span><ArrowUpRight size={16}/></button><button onClick={onDownloadSource} data-testid="download-source"><Code2 size={17}/><span><b>Download full workspace source</b><small>Workspace code and setup files · ZIP</small></span><Download size={16}/></button></div><div className="privacy-note"><ShieldCheck size={16}/><span><b>Private by design</b><br/>No account or sync. Learning data stays in this browser; the source ZIP contains workspace code and setup files only.</span></div></section></div>;
 }
 function NotFound({ goHome }: { goHome: () => void }) { return <div className="not-found"><span className="eyebrow">404 / WRONG TURN</span><h1>This path<br/><em>isn't in the guide.</em></h1><button className="primary-btn" onClick={goHome}>Return to the library <ArrowRight size={15}/></button></div>; }
 function progressListCount(s: Saved) { return Object.values(s.progress).reduce((a,p)=>a+p.attempts,0); }
