@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "pnpm --filter @workspace/pattern-masterclass run dev",
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "dev": "npx -y pnpm@10 --filter @workspace/pattern-masterclass run dev",
+    "build": "npx -y pnpm@10 run typecheck && npx -y pnpm@10 -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "npx -y pnpm@10 run typecheck:libs && npx -y pnpm@10 -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
   "private": true,
   "dependencies": {

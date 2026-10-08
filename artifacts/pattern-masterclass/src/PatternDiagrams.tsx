@@ -103,6 +103,7 @@ function MermaidCanvas({
           securityLevel: 'strict',
           theme: 'base',
           themeVariables: {
+            fontSize: '15px',
             background: dark ? '#20242b' : '#fbf9f5',
             primaryColor: dark ? '#303943' : '#efe9df',
             primaryTextColor: dark ? '#f2eee6' : '#292c33',

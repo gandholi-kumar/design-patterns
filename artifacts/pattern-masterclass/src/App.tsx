@@ -4,16 +4,17 @@ import {
   ArrowDownUp, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Check, ChevronDown,
   ChevronLeft, ChevronRight, CircleHelp, Code2, Compass, Copy, Download, FileJson2,
   Filter, GitBranch, Layers3, Lightbulb, Menu, Moon, Play, RotateCcw, Search, Settings2,
-  ShieldCheck, Sun, Terminal, X, Zap,
+  ShieldCheck, Sun, Terminal, X, Zap, ZoomIn,
 } from 'lucide-react';
 import { PATTERNS, QUIZ, type Pattern } from './data';
 import { PatternDiagrams } from './PatternDiagrams';
 
 type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz';
 type Progress = { attempts: number; correct: number; bookmarked: boolean; note: string; box: number };
-type Saved = { theme: 'light' | 'dark'; bookmarks: string[]; progress: Record<string, Progress>; mode: string };
+type ScaleMode = 'normal' | 'large' | 'projector';
+type Saved = { theme: 'light' | 'dark'; bookmarks: string[]; progress: Record<string, Progress>; mode: string; scale?: ScaleMode };
 const STORE = 'gof-masterclass-storage';
-const defaults: Saved = { theme: 'light', bookmarks: [], progress: {}, mode: 'typescript' };
+const defaults: Saved = { theme: 'light', bookmarks: [], progress: {}, mode: 'typescript', scale: 'normal' };
 function getSaved(): Saved {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE) || '{}');
@@ -24,7 +25,7 @@ function getSaved(): Saved {
       const p = value as Record<string, unknown>;
       return [id, { attempts: Number(p.attempts ?? p.attemptsCount ?? 0), correct: Number(p.correct ?? p.correctCount ?? 0), bookmarked: Boolean(p.bookmarked), note: String(p.note ?? p.notes ?? ''), box: Number(p.box ?? p.leitnerBox ?? 1) } satisfies Progress];
     }));
-    return { ...defaults, ...s, theme: s.theme || settings.theme || defaults.theme, mode: s.mode || settings.codeExperienceMode || defaults.mode, progress, bookmarks: s.bookmarks || [] };
+    return { ...defaults, ...s, theme: s.theme || settings.theme || defaults.theme, mode: s.mode || settings.codeExperienceMode || defaults.mode, scale: s.scale || settings.scale || defaults.scale, progress, bookmarks: s.bookmarks || [] };
   } catch { return defaults; }
 }
 const nav: { path: string; name: string; icon: typeof Layers3; id: Page }[] = [
@@ -42,7 +43,11 @@ function App() {
   const [mobileNav, setMobileNav] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
-  useEffect(() => { localStorage.setItem(STORE, JSON.stringify(saved)); document.documentElement.classList.toggle('dark', saved.theme === 'dark'); }, [saved]);
+  useEffect(() => {
+    localStorage.setItem(STORE, JSON.stringify(saved));
+    document.documentElement.classList.toggle('dark', saved.theme === 'dark');
+    document.documentElement.setAttribute('data-scale', saved.scale || 'normal');
+  }, [saved]);
   const patchSaved = (f: (s: Saved) => Saved) => setSaved(s => f(s));
   const togglePatternBookmark = (id: string) => patchSaved(s => ({ ...s, bookmarks: s.bookmarks.includes(id) ? s.bookmarks.filter(x => x !== id) : [...s.bookmarks, id] }));
   const page = nav.find(n => n.path === loc)?.id || 'catalog';
@@ -90,7 +95,27 @@ function App() {
     </aside>
     {mobileNav && <button className="scrim" aria-label="Close navigation" onClick={() => setMobileNav(false)}/>}
     <main className="main-column">
-      <header className="topbar"><button className="icon-btn mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={20}/></button><div className="crumb"><span>GOF DESIGN PATTERNS</span><ChevronRight size={13}/><b>{nav.find(n => n.id === page)?.name.toUpperCase()}</b></div><div className="top-actions"><button className="theme-toggle" onClick={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} aria-label={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`} data-testid="toggle-theme">{saved.theme === 'light' ? <Moon size={16}/> : <Sun size={16}/>}<span>{saved.theme === 'light' ? 'Light' : 'Dark'}</span></button><button className="avatar" title="Your learning space">M</button></div></header>
+      <header className="topbar">
+        <button className="icon-btn mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={20}/></button>
+        <div className="crumb"><span>GOF DESIGN PATTERNS</span><ChevronRight size={13}/><b>{nav.find(n => n.id === page)?.name.toUpperCase()}</b></div>
+        <div className="top-actions">
+          <button
+            className="scale-toggle"
+            onClick={() => patchSaved(s => {
+              const nextScale: ScaleMode = s.scale === 'large' ? 'projector' : s.scale === 'projector' ? 'normal' : 'large';
+              return { ...s, scale: nextScale };
+            })}
+            aria-label={`Scale mode: ${saved.scale || 'normal'}. Click to adjust font size.`}
+            title="Adjust font scale (Standard 100%, Large 115%, Projector 135%)"
+            data-testid="toggle-scale"
+          >
+            <ZoomIn size={15}/>
+            <span>{saved.scale === 'projector' ? 'Projector' : saved.scale === 'large' ? 'Large' : 'Scale'}</span>
+          </button>
+          <button className="theme-toggle" onClick={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} aria-label={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`} data-testid="toggle-theme">{saved.theme === 'light' ? <Moon size={16}/> : <Sun size={16}/>}<span>{saved.theme === 'light' ? 'Light' : 'Dark'}</span></button>
+          <button className="avatar" title="Your learning space">M</button>
+        </div>
+      </header>
       <div className="workspace">
         <Switch>
           <Route path="/"><Catalog saved={saved} savedOnly={savedOnly} clearSaved={() => setSavedOnly(false)} onBookmark={togglePatternBookmark} onSelect={setSelected}/></Route>
@@ -104,7 +129,7 @@ function App() {
       <footer className="global-footer"><span>BUILT AROUND THE GANG OF FOUR · 1994</span><span>23 patterns <i/> three families <i/> one shared language</span></footer>
     </main>
     {selected && <PatternDialog pattern={selected} saved={saved} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc('/playground'); }}/>}
-    {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} />}
+    {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} scale={saved.scale || 'normal'} toggleScale={() => patchSaved(s => ({ ...s, scale: s.scale === 'large' ? 'projector' : s.scale === 'projector' ? 'normal' : 'large' }))} />}
   </div>;
 }
 
@@ -320,8 +345,8 @@ function PatternTradeoffs({ pattern: p }: { pattern: Pattern }) {
   </>;
 }
 function PageIntro({ index, title, text }: { index: string; title: React.ReactNode; text: string }) { return <section className="page-intro"><span className="eyebrow"><i className="eyebrow-line"/>{index}</span><h1>{title}</h1><p>{text}</p><div className="intro-stamp"><Layers3 size={17}/><span>THE FIELD<br/>GUIDE</span></div></section>; }
-function BackupDialog({ onClose, onExport, onRestore, onZip, onDownloadSource, zipBusy, theme, toggleTheme }: { onClose: () => void; onExport: () => void; onRestore: (f?: File) => void; onZip: () => void; onDownloadSource: () => void; zipBusy: boolean; theme: string; toggleTheme: () => void }) {
-  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><section className="backup-modal" role="dialog" aria-modal="true" aria-labelledby="backup-title"><div className="modal-head"><span className="eyebrow">YOUR WORKSPACE</span><button className="icon-btn" onClick={onClose} aria-label="Close settings"><X size={18}/></button></div><h2 id="backup-title">Keep your<br/><em>work close.</em></h2><p className="backup-intro">Everything stays in this browser. Carry your notes and learning history with you whenever you need.</p><div className="setting-row"><div className="setting-icon"><Settings2 size={17}/></div><div><b>Appearance</b><small>Choose the tone of your workspace</small></div><button className="theme-toggle" onClick={toggleTheme} data-testid="settings-theme">{theme==='light'?<Moon size={15}/>:<Sun size={15}/>} {theme==='light'?'Light':'Dark'}</button></div><div className="backup-actions"><button onClick={onExport} data-testid="export-json"><FileJson2 size={17}/><span><b>Export learning state</b><small>Bookmarks, notes, settings · JSON</small></span><Download size={16}/></button><label className="restore-action"><FileJson2 size={17}/><span><b>Restore from backup</b><small>Replace this browser's saved state</small></span><ArrowUpRight size={16}/><input type="file" accept=".json,application/json" onChange={e => onRestore(e.target.files?.[0])} aria-label="Choose backup file" data-testid="restore-json"/></label><button onClick={onZip} disabled={zipBusy} data-testid="download-project"><Download size={17}/><span><b>{zipBusy?'Preparing archive…':'Download project ZIP'}</b><small>Pattern catalog, scenarios & local state</small></span><ArrowUpRight size={16}/></button><button onClick={onDownloadSource} data-testid="download-source"><Code2 size={17}/><span><b>Download full workspace source</b><small>Workspace code and setup files · ZIP</small></span><Download size={16}/></button></div><div className="privacy-note"><ShieldCheck size={16}/><span><b>Private by design</b><br/>No account or sync. Learning data stays in this browser; the source ZIP contains workspace code and setup files only.</span></div></section></div>;
+function BackupDialog({ onClose, onExport, onRestore, onZip, onDownloadSource, zipBusy, theme, toggleTheme, scale, toggleScale }: { onClose: () => void; onExport: () => void; onRestore: (f?: File) => void; onZip: () => void; onDownloadSource: () => void; zipBusy: boolean; theme: string; toggleTheme: () => void; scale: ScaleMode; toggleScale: () => void }) {
+  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><section className="backup-modal" role="dialog" aria-modal="true" aria-labelledby="backup-title"><div className="modal-head"><span className="eyebrow">YOUR WORKSPACE</span><button className="icon-btn" onClick={onClose} aria-label="Close settings"><X size={18}/></button></div><h2 id="backup-title">Keep your<br/><em>work close.</em></h2><p className="backup-intro">Everything stays in this browser. Carry your notes and learning history with you whenever you need.</p><div className="setting-row"><div className="setting-icon"><Settings2 size={17}/></div><div><b>Appearance</b><small>Choose the tone of your workspace</small></div><button className="theme-toggle" onClick={toggleTheme} data-testid="settings-theme">{theme==='light'?<Moon size={15}/>:<Sun size={15}/>} {theme==='light'?'Light':'Dark'}</button></div><div className="setting-row"><div className="setting-icon"><ZoomIn size={17}/></div><div><b>Display scale</b><small>Standard, large monitor, or projector screen</small></div><button className="scale-toggle" onClick={toggleScale} data-testid="settings-scale">{scale === 'projector' ? 'Projector (135%)' : scale === 'large' ? 'Large (115%)' : 'Standard (100%)'}</button></div><div className="backup-actions"><button onClick={onExport} data-testid="export-json"><FileJson2 size={17}/><span><b>Export learning state</b><small>Bookmarks, notes, settings · JSON</small></span><Download size={16}/></button><label className="restore-action"><FileJson2 size={17}/><span><b>Restore from backup</b><small>Replace this browser's saved state</small></span><ArrowUpRight size={16}/><input type="file" accept=".json,application/json" onChange={e => onRestore(e.target.files?.[0])} aria-label="Choose backup file" data-testid="restore-json"/></label><button onClick={onZip} disabled={zipBusy} data-testid="download-project"><Download size={17}/><span><b>{zipBusy?'Preparing archive…':'Download project ZIP'}</b><small>Pattern catalog, scenarios & local state</small></span><ArrowUpRight size={16}/></button><button onClick={onDownloadSource} data-testid="download-source"><Code2 size={17}/><span><b>Download full workspace source</b><small>Workspace code and setup files · ZIP</small></span><Download size={16}/></button></div><div className="privacy-note"><ShieldCheck size={16}/><span><b>Private by design</b><br/>No account or sync. Learning data stays in this browser; the source ZIP contains workspace code and setup files only.</span></div></section></div>;
 }
 function NotFound({ goHome }: { goHome: () => void }) { return <div className="not-found"><span className="eyebrow">404 / WRONG TURN</span><h1>This path<br/><em>isn't in the guide.</em></h1><button className="primary-btn" onClick={goHome}>Return to the library <ArrowRight size={15}/></button></div>; }
 function progressListCount(s: Saved) { return Object.values(s.progress).reduce((a,p)=>a+p.attempts,0); }
