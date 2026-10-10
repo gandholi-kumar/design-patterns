@@ -5,7 +5,7 @@ export interface ProjectFile {
   id: string;
   name: string;
   content: string;
-  isEntryPoint: boolean;
+  isEntryPoint?: boolean;
 }
 
 interface PlaygroundFileTabsProps {

@@ -69,9 +69,8 @@ export const PlaygroundTerminal: React.FC<PlaygroundTerminalProps> = ({
     <div className="output-card playground-terminal-card" aria-label="Console Output">
       <div className="output-head">
         <div className="output-title-group">
-          <Terminal size={15} />
-          <b>Output</b>
-          <span className="mono">/ console</span>
+          <Terminal size={14} className="terminal-title-icon" />
+          <b className="terminal-title-text">Console</b>
           {renderStatusBadge()}
         </div>
 
@@ -83,7 +82,7 @@ export const PlaygroundTerminal: React.FC<PlaygroundTerminalProps> = ({
               onClick={handleCopy}
               title="Copy output to clipboard"
             >
-              <Copy size={13} />
+              <Copy size={12} />
               <span>Copy</span>
             </button>
           )}
@@ -93,8 +92,9 @@ export const PlaygroundTerminal: React.FC<PlaygroundTerminalProps> = ({
             onClick={onClear}
             disabled={!hasOutput && !isRunning}
             data-testid="clear-output"
+            title="Clear console output"
           >
-            <Trash2 size={13} />
+            <Trash2 size={12} />
             <span>Clear</span>
           </button>
         </div>

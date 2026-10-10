@@ -11,6 +11,7 @@ import {
   Minimize2,
   Lightbulb,
   Square,
+  WrapText,
 } from 'lucide-react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { PATTERNS } from '../data';
@@ -18,6 +19,7 @@ import type { Pattern } from '../data';
 import { PlaygroundFileTabs, type ProjectFile } from '../components/PlaygroundFileTabs';
 import { PlaygroundTerminal } from '../components/PlaygroundTerminal';
 import { useCodeRunner } from '../hooks/useCodeRunner';
+import { buildProjectFiles } from '../data/playground-starters';
 
 interface PlaygroundPageProps {
   initialPatternId?: string;
@@ -50,6 +52,18 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
   const [isWide, setIsWide] = useState<boolean>(() => {
     return localStorage.getItem('gof_playground_wide') === 'true';
   });
+
+  const [wordWrap, setWordWrap] = useState<boolean>(() => {
+    return localStorage.getItem('gof_playground_word_wrap') === 'true';
+  });
+
+  const toggleWordWrap = useCallback(() => {
+    setWordWrap((prev) => {
+      const next = !prev;
+      localStorage.setItem('gof_playground_word_wrap', String(next));
+      return next;
+    });
+  }, []);
 
   const toggleLayoutMode = (mode: LayoutMode) => {
     setLayoutMode(mode);
@@ -107,17 +121,21 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
     });
   }, [isRunning, cancelRun, runCode, language, projectFiles]);
 
-  // Keyboard shortcut: Ctrl+Enter or Cmd+Enter to Run
+  // Keyboard shortcuts: Ctrl+Enter (Run code), Alt+Z (Toggle word wrap)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         handleRun();
       }
+      if (e.altKey && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        toggleWordWrap();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRun]);
+  }, [handleRun, toggleWordWrap]);
 
   // 5. File Operations
   const handleUpdateCode = (newContent: string) => {
@@ -314,6 +332,15 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                   <div className="editor-tools">
                     <button
                       type="button"
+                      className={`subtle-btn ${wordWrap ? 'active' : ''}`}
+                      onClick={toggleWordWrap}
+                      title="Toggle Word Wrap (Alt+Z)"
+                      aria-label="Toggle Word Wrap"
+                    >
+                      <WrapText size={13} /> Wrap: {wordWrap ? 'On' : 'Off'}
+                    </button>
+                    <button
+                      type="button"
                       className="subtle-btn"
                       onClick={() => navigator.clipboard?.writeText(currentCode)}
                       data-testid="copy-code"
@@ -344,6 +371,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                     onChange={(e) => handleUpdateCode(e.target.value)}
                     onKeyDown={(e) => handleTabKey(e, handleUpdateCode)}
                     data-testid="code-editor"
+                    className={wordWrap ? 'word-wrap-enabled' : ''}
                   />
                 </div>
               </div>
@@ -385,6 +413,15 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
               <div className="editor-tools">
                 <button
                   type="button"
+                  className={`subtle-btn ${wordWrap ? 'active' : ''}`}
+                  onClick={toggleWordWrap}
+                  title="Toggle Word Wrap (Alt+Z)"
+                  aria-label="Toggle Word Wrap"
+                >
+                  <WrapText size={13} /> Wrap: {wordWrap ? 'On' : 'Off'}
+                </button>
+                <button
+                  type="button"
                   className="subtle-btn"
                   onClick={() => navigator.clipboard?.writeText(currentCode)}
                   data-testid="copy-code"
@@ -415,6 +452,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                 onChange={(e) => handleUpdateCode(e.target.value)}
                 onKeyDown={(e) => handleTabKey(e, handleUpdateCode)}
                 data-testid="code-editor"
+                className={wordWrap ? 'word-wrap-enabled' : ''}
               />
             </div>
           </div>
@@ -472,32 +510,7 @@ function handleTabKey(
 
 // Helper: Seed initial project files from pattern data
 function createInitialFiles(pattern: Pattern, language: 'typescript' | 'java'): ProjectFile[] {
-  if (language === 'java') {
-    const rawCode = pattern.javaImplementation.code;
-    const fileName = pattern.javaImplementation.fileName || 'Main.java';
-
-    return [
-      {
-        id: 'main-java',
-        name: fileName,
-        content: rawCode,
-        isEntryPoint: true,
-      },
-    ];
-  }
-
-  // TypeScript
-  const rawCode = pattern.runnableCode || pattern.typeScriptImplementation.code;
-  const fileName = pattern.typeScriptImplementation.fileName || 'index.ts';
-
-  return [
-    {
-      id: 'main-ts',
-      name: fileName,
-      content: rawCode,
-      isEntryPoint: true,
-    },
-  ];
+  return buildProjectFiles(pattern, language);
 }
 
 export default PlaygroundPage;

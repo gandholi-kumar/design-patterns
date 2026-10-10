@@ -69,16 +69,34 @@ async function executeJavaProject(options: RunExecutionOptions): Promise<Executi
 
     // 4. Identify Entry Class
     let entryClass = "Main";
+    let foundMain = false;
+
+    // Check if the specified entryPoint has a main method
     if (options.entryPoint) {
-      entryClass = path.basename(options.entryPoint).replace(/\.java$/, "");
-    } else {
-      // Find the file containing `public static void main`
+      const candidateName = path.basename(options.entryPoint);
+      const candidateFile = options.files.find(
+        (f) => f.name === candidateName || f.name.endsWith("/" + candidateName),
+      );
+      if (candidateFile && /public\s+static\s+void\s+main\s*\(/m.test(candidateFile.content)) {
+        entryClass = candidateName.replace(/\.java$/, "");
+        foundMain = true;
+      }
+    }
+
+    // If not found yet, find any project file containing `public static void main`
+    if (!foundMain) {
       for (const file of options.files) {
         if (/public\s+static\s+void\s+main\s*\(/m.test(file.content)) {
           entryClass = path.basename(file.name).replace(/\.java$/, "");
+          foundMain = true;
           break;
         }
       }
+    }
+
+    // Fallback if no file explicitly defines main
+    if (!foundMain && options.entryPoint) {
+      entryClass = path.basename(options.entryPoint).replace(/\.java$/, "");
     }
 
     // 5. Execute JVM with resource caps & timeout
