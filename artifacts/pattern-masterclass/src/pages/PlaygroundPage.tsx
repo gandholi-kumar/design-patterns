@@ -45,6 +45,15 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
     return sp.get('pattern') || initialPatternId || 'factory-method';
   });
 
+  // Sync patternId whenever URL query param (?pattern=...) changes
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const qp = sp.get('pattern');
+    if (qp && qp !== patternId && PATTERNS.some((p) => p.id === qp)) {
+      setPatternId(qp);
+    }
+  }, [patternId]);
+
   const language = (saved.mode === 'java' ? 'java' : 'typescript') as 'typescript' | 'java';
 
   // 2. Layout preferences (persisted in localStorage)

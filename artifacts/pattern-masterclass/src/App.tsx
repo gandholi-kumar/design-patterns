@@ -75,21 +75,7 @@ function App() {
     localStorage.setItem('gof-sidebar-collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  // Global shortcuts: Ctrl+B (sidebar), Alt+F (Studio focus mode)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
-        e.preventDefault();
-        setSidebarCollapsed(c => !c);
-      }
-      if (e.altKey && (e.key === 'f' || e.key === 'F')) {
-        e.preventDefault();
-        patchSaved(s => ({ ...s, studioMode: !s.studioMode }));
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+
 
   const patchSaved = (f: (s: Saved) => Saved) => setSaved(s => f(s));
   const togglePatternBookmark = (id: string) => patchSaved(s => ({ ...s, bookmarks: s.bookmarks.includes(id) ? s.bookmarks.filter(x => x !== id) : [...s.bookmarks, id] }));
@@ -106,6 +92,35 @@ function App() {
   const isPatternPage = loc.startsWith('/pattern/');
   const patternIdFromUrl = isPatternPage ? loc.split('/pattern/')[1]?.split('?')[0] : null;
   const activePattern = patternIdFromUrl ? PATTERNS.find(p => p.id === patternIdFromUrl) : null;
+
+  // Global shortcuts: Ctrl+B (sidebar), Alt+F (Studio focus mode), P (Open playground for active pattern), B (Bookmark)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        setSidebarCollapsed(c => !c);
+      }
+      if (e.altKey && (e.key === 'f' || e.key === 'F')) {
+        e.preventDefault();
+        patchSaved(s => ({ ...s, studioMode: !s.studioMode }));
+      }
+      if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if ((e.key === 'p' || e.key === 'P') && isPatternPage && activePattern) {
+          e.preventDefault();
+          setLoc(`/playground?pattern=${activePattern.id}`);
+        }
+        if ((e.key === 'b' || e.key === 'B') && isPatternPage && activePattern) {
+          e.preventDefault();
+          togglePatternBookmark(activePattern.id);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPatternPage, activePattern]);
 
   const queryParams = useMemo(() => new URLSearchParams(window.location.search), [loc]);
   const familyFilter = queryParams.get('family');
@@ -250,7 +265,7 @@ function App() {
               <AppTooltip content="Open in live playground (P)" shortcut="P">
                 <button
                   className="icon-btn topbar-action-btn playground-btn"
-                  onClick={() => setLoc('/playground')}
+                  onClick={() => setLoc(`/playground?pattern=${activePattern.id}`)}
                   aria-label="Open in playground"
                   data-testid="topbar-playground-btn"
                 >
@@ -323,7 +338,7 @@ function App() {
         <footer className="global-footer"><span>BUILT AROUND THE GANG OF FOUR · 1994</span><span>23 patterns <i/> three families <i/> one shared language</span></footer>
       )}
     </main>
-    {selected && <PatternDialog pattern={selected} saved={saved} perspective={perspective} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc('/playground'); }}/>}
+    {selected && <PatternDialog pattern={selected} saved={saved} perspective={perspective} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc(`/playground?pattern=${selected.id}`); }}/>}
     {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} />}
   </div>;
 }
