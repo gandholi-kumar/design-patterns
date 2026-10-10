@@ -2266,6 +2266,16 @@ kbd {
   border-color: #d4a356;
 }
 
+.editor-tools .subtle-btn.copied-active {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #22c55e !important;
+  border-color: rgba(34, 197, 94, 0.45) !important;
+}
+
+.text-button.copied-active {
+  color: #22c55e !important;
+}
+
 .stacked-editor-body textarea.word-wrap-enabled,
 .split-editor-body textarea.word-wrap-enabled {
   white-space: pre-wrap !important;

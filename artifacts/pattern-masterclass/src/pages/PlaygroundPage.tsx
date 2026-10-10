@@ -11,6 +11,8 @@ import {
   Square,
   WrapText,
   BookOpen,
+  Check,
+  Files,
 } from 'lucide-react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { PATTERNS } from '../data';
@@ -62,6 +64,30 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
   });
 
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
+  const [copiedMode, setCopiedMode] = useState<'none' | 'file' | 'all'>('none');
+
+  const handleCopyActiveFile = async () => {
+    const ok = await copyTextToClipboard(currentCode);
+    if (ok) {
+      setCopiedMode('file');
+      setTimeout(() => setCopiedMode('none'), 2000);
+    }
+  };
+
+  const handleCopyAllFiles = async () => {
+    const bundle = projectFiles
+      .map((file) => {
+        const banner = `// ==========================================\n// File: ${file.name}${file.isEntryPoint ? ' ⭐ [Entry Point]' : ''}\n// ==========================================\n`;
+        return `${banner}${file.content.trim()}\n`;
+      })
+      .join('\n\n');
+
+    const ok = await copyTextToClipboard(bundle);
+    if (ok) {
+      setCopiedMode('all');
+      setTimeout(() => setCopiedMode('none'), 2000);
+    }
+  };
 
   const toggleWordWrap = useCallback(() => {
     setWordWrap((prev) => {
@@ -357,11 +383,37 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                     </button>
                     <button
                       type="button"
-                      className="subtle-btn"
-                      onClick={() => navigator.clipboard?.writeText(currentCode)}
+                      className={`subtle-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
+                      onClick={handleCopyActiveFile}
+                      title={`Copy active file (${activeFile?.name}) to clipboard`}
                       data-testid="copy-code"
                     >
-                      <Copy size={13} /> Copy
+                      {copiedMode === 'file' ? (
+                        <>
+                          <Check size={13} /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} /> Copy
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className={`subtle-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
+                      onClick={handleCopyAllFiles}
+                      title="Copy all project files combined to clipboard"
+                      data-testid="copy-all-code"
+                    >
+                      {copiedMode === 'all' ? (
+                        <>
+                          <Check size={13} /> All copied!
+                        </>
+                      ) : (
+                        <>
+                          <Files size={13} /> Copy all
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"
@@ -443,11 +495,37 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                 </button>
                 <button
                   type="button"
-                  className="subtle-btn"
-                  onClick={() => navigator.clipboard?.writeText(currentCode)}
+                  className={`subtle-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
+                  onClick={handleCopyActiveFile}
+                  title={`Copy active file (${activeFile?.name}) to clipboard`}
                   data-testid="copy-code"
                 >
-                  <Copy size={13} /> Copy
+                  {copiedMode === 'file' ? (
+                    <>
+                      <Check size={13} /> Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={13} /> Copy
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={`subtle-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
+                  onClick={handleCopyAllFiles}
+                  title="Copy all project files combined to clipboard"
+                  data-testid="copy-all-code"
+                >
+                  {copiedMode === 'all' ? (
+                    <>
+                      <Check size={13} /> All copied!
+                    </>
+                  ) : (
+                    <>
+                      <Files size={13} /> Copy all
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -505,10 +583,11 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
         </div>
         <button
           type="button"
-          className="text-button"
-          onClick={() => navigator.clipboard?.writeText(currentCode)}
+          className={`text-button ${copiedMode === 'file' ? 'copied-active' : ''}`}
+          onClick={handleCopyActiveFile}
         >
-          Copy active snippet <Copy size={13} />
+          {copiedMode === 'file' ? 'Snippet copied!' : 'Copy active snippet'}{' '}
+          {copiedMode === 'file' ? <Check size={13} /> : <Copy size={13} />}
         </button>
       </div>
 
@@ -534,6 +613,36 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
     </div>
   );
 };
+
+// Helper: Robust cross-origin copy to clipboard (supports HTTP LAN, localhost, HTTPS)
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall back to execCommand below
+  }
+
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    textarea.setAttribute('readonly', '');
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return successful;
+  } catch (err) {
+    console.error('Failed to copy to clipboard', err);
+    return false;
+  }
+}
 
 // Helper: Tab key indent handling (inserts 2 spaces)
 function handleTabKey(
