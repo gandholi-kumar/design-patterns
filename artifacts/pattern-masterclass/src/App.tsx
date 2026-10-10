@@ -39,8 +39,8 @@ function getSaved(): Saved {
 }
 const nav: { path: string; name: string; icon: typeof Layers3; id: Page }[] = [
   { path: '/', name: 'Pattern library', icon: Layers3, id: 'catalog' },
-  { path: '/decision-engine', name: 'Decision engine', icon: Compass, id: 'decision' },
   { path: '/playground', name: 'Code playground', icon: Terminal, id: 'playground' },
+  { path: '/decision-engine', name: 'Decision engine', icon: Compass, id: 'decision' },
   { path: '/simulators', name: 'Pattern studio', icon: GitBranch, id: 'simulators' },
   { path: '/quiz-lab', name: 'Scenario lab', icon: CircleHelp, id: 'quiz' },
 ];
@@ -312,8 +312,8 @@ function App() {
         <Switch>
           <Route path="/"><Catalog saved={saved} savedOnly={savedOnly} clearSaved={() => setSavedOnly(false)} onBookmark={togglePatternBookmark} onSelect={handleSelectPattern}/></Route>
           <Route path="/pattern/:id">{(params) => <PatternDetailPage id={params.id} saved={saved} globalPerspective={perspective} onBookmark={togglePatternBookmark} goPlayground={(pid) => setLoc(`/playground?pattern=${pid || params.id}`)} />}</Route>
-          <Route path="/decision-engine"><Decision onSelect={handleSelectPattern}/></Route>
           <Route path="/playground"><PlaygroundPage saved={saved} setSaved={setSaved}/></Route>
+          <Route path="/decision-engine"><Decision onSelect={handleSelectPattern}/></Route>
           <Route path="/simulators"><Simulators onSelect={handleSelectPattern}/></Route>
           <Route path="/quiz-lab"><QuizLab saved={saved} setSaved={setSaved}/></Route>
           <Route><NotFound goHome={() => setLoc('/')}/></Route>

@@ -2542,20 +2542,23 @@ kbd { font:0.6875rem var(--app-font-mono);border:0.0625rem solid hsl(var(--borde
 .dock-nav-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  border: 0;
-  background: transparent;
-  color: hsl(var(--muted-foreground));
+  gap: 0.5625rem;
+  border: 0.0625rem solid hsl(var(--border));
+  background: hsl(var(--card));
+  color: hsl(var(--accent));
   cursor: pointer;
   font-size: 0.8125rem;
   font-weight: 500;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  transition: color .15s, transform .15s;
+  padding: 0.3125rem 0.6875rem;
+  border-radius: 0.3125rem;
+  transition: all .18s ease;
 }
 .dock-nav-btn:hover {
+  border-color: hsl(var(--accent));
+  background: hsl(var(--accent) / 0.12);
   color: hsl(var(--accent));
   transform: translateX(-0.125rem);
+  box-shadow: 0 0.125rem 0.5rem hsl(var(--accent) / 0.15);
 }
 .dock-nav-btn.dock-next:hover {
   transform: translateX(0.125rem);
@@ -2571,11 +2574,19 @@ kbd { font:0.6875rem var(--app-font-mono);border:0.0625rem solid hsl(var(--borde
 .dock-sub {
   font: 600 0.59375rem var(--app-font-mono);
   letter-spacing: .08em;
-  opacity: .7;
+  color: hsl(var(--muted-foreground));
+  opacity: .8;
 }
 .dock-name {
   font-weight: 600;
-  font-size: 0.78125rem;
+  font-size: 0.8125rem;
+  color: hsl(var(--accent));
+  letter-spacing: -0.01em;
+  transition: color .15s ease, text-shadow .15s ease;
+}
+.dock-nav-btn:hover .dock-name {
+  color: hsl(var(--foreground));
+  text-shadow: 0 0 0.5rem hsl(var(--accent) / 0.35);
 }
 .dock-center {
   display: flex;
@@ -2814,18 +2825,33 @@ kbd { font:0.6875rem var(--app-font-mono);border:0.0625rem solid hsl(var(--borde
   height: 2rem;
   padding: 0;
   border-radius: 0.25rem;
-  border: 0;
+  border: 0.0625rem solid transparent;
   background: hsl(var(--accent)/0.12);
   color: hsl(var(--accent));
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
   flex-shrink: 0;
+}
+
+.perspective-sync-btn svg {
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center;
 }
 
 .perspective-sync-btn:hover {
   background: hsl(var(--accent)/0.22);
+  border-color: hsl(var(--accent)/0.4);
   color: hsl(var(--foreground));
-  transform: rotate(-45deg);
+  box-shadow: 0 0 0.5rem hsl(var(--accent)/0.25);
+  transform: scale(1.05);
+}
+
+.perspective-sync-btn:hover svg {
+  transform: rotate(-180deg);
+}
+
+.perspective-sync-btn:active {
+  transform: scale(0.94);
 }
 
 .dark .perspective-sync-btn {
@@ -2835,6 +2861,8 @@ kbd { font:0.6875rem var(--app-font-mono);border:0.0625rem solid hsl(var(--borde
 
 .dark .perspective-sync-btn:hover {
   background: hsl(var(--accent)/0.32);
+  border-color: hsl(var(--accent)/0.6);
+  box-shadow: 0 0 0.625rem hsl(var(--accent)/0.35);
 }
 
 .local-override-pill {
