@@ -99,6 +99,8 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
 
   // Reference for synchronizing line numbers scroll with textarea in Split View
   const splitLineNumbersRef = useRef<HTMLDivElement>(null);
+  // Reference for synchronizing line numbers scroll with textarea in Stacked View
+  const stackedLineNumbersRef = useRef<HTMLDivElement>(null);
 
   // Reload project files when pattern or language changes
   useEffect(() => {
@@ -459,7 +461,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
             </div>
 
             <div className="editor-body stacked-editor-body">
-              <div className="line-numbers" aria-hidden="true">
+              <div className="line-numbers" ref={stackedLineNumbersRef} aria-hidden="true">
                 {Array.from({ length: lineCount }, (_, i) => (
                   <span key={i}>{String(i + 1).padStart(2, '0')}</span>
                 ))}
@@ -470,12 +472,13 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                 value={currentCode}
                 onChange={(e) => handleUpdateCode(e.target.value)}
                 onKeyDown={(e) => handleTabKey(e, handleUpdateCode)}
+                onScroll={(e) => {
+                  if (stackedLineNumbersRef.current) {
+                    stackedLineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
+                  }
+                }}
                 data-testid="code-editor"
                 className={wordWrap ? 'word-wrap-enabled' : ''}
-                style={{
-                  minHeight: `${Math.max(22, lineCount * 1.55 + 2)}rem`,
-                  height: `${Math.max(22, lineCount * 1.55 + 2)}rem`,
-                }}
               />
             </div>
           </div>
