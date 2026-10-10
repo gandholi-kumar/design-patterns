@@ -257,36 +257,36 @@ function App() {
                   <Code2 size={17} />
                 </button>
               </AppTooltip>
+
+              <div className="topbar-perspective-toggle" role="radiogroup" aria-label="Perspective switch">
+                <AppTooltip content="Canonical (Refactoring Guru / GoF Academic)">
+                  <button
+                    role="radio"
+                    aria-checked={perspective === 'canonical'}
+                    aria-label="Canonical perspective"
+                    className={`topbar-perspective-btn ${perspective === 'canonical' ? 'active' : ''}`}
+                    onClick={() => handleSetPerspective('canonical')}
+                    data-testid="global-perspective-canonical"
+                  >
+                    <GraduationCap size={15} />
+                  </button>
+                </AppTooltip>
+
+                <AppTooltip content="Enterprise Cloud (Production Distributed Systems)">
+                  <button
+                    role="radio"
+                    aria-checked={perspective === 'enterprise'}
+                    aria-label="Enterprise Cloud perspective"
+                    className={`topbar-perspective-btn ${perspective === 'enterprise' ? 'active' : ''}`}
+                    onClick={() => handleSetPerspective('enterprise')}
+                    data-testid="global-perspective-enterprise"
+                  >
+                    <Building2 size={15} />
+                  </button>
+                </AppTooltip>
+              </div>
             </>
           )}
-
-          <div className="topbar-perspective-toggle" role="radiogroup" aria-label="Perspective switch">
-            <AppTooltip content="Canonical (Refactoring Guru / GoF Academic)">
-              <button
-                role="radio"
-                aria-checked={perspective === 'canonical'}
-                aria-label="Canonical perspective"
-                className={`topbar-perspective-btn ${perspective === 'canonical' ? 'active' : ''}`}
-                onClick={() => handleSetPerspective('canonical')}
-                data-testid="global-perspective-canonical"
-              >
-                <GraduationCap size={15} />
-              </button>
-            </AppTooltip>
-
-            <AppTooltip content="Enterprise Cloud (Production Distributed Systems)">
-              <button
-                role="radio"
-                aria-checked={perspective === 'enterprise'}
-                aria-label="Enterprise Cloud perspective"
-                className={`topbar-perspective-btn ${perspective === 'enterprise' ? 'active' : ''}`}
-                onClick={() => handleSetPerspective('enterprise')}
-                data-testid="global-perspective-enterprise"
-              >
-                <Building2 size={15} />
-              </button>
-            </AppTooltip>
-          </div>
 
           <AppTooltip content={saved.studioMode ? "Exit Studio Focus Mode (Alt+F)" : "Enter Studio Focus Mode (Alt+F)"} shortcut="Alt+F">
             <button
