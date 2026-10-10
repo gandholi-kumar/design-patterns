@@ -1133,7 +1133,7 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
 
 .overview-label {
   display: block;
-  font: 600 11px/1.2 var(--app-font-mono);
+  font: 600 13px/1.2 var(--app-font-mono);
   letter-spacing: 0.08em;
   color: hsl(var(--muted-foreground));
   text-transform: uppercase;
@@ -1427,21 +1427,24 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
 .tradeoffs-solid-stack {
   display: flex;
   flex-direction: column;
+  gap: 24px;
 }
 
 .solid-editorial-item {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  align-items: start;
+  gap: 16px;
+}
+
+.solid-badge-col {
+  padding-top: 2px;
+}
+
+.solid-body-col {
   display: flex;
   flex-direction: column;
-}
-
-.solid-editorial-item .item-divider {
-  margin: 18px 0;
-}
-
-.solid-item-heading-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  gap: 6px;
 }
 
 .tradeoff-impact-badge {
@@ -1661,6 +1664,13 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   }
   .desktop-sidebar-toggle {
     display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .solid-editorial-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 

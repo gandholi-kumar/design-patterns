@@ -333,18 +333,17 @@ export function PatternDetailPage({
               <div className="overview-divider" />
 
               <div className="tradeoffs-solid-stack">
-                {pattern.solidPrinciples.map((x, idx) => (
+                {pattern.solidPrinciples.map((x) => (
                   <div key={x.principle} className="solid-editorial-item">
-                    <div className="solid-item-heading-row">
+                    <div className="solid-badge-col">
                       <span className={`tradeoff-impact-badge ${x.impact.toLowerCase()}`}>
                         {x.impact}
                       </span>
-                      <h4 className="solid-principle-title">{x.principle}</h4>
                     </div>
-                    <p className="solid-principle-desc">{x.explanation}</p>
-                    {idx < pattern.solidPrinciples.length - 1 && (
-                      <div className="overview-divider item-divider" />
-                    )}
+                    <div className="solid-body-col">
+                      <h4 className="solid-principle-title">{x.principle}</h4>
+                      <p className="solid-principle-desc">{x.explanation}</p>
+                    </div>
                   </div>
                 ))}
               </div>
