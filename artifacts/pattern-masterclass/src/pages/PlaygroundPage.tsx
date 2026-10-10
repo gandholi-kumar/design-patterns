@@ -10,6 +10,7 @@ import {
   Lightbulb,
   Square,
   WrapText,
+  BookOpen,
 } from 'lucide-react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { PATTERNS } from '../data';
@@ -17,6 +18,8 @@ import type { Pattern } from '../data';
 import { PlaygroundFileTabs, type ProjectFile } from '../components/PlaygroundFileTabs';
 import { PlaygroundTerminal } from '../components/PlaygroundTerminal';
 import { PlaygroundPatternCombobox } from '../components/PlaygroundPatternCombobox';
+import { NotesDrawer } from '../components/NotesDrawer';
+import { PlaygroundDocContent } from '../components/PlaygroundDocContent';
 import { useCodeRunner } from '../hooks/useCodeRunner';
 import { buildProjectFiles } from '../data/playground-starters';
 
@@ -57,6 +60,8 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
   const [wordWrap, setWordWrap] = useState<boolean>(() => {
     return localStorage.getItem('gof_playground_word_wrap') === 'true';
   });
+
+  const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
 
   const toggleWordWrap = useCallback(() => {
     setWordWrap((prev) => {
@@ -135,6 +140,10 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
       if (e.altKey && (e.key === 'z' || e.key === 'Z')) {
         e.preventDefault();
         toggleWordWrap();
+      }
+      if (e.key === 'F1') {
+        e.preventDefault();
+        setIsGuideOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -295,6 +304,18 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
               <span>Split</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            className="subtle-btn playground-guide-trigger"
+            onClick={() => setIsGuideOpen(true)}
+            title="Open Playground Guide & Language Standards (F1)"
+            aria-label="Open Playground Guide & Language Standards"
+            data-testid="playground-guide-button"
+          >
+            <BookOpen size={13} />
+            <span>Guide & Rules</span>
+          </button>
         </div>
       </div>
 
@@ -487,6 +508,26 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
           Copy active snippet <Copy size={13} />
         </button>
       </div>
+
+      {/* 5. Generic Slide-Out Notes Drawer (Playground Guide & Language Standards) */}
+      <NotesDrawer
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        eyebrow="03 / WORKSHOP REFERENCE"
+        title="Playground Guide & Standards"
+        badge={
+          <span className="notes-drawer-lang-badge">
+            {language === 'java' ? '☕ JAVA 25 LTS' : '⚡ TYPESCRIPT WORKER'}
+          </span>
+        }
+        subtitle="Multi-file architecture, runtime contracts, zero-import conventions, and execution rules."
+        width="36rem"
+      >
+        <PlaygroundDocContent
+          activeLanguage={language}
+          onSelectLanguage={(lang) => toggleLanguageMode(lang)}
+        />
+      </NotesDrawer>
     </div>
   );
 };
