@@ -18,6 +18,7 @@ import { PATTERNS } from '../data';
 import type { Pattern } from '../data';
 import { PlaygroundFileTabs, type ProjectFile } from '../components/PlaygroundFileTabs';
 import { PlaygroundTerminal } from '../components/PlaygroundTerminal';
+import { PlaygroundPatternCombobox } from '../components/PlaygroundPatternCombobox';
 import { useCodeRunner } from '../hooks/useCodeRunner';
 import { buildProjectFiles } from '../data/playground-starters';
 
@@ -196,7 +197,10 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
   const lineCount = currentCode.split('\n').length;
 
   return (
-    <div className={`page-content reveal playground-page ${isWide ? 'playground-wide' : ''}`}>
+    <div
+      className={`page-content reveal playground-page ${isWide ? 'playground-wide' : ''} ${saved.theme === 'dark' ? 'dark-theme' : 'light-theme'}`}
+      data-theme={saved.theme || 'light'}
+    >
       {/* 1. Header intro */}
       <div className="page-intro">
         <span className="eyebrow">03 / WORKSHOP</span>
@@ -211,23 +215,11 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
 
       {/* 2. Playground Toolbar */}
       <div className="playground-toolbar">
-        {/* Pattern Picker */}
-        <label className="select-wrap" title="Select a GoF Design Pattern">
-          <Code2 size={15} />
-          <select
-            aria-label="Select a pattern example"
-            value={patternId}
-            onChange={(e) => setPatternId(e.target.value)}
-            data-testid="playground-pattern"
-          >
-            {PATTERNS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={13} />
-        </label>
+        {/* Pattern Search Combobox */}
+        <PlaygroundPatternCombobox
+          selectedPatternId={patternId}
+          onSelectPattern={(newId) => setPatternId(newId)}
+        />
 
         {/* Language Switcher */}
         <div className="language-switch" role="group" aria-label="Code language">
