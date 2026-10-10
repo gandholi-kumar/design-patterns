@@ -389,7 +389,7 @@ export function PatternDetailPage({
         )}
       </main>
 
-      {/* 4. Pinned Bottom Navigation Dock (42px) */}
+      {/* 4. Pinned Bottom Navigation Dock (2.625rem) */}
       <footer className="studio-bottom-dock" role="navigation" aria-label="Sequential pattern navigation">
         {prevPattern ? (
           <AppTooltip content={`Previous: ${prevPattern.name} (← arrow key)`} side="top">

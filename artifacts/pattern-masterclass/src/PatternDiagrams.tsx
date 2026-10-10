@@ -111,7 +111,7 @@ function MermaidCanvas({
           securityLevel: 'strict',
           theme: 'base',
           themeVariables: {
-            fontSize: '15px',
+            fontSize: '0.9375rem',
             background: dark ? '#20242b' : '#fbf9f5',
             primaryColor: dark ? '#303943' : '#efe9df',
             primaryTextColor: dark ? '#f2eee6' : '#292c33',
@@ -285,7 +285,7 @@ function MermaidCanvas({
           <div
             className="diagram-viewport"
             style={{
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transform: `translate(${pan.x / 16}rem, ${pan.y / 16}rem) scale(${zoom})`,
               transformOrigin: 'center center',
               transition: isDragging ? 'none' : 'transform 0.08s ease-out',
             }}

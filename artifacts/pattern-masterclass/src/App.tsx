@@ -4,7 +4,7 @@ import {
   ArrowDownUp, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Check, ChevronDown,
   ChevronLeft, ChevronRight, CircleHelp, Code2, Compass, Copy, Download, FileJson2,
   Filter, GitBranch, Layers3, Lightbulb, Menu, Moon, PanelLeftClose, PanelLeftOpen, Play, RotateCcw, Search, Settings2,
-  ShieldCheck, Sun, Terminal, X, Zap, ZoomIn,
+  ShieldCheck, Sun, Terminal, X, Zap,
 } from 'lucide-react';
 import { PATTERNS, QUIZ, type Pattern } from './data';
 import { PatternDiagrams } from './PatternDiagrams';
@@ -19,10 +19,9 @@ import {
 
 type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz';
 type Progress = { attempts: number; correct: number; bookmarked: boolean; note: string; box: number };
-type ScaleMode = 'normal' | 'large' | 'projector';
-type Saved = { theme: 'light' | 'dark'; bookmarks: string[]; progress: Record<string, Progress>; mode: string; scale?: ScaleMode };
+type Saved = { theme: 'light' | 'dark'; bookmarks: string[]; progress: Record<string, Progress>; mode: string };
 const STORE = 'gof-masterclass-storage';
-const defaults: Saved = { theme: 'light', bookmarks: [], progress: {}, mode: 'typescript', scale: 'normal' };
+const defaults: Saved = { theme: 'light', bookmarks: [], progress: {}, mode: 'typescript' };
 function getSaved(): Saved {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE) || '{}');
@@ -33,7 +32,7 @@ function getSaved(): Saved {
       const p = value as Record<string, unknown>;
       return [id, { attempts: Number(p.attempts ?? p.attemptsCount ?? 0), correct: Number(p.correct ?? p.correctCount ?? 0), bookmarked: Boolean(p.bookmarked), note: String(p.note ?? p.notes ?? ''), box: Number(p.box ?? p.leitnerBox ?? 1) } satisfies Progress];
     }));
-    return { ...defaults, ...s, theme: s.theme || settings.theme || defaults.theme, mode: s.mode || settings.codeExperienceMode || defaults.mode, scale: s.scale || settings.scale || defaults.scale, progress, bookmarks: s.bookmarks || [] };
+    return { ...defaults, ...s, theme: s.theme || settings.theme || defaults.theme, mode: s.mode || settings.codeExperienceMode || defaults.mode, progress, bookmarks: s.bookmarks || [] };
   } catch { return defaults; }
 }
 const nav: { path: string; name: string; icon: typeof Layers3; id: Page }[] = [
@@ -59,7 +58,6 @@ function App() {
   useEffect(() => {
     localStorage.setItem(STORE, JSON.stringify(saved));
     document.documentElement.classList.toggle('dark', saved.theme === 'dark');
-    document.documentElement.setAttribute('data-scale', saved.scale || 'normal');
   }, [saved]);
 
   useEffect(() => {
@@ -144,7 +142,23 @@ function App() {
   };
   return <div className={`app-frame grain ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
-      <div className="brand-row"><div className="brand-mark"><Layers3 size={20}/></div><div><strong>Pattern</strong><span>MASTERCLASS / 01</span></div><button className="icon-btn mobile-close" aria-label="Close navigation" onClick={() => setMobileNav(false)}><X size={18}/></button></div>
+      <div className="brand-row">
+        <Link
+          href="/"
+          className="brand-link"
+          onClick={() => {
+            setMobileNav(false);
+            setSavedOnly(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          aria-label="Go to pattern catalog homepage"
+          data-testid="brand-home-link"
+        >
+          <div className="brand-mark"><Layers3 size={20}/></div>
+          <div><strong>Pattern</strong><span>MASTERCLASS / 01</span></div>
+        </Link>
+        <button className="icon-btn mobile-close" aria-label="Close navigation" onClick={() => setMobileNav(false)}><X size={18}/></button>
+      </div>
       <div className="side-kicker">LEARNING PATH</div>
       <nav className="side-nav" aria-label="Main navigation">{nav.map(item => { const Icon = item.icon; return <Link key={item.id} href={item.path} onClick={() => { setMobileNav(false); setSavedOnly(false); }} className={`nav-item ${page === item.id ? 'active' : ''}`} data-testid={`nav-${item.id}`}><Icon size={17}/><span>{item.name}</span>{item.id === 'catalog' && <span className="nav-count">23</span>}</Link>; })}</nav>
       <div className="side-divider"/>
@@ -222,22 +236,6 @@ function App() {
             </>
           )}
 
-          <AppTooltip content={`Font scale: ${saved.scale || 'normal'}`}>
-            <button
-              className="scale-toggle"
-              onClick={() => patchSaved(s => {
-                const nextScale: ScaleMode = s.scale === 'large' ? 'projector' : s.scale === 'projector' ? 'normal' : 'large';
-                return { ...s, scale: nextScale };
-              })}
-              aria-label={`Scale mode: ${saved.scale || 'normal'}. Click to adjust font size.`}
-              title="Adjust font scale (Standard 100%, Large 115%, Projector 135%)"
-              data-testid="toggle-scale"
-            >
-              <ZoomIn size={15}/>
-              <span>{saved.scale === 'projector' ? 'Projector' : saved.scale === 'large' ? 'Large' : 'Scale'}</span>
-            </button>
-          </AppTooltip>
-
           <AppTooltip content={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`}>
             <button className="theme-toggle" onClick={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} aria-label={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`} data-testid="toggle-theme">{saved.theme === 'light' ? <Moon size={16}/> : <Sun size={16}/>}<span>{saved.theme === 'light' ? 'Light' : 'Dark'}</span></button>
           </AppTooltip>
@@ -261,7 +259,7 @@ function App() {
       )}
     </main>
     {selected && <PatternDialog pattern={selected} saved={saved} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc('/playground'); }}/>}
-    {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} scale={saved.scale || 'normal'} toggleScale={() => patchSaved(s => ({ ...s, scale: s.scale === 'large' ? 'projector' : s.scale === 'projector' ? 'normal' : 'large' }))} />}
+    {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} />}
   </div>;
 }
 
@@ -271,6 +269,10 @@ function Catalog({ saved, savedOnly, clearSaved, onBookmark, onSelect }: { saved
     return sp.get('family') || 'All patterns';
   });
   const [query, setQuery] = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('q') || '';
+  });
+  const [searchInput, setSearchInput] = useState(() => {
     const sp = new URLSearchParams(window.location.search);
     return sp.get('q') || '';
   });
@@ -293,6 +295,9 @@ function Catalog({ saved, savedOnly, clearSaved, onBookmark, onSelect }: { saved
     const qs = sp.toString() ? `?${sp.toString()}` : '/';
     window.history.replaceState(null, '', qs);
   }, [filter, query, sort]);
+  const handleSearch = () => {
+    setQuery(searchInput.trim());
+  };
   const list = useMemo(() => {
     let items = PATTERNS.filter(p => (filter === 'All patterns' || p.category === filter) && (!savedOnly || saved.bookmarks.includes(p.id)) && (!query || `${p.name} ${p.category} ${p.tagline} ${p.intent}`.toLowerCase().includes(query.toLowerCase())));
     if (sort === 'A–Z') items = [...items].sort((a,b) => a.name.localeCompare(b.name));
@@ -302,6 +307,7 @@ function Catalog({ saved, savedOnly, clearSaved, onBookmark, onSelect }: { saved
   }, [filter, query, sort, saved.bookmarks, savedOnly]);
   const families = ['Creational','Structural','Behavioral'] as const;
   const clearFilters = () => {
+    setSearchInput('');
     setQuery('');
     setFilter('All patterns');
     setSort('A–Z');
@@ -310,7 +316,7 @@ function Catalog({ saved, savedOnly, clearSaved, onBookmark, onSelect }: { saved
   };
   return <div className="page-content reveal">
     <section className="catalog-hero"><div className="hero-copy"><div className="eyebrow"><span className="eyebrow-line"/>THE ORIGINAL 23 · REIMAGINED FOR PRACTICE</div><h1>Patterns are<br/><em>decisions</em> made visible.</h1><p>A field guide to the recurring problems behind resilient software. Learn the shape, know the trade-off, recognize when it fits.</p><div className="hero-meta"><span><b>23</b> classic patterns</span><span><b>03</b> pattern families</span><span><b>01</b> working vocabulary</span></div></div><div className="orbit-art" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit orbit-three"/><div className="orbit-core"><Layers3 size={25}/></div><span className="orbit-node n1">01</span><span className="orbit-node n2">02</span><span className="orbit-node n3">03</span></div></section>
-    <section className="catalog-toolbar"><div className="toolbar-title"><span className="eyebrow">THE LIBRARY</span><h2>{savedOnly ? 'Your saved patterns' : 'Browse the collection'} <span>{list.length.toString().padStart(2,'0')}</span></h2></div><div className="toolbar-controls"><label className="searchbox"><Search size={16}/><input ref={searchRef} aria-label="Search patterns" placeholder="Find a pattern…" value={query} onChange={e => setQuery(e.target.value)} data-testid="pattern-search"/><kbd>⌘ K</kbd></label><label className="select-wrap"><Filter size={14}/><select aria-label="Sort patterns" value={sort} onChange={e => setSort(e.target.value)} data-testid="pattern-sort"><option>A–Z</option><option>Family</option><option>Saved first</option></select><ChevronDown size={13}/></label></div></section>
+    <section className="catalog-toolbar"><div className="toolbar-title"><span className="eyebrow">THE LIBRARY</span><h2>{savedOnly ? 'Your saved patterns' : 'Browse the collection'} <span>{list.length.toString().padStart(2,'0')}</span></h2></div><div className="toolbar-controls"><div className="searchbox" role="search"><input ref={searchRef} aria-label="Search patterns" placeholder="Find a pattern…" value={searchInput} onChange={e => { setSearchInput(e.target.value); if (e.target.value === '') setQuery(''); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }} data-testid="pattern-search"/><button type="button" className="search-btn" onClick={handleSearch} title="Search patterns (Enter)" aria-label="Search patterns" data-testid="search-btn"><Search size={16}/></button></div><label className="select-wrap"><Filter size={14}/><select aria-label="Sort patterns" value={sort} onChange={e => setSort(e.target.value)} data-testid="pattern-sort"><option>A–Z</option><option>Family</option><option>Saved first</option></select><ChevronDown size={13}/></label></div></section>
     <div className="filter-row" role="group" aria-label="Filter by pattern family">{['All patterns',...families].map(f => <button className={`filter-pill ${filter === f ? 'chosen' : ''}`} key={f} onClick={() => setFilter(f)} data-testid={`filter-${f.toLowerCase().replace(' ','-')}`}>{f}{f !== 'All patterns' && <span>{PATTERNS.filter(p => p.category === f).length}</span>}</button>)}</div>
     {families.filter(f => filter === 'All patterns' || filter === f).map(family => { const entries = list.filter(p => p.category === family); if (!entries.length) return null; return <section className={`family-section family-${family.toLowerCase()}`} key={family}><div className="family-heading"><div className="family-index">{family === 'Creational' ? 'I' : family === 'Structural' ? 'II' : 'III'}</div><div><div className="family-label">{family.toUpperCase()} PATTERNS</div><h3>{family === 'Creational' ? 'How things come to be.' : family === 'Structural' ? 'How parts fit together.' : 'How objects collaborate.'}</h3></div><span className="family-total">{entries.length} patterns <ArrowDownUp size={13}/></span></div><div className="pattern-grid">{entries.map((p, i) => <PatternCard key={p.id} pattern={p} index={i} isSaved={saved.bookmarks.includes(p.id)} onBookmark={() => onBookmark(p.id)} onOpen={() => onSelect(p)}/>)}</div></section>; })}
      {list.length === 0 && <div className="empty-state"><div className="empty-icon"><Search size={21}/></div><h3>Nothing in this corner.</h3><p>{savedOnly ? 'Save a pattern with the bookmark icon and it will be waiting here.' : 'Try a different phrase, or clear the family filter.'}</p><button className="text-button" onClick={clearFilters}>Clear filters <ArrowRight size={14}/></button></div>}
@@ -466,8 +472,8 @@ function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode }: { pat
   );
 }
 function PageIntro({ index, title, text }: { index: string; title: React.ReactNode; text: string }) { return <section className="page-intro"><span className="eyebrow"><i className="eyebrow-line"/>{index}</span><h1>{title}</h1><p>{text}</p><div className="intro-stamp"><Layers3 size={17}/><span>THE FIELD<br/>GUIDE</span></div></section>; }
-function BackupDialog({ onClose, onExport, onRestore, onZip, onDownloadSource, zipBusy, theme, toggleTheme, scale, toggleScale }: { onClose: () => void; onExport: () => void; onRestore: (f?: File) => void; onZip: () => void; onDownloadSource: () => void; zipBusy: boolean; theme: string; toggleTheme: () => void; scale: ScaleMode; toggleScale: () => void }) {
-  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><section className="backup-modal" role="dialog" aria-modal="true" aria-labelledby="backup-title"><div className="modal-head"><span className="eyebrow">YOUR WORKSPACE</span><button className="icon-btn" onClick={onClose} aria-label="Close settings"><X size={18}/></button></div><h2 id="backup-title">Keep your<br/><em>work close.</em></h2><p className="backup-intro">Everything stays in this browser. Carry your notes and learning history with you whenever you need.</p><div className="setting-row"><div className="setting-icon"><Settings2 size={17}/></div><div><b>Appearance</b><small>Choose the tone of your workspace</small></div><button className="theme-toggle" onClick={toggleTheme} data-testid="settings-theme">{theme==='light'?<Moon size={15}/>:<Sun size={15}/>} {theme==='light'?'Light':'Dark'}</button></div><div className="setting-row"><div className="setting-icon"><ZoomIn size={17}/></div><div><b>Display scale</b><small>Standard, large monitor, or projector screen</small></div><button className="scale-toggle" onClick={toggleScale} data-testid="settings-scale">{scale === 'projector' ? 'Projector (135%)' : scale === 'large' ? 'Large (115%)' : 'Standard (100%)'}</button></div><div className="backup-actions"><button onClick={onExport} data-testid="export-json"><FileJson2 size={17}/><span><b>Export learning state</b><small>Bookmarks, notes, settings · JSON</small></span><Download size={16}/></button><label className="restore-action"><FileJson2 size={17}/><span><b>Restore from backup</b><small>Replace this browser's saved state</small></span><ArrowUpRight size={16}/><input type="file" accept=".json,application/json" onChange={e => onRestore(e.target.files?.[0])} aria-label="Choose backup file" data-testid="restore-json"/></label><button onClick={onZip} disabled={zipBusy} data-testid="download-project"><Download size={17}/><span><b>{zipBusy?'Preparing archive…':'Download project ZIP'}</b><small>Pattern catalog, scenarios & local state</small></span><ArrowUpRight size={16}/></button><button onClick={onDownloadSource} data-testid="download-source"><Code2 size={17}/><span><b>Download full workspace source</b><small>Workspace code and setup files · ZIP</small></span><Download size={16}/></button></div><div className="privacy-note"><ShieldCheck size={16}/><span><b>Private by design</b><br/>No account or sync. Learning data stays in this browser; the source ZIP contains workspace code and setup files only.</span></div></section></div>;
+function BackupDialog({ onClose, onExport, onRestore, onZip, onDownloadSource, zipBusy, theme, toggleTheme }: { onClose: () => void; onExport: () => void; onRestore: (f?: File) => void; onZip: () => void; onDownloadSource: () => void; zipBusy: boolean; theme: string; toggleTheme: () => void }) {
+  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}><section className="backup-modal" role="dialog" aria-modal="true" aria-labelledby="backup-title"><div className="modal-head"><span className="eyebrow">YOUR WORKSPACE</span><button className="icon-btn" onClick={onClose} aria-label="Close settings"><X size={18}/></button></div><h2 id="backup-title">Keep your<br/><em>work close.</em></h2><p className="backup-intro">Everything stays in this browser. Carry your notes and learning history with you whenever you need.</p><div className="setting-row"><div className="setting-icon"><Settings2 size={17}/></div><div><b>Appearance</b><small>Choose the tone of your workspace</small></div><button className="theme-toggle" onClick={toggleTheme} data-testid="settings-theme">{theme==='light'?<Moon size={15}/>:<Sun size={15}/>} {theme==='light'?'Light':'Dark'}</button></div><div className="backup-actions"><button onClick={onExport} data-testid="export-json"><FileJson2 size={17}/><span><b>Export learning state</b><small>Bookmarks, notes, settings · JSON</small></span><Download size={16}/></button><label className="restore-action"><FileJson2 size={17}/><span><b>Restore from backup</b><small>Replace this browser's saved state</small></span><ArrowUpRight size={16}/><input type="file" accept=".json,application/json" onChange={e => onRestore(e.target.files?.[0])} aria-label="Choose backup file" data-testid="restore-json"/></label><button onClick={onZip} disabled={zipBusy} data-testid="download-project"><Download size={17}/><span><b>{zipBusy?'Preparing archive…':'Download project ZIP'}</b><small>Pattern catalog, scenarios & local state</small></span><ArrowUpRight size={16}/></button><button onClick={onDownloadSource} data-testid="download-source"><Code2 size={17}/><span><b>Download full workspace source</b><small>Workspace code and setup files · ZIP</small></span><Download size={16}/></button></div><div className="privacy-note"><ShieldCheck size={16}/><span><b>Private by design</b><br/>No account or sync. Learning data stays in this browser; the source ZIP contains workspace code and setup files only.</span></div></section></div>;
 }
 function NotFound({ goHome }: { goHome: () => void }) { return <div className="not-found"><span className="eyebrow">404 / WRONG TURN</span><h1>This path<br/><em>isn't in the guide.</em></h1><button className="primary-btn" onClick={goHome}>Return to the library <ArrowRight size={15}/></button></div>; }
 function progressListCount(s: Saved) { return Object.values(s.progress).reduce((a,p)=>a+p.attempts,0); }

@@ -32,11 +32,11 @@ export function AppTooltip({
         <TooltipContent
           side={side}
           align={align}
-          className="app-tooltip-content flex items-center gap-1.5 text-[12px] font-medium py-1 px-2.5 z-50 pointer-events-none"
+          className="app-tooltip-content flex items-center gap-1.5 text-[0.75rem] font-medium py-1 px-2.5 z-50 pointer-events-none"
         >
           <span>{content}</span>
           {shortcut && (
-            <kbd className="app-tooltip-kbd text-[10px] px-1 py-0.5 rounded bg-muted/30 border border-border/40 font-mono opacity-80">
+            <kbd className="app-tooltip-kbd text-[0.625rem] px-1 py-0.5 rounded bg-muted/30 border border-border/40 font-mono opacity-80">
               {shortcut}
             </kbd>
           )}
