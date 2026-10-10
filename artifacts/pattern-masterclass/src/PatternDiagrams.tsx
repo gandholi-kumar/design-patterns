@@ -27,7 +27,6 @@ export function PatternDiagrams({ patternId, patternName, theme }: PatternDiagra
     <section className="pattern-diagrams" aria-label={`${patternName} diagrams`}>
       <div className="diagram-intro">
         <span className="eyebrow">DESIGN MAP / {patternName.toUpperCase()}</span>
-        <span className="diagram-subtext">Static class structure and dynamic interaction flow</span>
       </div>
       <div className="diagram-tabs" role="tablist" aria-label="Diagram type">
         <button

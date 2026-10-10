@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -114,7 +114,7 @@
   --chart-4: 215 28% 49%;
   --chart-5: 282 19% 49%;
   --app-font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --app-font-serif: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --app-font-serif: 'Newsreader', Georgia, serif;
   --app-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --radius: 0.5rem; /* 8px */
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
@@ -1092,83 +1092,85 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   flex-direction: column;
 }
 
-/* Tab 1: Clean Stacked Overview Layout */
+/* Tab 1: Clean Boxless Editorial Overview */
+.studio-editorial-overview,
 .studio-stacked-overview {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 4px 8px 24px 0;
+  padding: 8px 12px 36px 0;
   scrollbar-gutter: stable;
 }
 
-.overview-row {
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  padding: 14px 18px;
-  box-shadow: var(--shadow-xs);
+.editorial-section {
+  display: flex;
+  flex-direction: column;
 }
 
-.overview-row.row-intent {
-  background: hsl(var(--card));
-  border-left: 3px solid hsl(var(--accent));
+.editorial-section.section-intent {
+  padding-bottom: 22px;
+}
+
+.editorial-section.section-core {
+  padding: 22px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.editorial-section.section-usage {
+  padding: 22px 0 24px;
+}
+
+.overview-divider {
+  height: 1px;
+  background: hsl(var(--border));
+  width: 100%;
+  flex-shrink: 0;
 }
 
 .overview-label {
   display: block;
-  font: 600 11px/1 var(--app-font-mono);
+  font: 600 11px/1.2 var(--app-font-mono);
   letter-spacing: 0.08em;
   color: hsl(var(--muted-foreground));
   text-transform: uppercase;
   margin-bottom: 8px;
-  margin-top: 0;
 }
 
 .intent-statement {
   margin: 0;
-  font-size: 15.5px;
-  line-height: 1.62;
+  font: italic 400 clamp(19px, 1.9vw, 23px)/1.45 var(--app-font-serif);
   color: hsl(var(--foreground));
-  font-weight: 450;
+  letter-spacing: -0.01em;
 }
 
-.overview-pair-row {
+.overview-columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 14px;
+  gap: 36px;
 }
 
-.pair-col {
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  padding: 14px 18px;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-xs);
-}
-
-.pair-col p {
+.overview-col p {
   margin: 0;
   font-size: 14.5px;
   line-height: 1.6;
-  color: hsl(var(--muted-foreground));
+  color: hsl(var(--foreground)/0.88);
 }
 
-.overview-row.row-wild p {
+.overview-wild p {
   margin: 0;
   font-size: 14.5px;
   line-height: 1.6;
-  color: hsl(var(--foreground));
+  color: hsl(var(--foreground)/0.88);
 }
 
 .bullet-stack {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .bullet-item {
@@ -1177,40 +1179,52 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   align-items: flex-start;
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
-  color: hsl(var(--muted-foreground));
+  line-height: 1.55;
+  color: hsl(var(--foreground)/0.88);
 }
 
 .bullet-item.yes svg {
-  color: #34d399;
+  color: #4e835b;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .bullet-item.no svg {
-  color: #f87171;
+  color: #b8624e;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
-.overview-shape-card {
-  background: hsl(var(--card));
+.dark .bullet-item.yes svg {
+  color: #5ea36f;
+}
+
+.dark .bullet-item.no svg {
+  color: #d2715c;
+}
+
+/* Collaboration Shape: The only bordered frame container */
+.editorial-shape-frame {
+  margin-top: 4px;
   border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  padding: 14px 18px;
-  box-shadow: var(--shadow-xs);
+  border-radius: 4px;
+  padding: 16px 20px;
+  background: transparent;
+}
+
+.editorial-shape-frame .overview-label {
+  margin-bottom: 8px;
 }
 
 .shape-ascii {
   margin: 0;
-  font: 12px/1.55 var(--app-font-mono);
-  background: hsl(var(--background));
-  padding: 12px 14px;
-  border-radius: 6px;
-  border: 1px solid hsl(var(--border));
-  overflow-x: auto;
-  white-space: pre-wrap;
+  font: 12.5px/1.6 var(--app-font-mono);
   color: hsl(var(--foreground));
+  white-space: pre-wrap;
+  background: transparent;
+  padding: 0;
+  border: 0;
+  overflow-x: auto;
 }
 
 /* Shared cards and eyebrows used across Code & Tradeoffs tabs */
@@ -1600,14 +1614,15 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
 
 /* Responsive Adaptive Fallbacks (When screen is narrower or on mobile) */
 @media (max-width: 1180px) {
-  .overview-pair-row {
-    gap: 10px;
+  .overview-columns {
+    gap: 24px;
   }
 }
 
 @media (max-width: 900px) {
-  .overview-pair-row {
+  .overview-columns {
     grid-template-columns: 1fr;
+    gap: 18px;
   }
 }
 

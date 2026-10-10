@@ -177,62 +177,69 @@ export function PatternDetailPage({
       {/* 3. Main Viewport-Pinned Tab Workspace */}
       <main className="studio-workspace-area" role="tabpanel">
         {tab === 'overview' && (
-          <div className="studio-stacked-overview" data-testid="studio-overview">
+          <div className="studio-editorial-overview studio-stacked-overview" data-testid="studio-overview">
             {/* 1. THE INTENT */}
-            <div className="overview-row row-intent">
+            <section className="editorial-section section-intent">
               <span className="overview-label">THE INTENT</span>
               <p className="intent-statement">{pattern.intent}</p>
-            </div>
+            </section>
 
-            {/* 2. THE PROBLEM & THE SOLUTION (2-Column Pair) */}
-            <div className="overview-pair-row">
-              <div className="pair-col">
-                <span className="overview-label">THE PROBLEM</span>
-                <p>{pattern.problem}</p>
-              </div>
-              <div className="pair-col">
-                <span className="overview-label">THE SOLUTION</span>
-                <p>{pattern.solution}</p>
-              </div>
-            </div>
+            <div className="overview-divider" />
 
-            {/* 3. IN THE WILD */}
-            <div className="overview-row row-wild">
-              <span className="overview-label">IN THE WILD</span>
-              <p>{pattern.realWorldEnterpriseScenario}</p>
-            </div>
-
-            {/* 4. USE IT WHEN & THINK TWICE WHEN (2-Column Pair) */}
-            <div className="overview-pair-row">
-              <div className="pair-col">
-                <span className="overview-label">USE IT WHEN</span>
-                <div className="bullet-stack">
-                  {pattern.whenToUse.map(v => (
-                    <p className="bullet-item yes" key={v}>
-                      <Check size={14} />
-                      <span>{v}</span>
-                    </p>
-                  ))}
+            {/* 2. THE PROBLEM, THE SOLUTION & IN THE WILD */}
+            <section className="editorial-section section-core">
+              <div className="overview-columns">
+                <div className="overview-col">
+                  <span className="overview-label">THE PROBLEM</span>
+                  <p>{pattern.problem}</p>
+                </div>
+                <div className="overview-col">
+                  <span className="overview-label">THE SOLUTION</span>
+                  <p>{pattern.solution}</p>
                 </div>
               </div>
-              <div className="pair-col">
-                <span className="overview-label">THINK TWICE WHEN</span>
-                <div className="bullet-stack">
-                  {pattern.whenNotToUse.map(v => (
-                    <p className="bullet-item no" key={v}>
-                      <X size={14} />
-                      <span>{v}</span>
-                    </p>
-                  ))}
+
+              <div className="overview-wild">
+                <span className="overview-label">IN THE WILD</span>
+                <p>{pattern.realWorldEnterpriseScenario}</p>
+              </div>
+            </section>
+
+            <div className="overview-divider" />
+
+            {/* 3. USE IT WHEN & THINK TWICE WHEN */}
+            <section className="editorial-section section-usage">
+              <div className="overview-columns">
+                <div className="overview-col">
+                  <span className="overview-label">USE IT WHEN</span>
+                  <div className="bullet-stack">
+                    {pattern.whenToUse.map(v => (
+                      <p className="bullet-item yes" key={v}>
+                        <Check size={15} />
+                        <span>{v}</span>
+                      </p>
+                    ))}
+                  </div>
+                </div>
+                <div className="overview-col">
+                  <span className="overview-label">THINK TWICE WHEN</span>
+                  <div className="bullet-stack">
+                    {pattern.whenNotToUse.map(v => (
+                      <p className="bullet-item no" key={v}>
+                        <X size={15} />
+                        <span>{v}</span>
+                      </p>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* 5. COLLABORATION SHAPE */}
-            <div className="overview-shape-card">
+            {/* 4. COLLABORATION SHAPE (Single Framed Container) */}
+            <section className="editorial-shape-frame">
               <span className="overview-label">COLLABORATION SHAPE</span>
               <pre className="shape-ascii">{pattern.asciiShape}</pre>
-            </div>
+            </section>
           </div>
         )}
 
