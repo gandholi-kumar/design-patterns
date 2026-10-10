@@ -8,6 +8,13 @@ import {
 } from 'lucide-react';
 import { PATTERNS, QUIZ, type Pattern } from './data';
 import { PatternDiagrams } from './PatternDiagrams';
+import { useIsMobile } from './hooks/use-mobile';
+import { PatternDetailPage } from './pages/PatternDetailPage';
+import {
+  PatternOverview,
+  PatternCode,
+  PatternTradeoffs,
+} from './components/PatternDetailSections';
 
 type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz';
 type Progress = { attempts: number; correct: number; bookmarked: boolean; note: string; box: number };
@@ -43,6 +50,7 @@ function App() {
   const [mobileNav, setMobileNav] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
+  const isMobile = useIsMobile();
   useEffect(() => {
     localStorage.setItem(STORE, JSON.stringify(saved));
     document.documentElement.classList.toggle('dark', saved.theme === 'dark');
@@ -50,7 +58,16 @@ function App() {
   }, [saved]);
   const patchSaved = (f: (s: Saved) => Saved) => setSaved(s => f(s));
   const togglePatternBookmark = (id: string) => patchSaved(s => ({ ...s, bookmarks: s.bookmarks.includes(id) ? s.bookmarks.filter(x => x !== id) : [...s.bookmarks, id] }));
-  const page = nav.find(n => n.path === loc)?.id || 'catalog';
+  const handleSelectPattern = (pattern: Pattern) => {
+    if (isMobile) {
+      setSelected(pattern);
+    } else {
+      const qs = window.location.search;
+      setLoc(`/pattern/${pattern.id}${qs}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  const page = loc.startsWith('/pattern/') ? 'catalog' : (nav.find(n => n.path === loc)?.id || 'catalog');
   const progressList = Object.values(saved.progress);
   const onExport = () => {
     const blob = new Blob([JSON.stringify({ version: '1.0.0', exportTimestamp: new Date().toISOString(), ...saved, settings: { theme: saved.theme, codeExperienceMode: saved.mode, activeCategoryFilter: 'All' }, quizProgress: saved.progress }, null, 2)], { type: 'application/json' });
@@ -97,7 +114,7 @@ function App() {
     <main className="main-column">
       <header className="topbar">
         <button className="icon-btn mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={20}/></button>
-        <div className="crumb"><span>GOF DESIGN PATTERNS</span><ChevronRight size={13}/><b>{nav.find(n => n.id === page)?.name.toUpperCase()}</b></div>
+        <div className="crumb"><span>GOF DESIGN PATTERNS</span><ChevronRight size={13}/><b>{loc.startsWith('/pattern/') ? 'PATTERN DETAIL' : (nav.find(n => n.id === page)?.name.toUpperCase())}</b></div>
         <div className="top-actions">
           <button
             className="scale-toggle"
@@ -118,10 +135,11 @@ function App() {
       </header>
       <div className="workspace">
         <Switch>
-          <Route path="/"><Catalog saved={saved} savedOnly={savedOnly} clearSaved={() => setSavedOnly(false)} onBookmark={togglePatternBookmark} onSelect={setSelected}/></Route>
-          <Route path="/decision-engine"><Decision onSelect={setSelected}/></Route>
+          <Route path="/"><Catalog saved={saved} savedOnly={savedOnly} clearSaved={() => setSavedOnly(false)} onBookmark={togglePatternBookmark} onSelect={handleSelectPattern}/></Route>
+          <Route path="/pattern/:id">{(params) => <PatternDetailPage id={params.id} saved={saved} onBookmark={togglePatternBookmark} goPlayground={() => setLoc('/playground')} />}</Route>
+          <Route path="/decision-engine"><Decision onSelect={handleSelectPattern}/></Route>
           <Route path="/playground"><Playground saved={saved} setSaved={setSaved}/></Route>
-          <Route path="/simulators"><Simulators onSelect={setSelected}/></Route>
+          <Route path="/simulators"><Simulators onSelect={handleSelectPattern}/></Route>
           <Route path="/quiz-lab"><QuizLab saved={saved} setSaved={setSaved}/></Route>
           <Route><NotFound goHome={() => setLoc('/')}/></Route>
         </Switch>
@@ -134,13 +152,33 @@ function App() {
 }
 
 function Catalog({ saved, savedOnly, clearSaved, onBookmark, onSelect }: { saved: Saved; savedOnly: boolean; clearSaved: () => void; onBookmark: (id: string) => void; onSelect: (p: Pattern) => void }) {
-  const [filter, setFilter] = useState('All patterns'); const [query, setQuery] = useState(''); const [sort, setSort] = useState('A–Z');
+  const [filter, setFilter] = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('family') || 'All patterns';
+  });
+  const [query, setQuery] = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('q') || '';
+  });
+  const [sort, setSort] = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('sort') || 'A–Z';
+  });
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); searchRef.current?.focus(); } };
     window.addEventListener('keydown', shortcut);
     return () => window.removeEventListener('keydown', shortcut);
   }, []);
+  useEffect(() => {
+    if (window.location.pathname !== '/') return;
+    const sp = new URLSearchParams(window.location.search);
+    if (filter !== 'All patterns') sp.set('family', filter); else sp.delete('family');
+    if (query.trim()) sp.set('q', query.trim()); else sp.delete('q');
+    if (sort !== 'A–Z') sp.set('sort', sort); else sp.delete('sort');
+    const qs = sp.toString() ? `?${sp.toString()}` : '/';
+    window.history.replaceState(null, '', qs);
+  }, [filter, query, sort]);
   const list = useMemo(() => {
     let items = PATTERNS.filter(p => (filter === 'All patterns' || p.category === filter) && (!savedOnly || saved.bookmarks.includes(p.id)) && (!query || `${p.name} ${p.category} ${p.tagline} ${p.intent}`.toLowerCase().includes(query.toLowerCase())));
     if (sort === 'A–Z') items = [...items].sort((a,b) => a.name.localeCompare(b.name));
@@ -149,12 +187,19 @@ function Catalog({ saved, savedOnly, clearSaved, onBookmark, onSelect }: { saved
     return items;
   }, [filter, query, sort, saved.bookmarks, savedOnly]);
   const families = ['Creational','Structural','Behavioral'] as const;
+  const clearFilters = () => {
+    setQuery('');
+    setFilter('All patterns');
+    setSort('A–Z');
+    window.history.replaceState(null, '', '/');
+    if (savedOnly) clearSaved();
+  };
   return <div className="page-content reveal">
     <section className="catalog-hero"><div className="hero-copy"><div className="eyebrow"><span className="eyebrow-line"/>THE ORIGINAL 23 · REIMAGINED FOR PRACTICE</div><h1>Patterns are<br/><em>decisions</em> made visible.</h1><p>A field guide to the recurring problems behind resilient software. Learn the shape, know the trade-off, recognize when it fits.</p><div className="hero-meta"><span><b>23</b> classic patterns</span><span><b>03</b> pattern families</span><span><b>01</b> working vocabulary</span></div></div><div className="orbit-art" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit orbit-three"/><div className="orbit-core"><Layers3 size={25}/></div><span className="orbit-node n1">01</span><span className="orbit-node n2">02</span><span className="orbit-node n3">03</span></div></section>
     <section className="catalog-toolbar"><div className="toolbar-title"><span className="eyebrow">THE LIBRARY</span><h2>{savedOnly ? 'Your saved patterns' : 'Browse the collection'} <span>{list.length.toString().padStart(2,'0')}</span></h2></div><div className="toolbar-controls"><label className="searchbox"><Search size={16}/><input ref={searchRef} aria-label="Search patterns" placeholder="Find a pattern…" value={query} onChange={e => setQuery(e.target.value)} data-testid="pattern-search"/><kbd>⌘ K</kbd></label><label className="select-wrap"><Filter size={14}/><select aria-label="Sort patterns" value={sort} onChange={e => setSort(e.target.value)} data-testid="pattern-sort"><option>A–Z</option><option>Family</option><option>Saved first</option></select><ChevronDown size={13}/></label></div></section>
     <div className="filter-row" role="group" aria-label="Filter by pattern family">{['All patterns',...families].map(f => <button className={`filter-pill ${filter === f ? 'chosen' : ''}`} key={f} onClick={() => setFilter(f)} data-testid={`filter-${f.toLowerCase().replace(' ','-')}`}>{f}{f !== 'All patterns' && <span>{PATTERNS.filter(p => p.category === f).length}</span>}</button>)}</div>
     {families.filter(f => filter === 'All patterns' || filter === f).map(family => { const entries = list.filter(p => p.category === family); if (!entries.length) return null; return <section className={`family-section family-${family.toLowerCase()}`} key={family}><div className="family-heading"><div className="family-index">{family === 'Creational' ? 'I' : family === 'Structural' ? 'II' : 'III'}</div><div><div className="family-label">{family.toUpperCase()} PATTERNS</div><h3>{family === 'Creational' ? 'How things come to be.' : family === 'Structural' ? 'How parts fit together.' : 'How objects collaborate.'}</h3></div><span className="family-total">{entries.length} patterns <ArrowDownUp size={13}/></span></div><div className="pattern-grid">{entries.map((p, i) => <PatternCard key={p.id} pattern={p} index={i} isSaved={saved.bookmarks.includes(p.id)} onBookmark={() => onBookmark(p.id)} onOpen={() => onSelect(p)}/>)}</div></section>; })}
-     {list.length === 0 && <div className="empty-state"><div className="empty-icon"><Search size={21}/></div><h3>Nothing in this corner.</h3><p>{savedOnly ? 'Save a pattern with the bookmark icon and it will be waiting here.' : 'Try a different phrase, or clear the family filter.'}</p><button className="text-button" onClick={() => { setQuery(''); setFilter('All patterns'); if (savedOnly) clearSaved(); }}>Clear filters <ArrowRight size={14}/></button></div>}
+     {list.length === 0 && <div className="empty-state"><div className="empty-icon"><Search size={21}/></div><h3>Nothing in this corner.</h3><p>{savedOnly ? 'Save a pattern with the bookmark icon and it will be waiting here.' : 'Try a different phrase, or clear the family filter.'}</p><button className="text-button" onClick={clearFilters}>Clear filters <ArrowRight size={14}/></button></div>}
     <div className="catalog-note"><Lightbulb size={17}/><p><b>A useful question:</b> what is changing, and which part of the system should own that change?</p><span>START HERE</span></div>
   </div>;
 }
@@ -305,44 +350,6 @@ function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode }: { pat
       </section>
     </div>
   );
-}
-function PatternOverview({ pattern: p }: { pattern: Pattern }) {
-  return <>
-    <div className="detail-block"><span className="eyebrow">THE INTENT</span><p className="intent-quote">{p.intent}</p></div>
-    <div className="detail-pair">
-      <div><span className="eyebrow">THE PROBLEM</span><p>{p.problem}</p></div>
-      <div><span className="eyebrow">THE SOLUTION</span><p>{p.solution}</p></div>
-    </div>
-    <div className="detail-block"><span className="eyebrow">IN THE WILD</span><p>{p.realWorldEnterpriseScenario}</p></div>
-    <div className="detail-pair usage-pair">
-      <div><span className="eyebrow">USE IT WHEN</span>{p.whenToUse.map(v => <p className="bullet" key={v}><Check size={13}/>{v}</p>)}</div>
-      <div><span className="eyebrow">THINK TWICE WHEN</span>{p.whenNotToUse.map(v => <p className="bullet no" key={v}><X size={13}/>{v}</p>)}</div>
-    </div>
-    <div className="detail-block diagram"><span className="eyebrow">COLLABORATION SHAPE</span><pre>{p.asciiShape}</pre></div>
-  </>;
-}
-function PatternCode({ pattern: p, goCode }: { pattern: Pattern; goCode: () => void }) {
-  return <>
-    <p className="code-explanation">{p.typeScriptImplementation.explanation}</p>
-    <div className="detail-code">
-      <div><span className="file-dot"/> {p.typeScriptImplementation.fileName}</div>
-      <pre>{p.typeScriptImplementation.code}</pre>
-    </div>
-    <button className="primary-btn modal-run" onClick={goCode}><Code2 size={15}/> Open in playground <ArrowRight size={15}/></button>
-  </>;
-}
-function PatternTradeoffs({ pattern: p }: { pattern: Pattern }) {
-  return <>
-    <div className="detail-block">
-      <span className="eyebrow">WHAT IT SUPPORTS</span>
-      {p.solidPrinciples.map(x => <div className="solid-row" key={x.principle}><span className={`impact ${x.impact}`}>{x.impact}</span><div><b>{x.principle}</b><p>{x.explanation}</p></div></div>)}
-    </div>
-    <div className="detail-block">
-      <span className="eyebrow">EASY TO CONFUSE WITH</span>
-      {p.confusedWith.map(x => <div className="confused-row" key={x.targetPattern}><b>{x.targetPattern}</b><p>{x.keyDifference}</p><small>DECISION RULE · {x.decisionRule}</small></div>)}
-    </div>
-    <div className="detail-block traps"><span className="eyebrow">INTERVIEW TRAPS</span>{p.interviewTraps.map(t => <p key={t}><span>!</span>{t}</p>)}</div>
-  </>;
 }
 function PageIntro({ index, title, text }: { index: string; title: React.ReactNode; text: string }) { return <section className="page-intro"><span className="eyebrow"><i className="eyebrow-line"/>{index}</span><h1>{title}</h1><p>{text}</p><div className="intro-stamp"><Layers3 size={17}/><span>THE FIELD<br/>GUIDE</span></div></section>; }
 function BackupDialog({ onClose, onExport, onRestore, onZip, onDownloadSource, zipBusy, theme, toggleTheme, scale, toggleScale }: { onClose: () => void; onExport: () => void; onRestore: (f?: File) => void; onZip: () => void; onDownloadSource: () => void; zipBusy: boolean; theme: string; toggleTheme: () => void; scale: ScaleMode; toggleScale: () => void }) {
