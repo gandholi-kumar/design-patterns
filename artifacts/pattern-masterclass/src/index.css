@@ -5431,7 +5431,7 @@ kbd {
   margin: 0;
   font: 0.78125rem/1.6 var(--app-font-mono);
   color: hsl(var(--foreground));
-  white-space: pre-wrap;
+  white-space: pre;
   background: transparent;
   padding: 0;
   border: 0;

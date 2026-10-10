@@ -141,16 +141,14 @@ S3 -->|uploads to| Bucket["AWS S3 Bucket"]`,
     whenNotToUse: [
       'When your infrastructure requirements change frequently by adding new resource types (e.g. Serverless, Queues), requiring updates across all factory classes.',
     ],
-    asciiShape: `CloudDeployment ──► CloudResourceFactory
-                         ├── createCompute()
-                         ├── createStorage()
-                         └── createFirewall()
-            ┌────────────┴────────────┐
-            ▼                         ▼
-    AwsResourceFactory        GcpResourceFactory
-     ├── EC2Compute            ├── GcpCompute
-     ├── S3Bucket              ├── GcsBucket
-     └── AwsSecurityGroup      └── GcpFirewall`,
+    asciiShape: `CloudDeployment ──► CloudResourceFactory ──► { createCompute(), createStorage(), createFirewall() }
+                              │
+                ┌─────────────┴─────────────┐
+                ▼                           ▼
+       AwsResourceFactory          GcpResourceFactory
+        ├── EC2Compute              ├── GcpCompute
+        ├── S3Bucket                ├── GcsBucket
+        └── AwsSecurityGroup        └── GcpFirewall`,
     typeScript: {
       fileName: 'CloudResourceFactory.ts',
       explanation: 'CloudResourceFactory produces compatible compute, storage, and firewall resources for a single cloud vendor.',
