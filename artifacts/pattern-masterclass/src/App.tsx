@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Route, Switch, useLocation } from 'wouter';
 import {
-  ArrowDownUp, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Check, ChevronDown,
+  ArrowDownUp, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Check, ChevronDown,
   ChevronLeft, ChevronRight, CircleHelp, Code2, Compass, Copy, Download, FileJson2,
-  Filter, GitBranch, Layers3, Lightbulb, Menu, Moon, Play, RotateCcw, Search, Settings2,
+  Filter, GitBranch, Layers3, Lightbulb, Menu, Moon, PanelLeftClose, PanelLeftOpen, Play, RotateCcw, Search, Settings2,
   ShieldCheck, Sun, Terminal, X, Zap, ZoomIn,
 } from 'lucide-react';
 import { PATTERNS, QUIZ, type Pattern } from './data';
 import { PatternDiagrams } from './PatternDiagrams';
 import { useIsMobile } from './hooks/use-mobile';
 import { PatternDetailPage } from './pages/PatternDetailPage';
+import { AppTooltip } from './components/ui/app-tooltip';
 import {
   PatternOverview,
   PatternCode,
@@ -50,12 +51,33 @@ function App() {
   const [mobileNav, setMobileNav] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('gof-sidebar-collapsed') === 'true';
+  });
   const isMobile = useIsMobile();
+
   useEffect(() => {
     localStorage.setItem(STORE, JSON.stringify(saved));
     document.documentElement.classList.toggle('dark', saved.theme === 'dark');
     document.documentElement.setAttribute('data-scale', saved.scale || 'normal');
   }, [saved]);
+
+  useEffect(() => {
+    localStorage.setItem('gof-sidebar-collapsed', String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  // Global Ctrl+B / Cmd+B keyboard shortcut for toggling sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        setSidebarCollapsed(c => !c);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const patchSaved = (f: (s: Saved) => Saved) => setSaved(s => f(s));
   const togglePatternBookmark = (id: string) => patchSaved(s => ({ ...s, bookmarks: s.bookmarks.includes(id) ? s.bookmarks.filter(x => x !== id) : [...s.bookmarks, id] }));
   const handleSelectPattern = (pattern: Pattern) => {
@@ -67,7 +89,30 @@ function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
-  const page = loc.startsWith('/pattern/') ? 'catalog' : (nav.find(n => n.path === loc)?.id || 'catalog');
+
+  const isPatternPage = loc.startsWith('/pattern/');
+  const patternIdFromUrl = isPatternPage ? loc.split('/pattern/')[1]?.split('?')[0] : null;
+  const activePattern = patternIdFromUrl ? PATTERNS.find(p => p.id === patternIdFromUrl) : null;
+
+  const queryParams = useMemo(() => new URLSearchParams(window.location.search), [loc]);
+  const familyFilter = queryParams.get('family');
+  const searchQuery = queryParams.get('q');
+  const backLabel = useMemo(() => {
+    if (familyFilter && familyFilter !== 'All patterns') {
+      return `Back to ${familyFilter} patterns`;
+    }
+    if (searchQuery) {
+      return `Back to results ("${searchQuery}")`;
+    }
+    return 'Back to library';
+  }, [familyFilter, searchQuery]);
+
+  const handleBack = () => {
+    const qs = window.location.search;
+    setLoc(`/${qs}`);
+  };
+
+  const page = isPatternPage ? 'catalog' : (nav.find(n => n.path === loc)?.id || 'catalog');
   const progressList = Object.values(saved.progress);
   const onExport = () => {
     const blob = new Blob([JSON.stringify({ version: '1.0.0', exportTimestamp: new Date().toISOString(), ...saved, settings: { theme: saved.theme, codeExperienceMode: saved.mode, activeCategoryFilter: 'All' }, quizProgress: saved.progress }, null, 2)], { type: 'application/json' });
@@ -97,7 +142,7 @@ function App() {
     link.download = 'pattern-masterclass-workspace-source.zip';
     link.click();
   };
-  return <div className="app-frame grain">
+  return <div className={`app-frame grain ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
       <div className="brand-row"><div className="brand-mark"><Layers3 size={20}/></div><div><strong>Pattern</strong><span>MASTERCLASS / 01</span></div><button className="icon-btn mobile-close" aria-label="Close navigation" onClick={() => setMobileNav(false)}><X size={18}/></button></div>
       <div className="side-kicker">LEARNING PATH</div>
@@ -113,27 +158,94 @@ function App() {
     {mobileNav && <button className="scrim" aria-label="Close navigation" onClick={() => setMobileNav(false)}/>}
     <main className="main-column">
       <header className="topbar">
-        <button className="icon-btn mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={20}/></button>
-        <div className="crumb"><span>GOF DESIGN PATTERNS</span><ChevronRight size={13}/><b>{loc.startsWith('/pattern/') ? 'PATTERN DETAIL' : (nav.find(n => n.id === page)?.name.toUpperCase())}</b></div>
+        <div className="topbar-left">
+          <button className="icon-btn mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={20}/></button>
+          
+          <AppTooltip content={sidebarCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"} shortcut="Ctrl+B">
+            <button
+              className="icon-btn desktop-sidebar-toggle"
+              onClick={() => setSidebarCollapsed(c => !c)}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              data-testid="toggle-sidebar"
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={18}/> : <PanelLeftClose size={18}/>}
+            </button>
+          </AppTooltip>
+
+          {isPatternPage && (
+            <AppTooltip content={`${backLabel} (Esc)`} shortcut="Esc">
+              <button
+                className="icon-btn topbar-back-btn"
+                onClick={handleBack}
+                aria-label={backLabel}
+                data-testid="topbar-back-btn"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            </AppTooltip>
+          )}
+
+          <div className="crumb">
+            <span>GOF DESIGN PATTERNS</span>
+            <ChevronRight size={13}/>
+            <b>{isPatternPage && activePattern ? activePattern.name.toUpperCase() : (nav.find(n => n.id === page)?.name.toUpperCase())}</b>
+          </div>
+        </div>
+
         <div className="top-actions">
-          <button
-            className="scale-toggle"
-            onClick={() => patchSaved(s => {
-              const nextScale: ScaleMode = s.scale === 'large' ? 'projector' : s.scale === 'projector' ? 'normal' : 'large';
-              return { ...s, scale: nextScale };
-            })}
-            aria-label={`Scale mode: ${saved.scale || 'normal'}. Click to adjust font size.`}
-            title="Adjust font scale (Standard 100%, Large 115%, Projector 135%)"
-            data-testid="toggle-scale"
-          >
-            <ZoomIn size={15}/>
-            <span>{saved.scale === 'projector' ? 'Projector' : saved.scale === 'large' ? 'Large' : 'Scale'}</span>
-          </button>
-          <button className="theme-toggle" onClick={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} aria-label={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`} data-testid="toggle-theme">{saved.theme === 'light' ? <Moon size={16}/> : <Sun size={16}/>}<span>{saved.theme === 'light' ? 'Light' : 'Dark'}</span></button>
+          {isPatternPage && activePattern && (
+            <>
+              <AppTooltip
+                content={saved.bookmarks.includes(activePattern.id) ? "Saved in bookmarks (B)" : "Save to bookmarks (B)"}
+                shortcut="B"
+              >
+                <button
+                  className={`icon-btn topbar-action-btn ${saved.bookmarks.includes(activePattern.id) ? 'saved' : ''}`}
+                  onClick={() => togglePatternBookmark(activePattern.id)}
+                  aria-label={saved.bookmarks.includes(activePattern.id) ? "Remove bookmark" : "Save pattern"}
+                  data-testid="topbar-bookmark-btn"
+                >
+                  {saved.bookmarks.includes(activePattern.id) ? <BookmarkCheck size={17} /> : <Bookmark size={17} />}
+                </button>
+              </AppTooltip>
+
+              <AppTooltip content="Open in live playground (P)" shortcut="P">
+                <button
+                  className="icon-btn topbar-action-btn playground-btn"
+                  onClick={() => setLoc('/playground')}
+                  aria-label="Open in playground"
+                  data-testid="topbar-playground-btn"
+                >
+                  <Code2 size={17} />
+                </button>
+              </AppTooltip>
+            </>
+          )}
+
+          <AppTooltip content={`Font scale: ${saved.scale || 'normal'}`}>
+            <button
+              className="scale-toggle"
+              onClick={() => patchSaved(s => {
+                const nextScale: ScaleMode = s.scale === 'large' ? 'projector' : s.scale === 'projector' ? 'normal' : 'large';
+                return { ...s, scale: nextScale };
+              })}
+              aria-label={`Scale mode: ${saved.scale || 'normal'}. Click to adjust font size.`}
+              title="Adjust font scale (Standard 100%, Large 115%, Projector 135%)"
+              data-testid="toggle-scale"
+            >
+              <ZoomIn size={15}/>
+              <span>{saved.scale === 'projector' ? 'Projector' : saved.scale === 'large' ? 'Large' : 'Scale'}</span>
+            </button>
+          </AppTooltip>
+
+          <AppTooltip content={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`}>
+            <button className="theme-toggle" onClick={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} aria-label={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`} data-testid="toggle-theme">{saved.theme === 'light' ? <Moon size={16}/> : <Sun size={16}/>}<span>{saved.theme === 'light' ? 'Light' : 'Dark'}</span></button>
+          </AppTooltip>
+
           <button className="avatar" title="Your learning space">M</button>
         </div>
       </header>
-      <div className="workspace">
+      <div className={`workspace ${isPatternPage ? 'workspace-studio' : ''}`}>
         <Switch>
           <Route path="/"><Catalog saved={saved} savedOnly={savedOnly} clearSaved={() => setSavedOnly(false)} onBookmark={togglePatternBookmark} onSelect={handleSelectPattern}/></Route>
           <Route path="/pattern/:id">{(params) => <PatternDetailPage id={params.id} saved={saved} onBookmark={togglePatternBookmark} goPlayground={() => setLoc('/playground')} />}</Route>
@@ -144,7 +256,9 @@ function App() {
           <Route><NotFound goHome={() => setLoc('/')}/></Route>
         </Switch>
       </div>
-      <footer className="global-footer"><span>BUILT AROUND THE GANG OF FOUR · 1994</span><span>23 patterns <i/> three families <i/> one shared language</span></footer>
+      {!isPatternPage && (
+        <footer className="global-footer"><span>BUILT AROUND THE GANG OF FOUR · 1994</span><span>23 patterns <i/> three families <i/> one shared language</span></footer>
+      )}
     </main>
     {selected && <PatternDialog pattern={selected} saved={saved} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc('/playground'); }}/>}
     {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} scale={saved.scale || 'normal'} toggleScale={() => patchSaved(s => ({ ...s, scale: s.scale === 'large' ? 'projector' : s.scale === 'projector' ? 'normal' : 'large' }))} />}
