@@ -24,7 +24,7 @@ import { buildProjectFiles } from '../data/playground-starters';
 
 interface PlaygroundPageProps {
   initialPatternId?: string;
-  saved: { mode?: string; theme?: string };
+  saved: { mode?: string; theme?: string; studioMode?: boolean };
   setSaved: React.Dispatch<React.SetStateAction<any>>;
 }
 
@@ -49,6 +49,11 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
     const savedLayout = localStorage.getItem('gof_playground_layout');
     return savedLayout === 'split' ? 'split' : 'stacked';
   });
+
+  const isStudioMode = Boolean(saved.studioMode);
+  const toggleStudioMode = () => {
+    setSaved((s: any) => ({ ...s, studioMode: !s.studioMode }));
+  };
 
   const [isWide, setIsWide] = useState<boolean>(() => {
     return localStorage.getItem('gof_playground_wide') === 'true';
@@ -201,19 +206,38 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
 
   return (
     <div
-      className={`page-content reveal playground-page ${isWide ? 'playground-wide' : ''} ${saved.theme === 'dark' ? 'dark-theme' : 'light-theme'}`}
+      className={`page-content reveal playground-page ${isStudioMode ? 'playground-wide' : isWide ? 'playground-wide' : ''} ${saved.theme === 'dark' ? 'dark-theme' : 'light-theme'}`}
       data-theme={saved.theme || 'light'}
     >
       {/* 1. Header intro */}
       <div className="page-intro">
-        <span className="eyebrow">03 / WORKSHOP</span>
-        <h1>
-          Read the shape.<br />
-          <em>Run the idea.</em>
-        </h1>
-        <p>
-          A live, multi-file execution environment. Modify code, link classes across tabs, and execute against real {language === 'java' ? 'Java 25 LTS' : 'TypeScript Web Workers'} with instant feedback.
-        </p>
+        <div className="intro-left">
+          <span className="eyebrow"><i className="eyebrow-line" />03 / WORKSHOP</span>
+          <h1>
+            Read the shape.<br />
+            <em>Run the idea.</em>
+          </h1>
+        </div>
+        <div className="intro-right">
+          <p>
+            A live, multi-file execution environment. Modify code, link classes across tabs, and execute against real {language === 'java' ? 'Java 25 LTS' : 'TypeScript Web Workers'} with instant feedback.
+          </p>
+          <button
+            type="button"
+            className={`subtle-btn intro-focus-pill ${isStudioMode ? 'active' : ''}`}
+            onClick={toggleStudioMode}
+            title={isStudioMode ? "Exit Studio Focus Mode (Alt+F)" : "Enter Studio Focus Mode (Alt+F)"}
+            aria-label="Toggle Studio Focus Mode"
+            data-testid="playground-intro-studio-toggle"
+          >
+            {isStudioMode ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+            <span>{isStudioMode ? 'Exit Focus' : 'Focus Studio'}</span>
+          </button>
+        </div>
+        <div className="intro-stamp">
+          <Code2 size={17} />
+          <span>LIVE<br />WORKSHOP</span>
+        </div>
       </div>
 
       {/* 2. Playground Toolbar */}
@@ -288,14 +312,16 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
             </button>
           </div>
 
-          {/* Wide Canvas Toggle */}
+          {/* Studio Focus Mode / Wide Canvas Toggle */}
           <button
             type="button"
-            className={`subtle-btn wide-toggle-btn ${isWide ? 'active' : ''}`}
-            onClick={toggleWide}
-            title={isWide ? 'Reset to standard width' : 'Expand to full viewport width'}
+            className={`subtle-btn wide-toggle-btn ${isStudioMode ? 'active' : ''}`}
+            onClick={toggleStudioMode}
+            title={isStudioMode ? 'Exit Studio Focus Mode (Alt+F)' : 'Enter Studio Focus Mode (Alt+F)'}
+            aria-label="Toggle Studio Focus Mode"
+            data-testid="playground-studio-toggle"
           >
-            {isWide ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            {isStudioMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>
         </div>
       </div>
