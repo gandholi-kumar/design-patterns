@@ -323,9 +323,9 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
       {layoutMode === 'split' ? (
         /* MODE B: SIDE-BY-SIDE RESIZABLE SPLIT (Sliding Window Divider) */
         <div className="playground-split-wrapper">
-          <PanelGroup direction="horizontal" autoSaveId="gof-playground-panel-sizes">
-            {/* Left Panel: Editor & Tabs */}
-            <Panel defaultSize={65} minSize={30} className="playground-editor-panel">
+          <PanelGroup direction="horizontal" autoSaveId="gof-playground-panel-sizes-v2">
+            {/* Left Panel: Editor & Tabs (Threshold minSize=48 prevents tab bar shrink and horizontal scroll) */}
+            <Panel defaultSize={65} minSize={48} maxSize={80} className="playground-editor-panel">
               <div className="editor-card playground-editor-card split-editor-card">
                 <PlaygroundFileTabs
                   files={projectFiles}
@@ -404,7 +404,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
             </PanelResizeHandle>
 
             {/* Right Panel: Terminal Output */}
-            <Panel defaultSize={35} minSize={20} className="playground-terminal-panel">
+            <Panel defaultSize={35} minSize={20} maxSize={52} className="playground-terminal-panel">
               <PlaygroundTerminal result={result} isRunning={isRunning} onClear={clearOutput} />
             </Panel>
           </PanelGroup>
