@@ -1401,153 +1401,168 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   min-height: 0;
 }
 
-/* Tab 4: 2-Column Trade-offs Matrix */
+/* Tab 4: Clean Boxless Editorial Trade-offs */
+.studio-editorial-tradeoffs,
 .studio-tradeoffs-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: 12px;
-  height: 100%;
-  min-height: 0;
-}
-.tradeoffs-column {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 4px;
-}
-.tradeoffs-header-card {
-  padding: 10px 14px;
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-.tradeoffs-header-card h3 {
-  font: 500 17px var(--app-font-serif);
-  margin: 2px 0 3px;
-}
-.tradeoffs-header-card p {
-  font-size: 12.5px;
-  color: hsl(var(--muted-foreground));
-  margin: 0;
-}
-.solid-principles-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  padding: 8px 12px 36px 0;
+  scrollbar-gutter: stable;
+  gap: 28px;
 }
-.solid-item-card {
-  padding: 11px 13px;
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 6px;
-  flex-shrink: 0;
+
+.tradeoffs-editorial-section {
+  display: flex;
+  flex-direction: column;
 }
-.solid-item-head {
+
+.tradeoffs-editorial-section .overview-divider {
+  margin-top: 8px;
+  margin-bottom: 18px;
+}
+
+.tradeoffs-solid-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.solid-editorial-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.solid-editorial-item .item-divider {
+  margin: 18px 0;
+}
+
+.solid-item-heading-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 12px;
 }
-.solid-item-head b {
-  font: 500 14px var(--app-font-serif);
-}
-.solid-item-card p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: hsl(var(--muted-foreground));
-}
-.impact-badge {
-  font: 600 10.5px var(--app-font-mono);
-  padding: 3px 6px;
+
+.tradeoff-impact-badge {
+  font: 600 11px/1.2 var(--app-font-mono);
+  padding: 3px 8px;
   border-radius: 3px;
-  background: hsl(var(--muted));
-  color: hsl(var(--accent));
-}
-.impact-badge.adheres {
-  color: #61816c;
-}
-.confused-section, .traps-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.confused-title, .traps-title {
-  font: 600 11px var(--app-font-mono);
-  letter-spacing: .08em;
-  color: hsl(var(--muted-foreground));
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.confused-card {
-  padding: 11px 13px;
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 6px;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
 }
-.confused-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
+
+/* adheres / supports badge */
+.tradeoff-impact-badge.adheres,
+.tradeoff-impact-badge.supports {
+  background: rgba(78, 131, 91, 0.16);
+  color: #5da36f;
 }
-.confused-head b {
-  font: 500 14px var(--app-font-serif);
+
+/* trades-off / violates badge */
+.tradeoff-impact-badge.trades-off,
+.tradeoff-impact-badge.trade-off,
+.tradeoff-impact-badge.violates,
+.tradeoff-impact-badge.compromises {
+  background: rgba(184, 98, 78, 0.16);
+  color: #d2715c;
 }
-.decision-pill {
-  font: 600 10px var(--app-font-mono);
-  padding: 2px 5px;
-  background: hsl(var(--accent)/.12);
-  color: hsl(var(--accent));
-  border-radius: 3px;
-}
-.confused-diff {
+
+.solid-principle-title {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: hsl(var(--muted-foreground));
+  font: 600 16px/1.3 var(--app-font-sans);
+  color: hsl(var(--foreground));
 }
-.confused-rule {
-  margin-top: 6px;
-  font: 11.5px var(--app-font-mono);
-  color: hsl(var(--accent));
+
+.solid-principle-desc {
+  margin: 8px 0 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: hsl(var(--foreground)/0.85);
 }
-.traps-grid {
+
+/* Easy to Confuse With */
+.tradeoffs-confused-stack {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 20px;
 }
-.trap-item {
+
+.confused-editorial-item {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+}
+
+.confused-editorial-item .item-divider {
+  margin: 20px 0 0;
+}
+
+.confused-pattern-title {
+  margin: 0;
+  font: 600 16.5px/1.3 var(--app-font-sans);
+  color: hsl(var(--foreground));
+}
+
+.confused-pattern-desc {
+  margin: 8px 0 6px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: hsl(var(--foreground)/0.85);
+}
+
+.tradeoff-decision-rule {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font: 12px/1.5 var(--app-font-mono);
+  color: hsl(var(--accent));
+  margin-top: 4px;
+}
+
+.rule-badge {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.rule-dot {
+  opacity: 0.7;
+}
+
+.rule-text {
+  font-weight: 400;
+}
+
+/* Interview Traps */
+.tradeoffs-traps-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.trap-editorial-item {
+  display: flex;
   align-items: flex-start;
-  padding: 8px 10px;
-  background: rgba(184, 113, 98, .06);
-  border: 1px solid rgba(184, 113, 98, .25);
-  border-radius: 4px;
+  gap: 12px;
 }
-.trap-icon {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #ad6c58;
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font: 700 10px var(--app-font-mono);
+
+.trap-bang {
+  font: 700 14px/1.5 var(--app-font-mono);
+  color: #b8624e;
   flex-shrink: 0;
-  margin-top: 1px;
 }
-.trap-item p {
+
+.dark .trap-bang {
+  color: #d2715c;
+}
+
+.trap-text {
   margin: 0;
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: hsl(var(--muted-foreground));
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: hsl(var(--foreground)/0.85);
 }
 
 /* 4. Pinned Bottom Navigation Dock (42px) */

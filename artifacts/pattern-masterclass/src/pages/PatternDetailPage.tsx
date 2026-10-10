@@ -326,70 +326,66 @@ export function PatternDetailPage({
         )}
 
         {tab === 'trade-offs' && (
-          <div className="studio-tradeoffs-layout" data-testid="studio-tradeoffs">
-            {/* Left: SOLID Principles Impact */}
-            <div className="tradeoffs-column tradeoffs-solid-col">
-              <div className="tradeoffs-header-card">
-                <span className="bento-eyebrow">WHAT IT SUPPORTS & IMPACTS</span>
-                <h3>SOLID Principles Alignment</h3>
-                <p>How this pattern interacts with fundamental design principles.</p>
-              </div>
+          <div className="studio-editorial-tradeoffs studio-tradeoffs-layout" data-testid="studio-tradeoffs">
+            {/* 1. WHAT IT SUPPORTS */}
+            <section className="tradeoffs-editorial-section">
+              <span className="overview-label">WHAT IT SUPPORTS</span>
+              <div className="overview-divider" />
 
-              <div className="solid-principles-list">
-                {pattern.solidPrinciples.map(x => (
-                  <div className="solid-item-card" key={x.principle}>
-                    <div className="solid-item-head">
-                      <span className={`impact-badge ${x.impact}`}>
+              <div className="tradeoffs-solid-stack">
+                {pattern.solidPrinciples.map((x, idx) => (
+                  <div key={x.principle} className="solid-editorial-item">
+                    <div className="solid-item-heading-row">
+                      <span className={`tradeoff-impact-badge ${x.impact.toLowerCase()}`}>
                         {x.impact}
                       </span>
-                      <b>{x.principle}</b>
+                      <h4 className="solid-principle-title">{x.principle}</h4>
                     </div>
-                    <p>{x.explanation}</p>
+                    <p className="solid-principle-desc">{x.explanation}</p>
+                    {idx < pattern.solidPrinciples.length - 1 && (
+                      <div className="overview-divider item-divider" />
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            {/* Right: Confused With & Interview Traps */}
-            <div className="tradeoffs-column tradeoffs-traps-col">
-              <div className="tradeoffs-header-card">
-                <span className="bento-eyebrow">EDGE CASES & EVALUATION</span>
-                <h3>Distinctions & Pitfalls</h3>
-                <p>Common conflations and questions asked in architecture reviews.</p>
-              </div>
+            {/* 2. EASY TO CONFUSE WITH */}
+            <section className="tradeoffs-editorial-section">
+              <span className="overview-label">EASY TO CONFUSE WITH</span>
+              <div className="overview-divider" />
 
-              {/* Easy to Confuse With */}
-              <div className="confused-section">
-                <span className="confused-title">EASY TO CONFUSE WITH</span>
-                {pattern.confusedWith.map(x => (
-                  <div className="confused-card" key={x.targetPattern}>
-                    <div className="confused-head">
-                      <b>vs. {x.targetPattern}</b>
-                      <span className="decision-pill">DECISION RULE</span>
+              <div className="tradeoffs-confused-stack">
+                {pattern.confusedWith.map((x, idx) => (
+                  <div key={x.targetPattern} className="confused-editorial-item">
+                    <h4 className="confused-pattern-title">{x.targetPattern}</h4>
+                    <p className="confused-pattern-desc">{x.keyDifference}</p>
+                    <div className="tradeoff-decision-rule">
+                      <span className="rule-badge">DECISION RULE</span>
+                      <span className="rule-dot">·</span>
+                      <span className="rule-text">{x.decisionRule}</span>
                     </div>
-                    <p className="confused-diff">{x.keyDifference}</p>
-                    <div className="confused-rule">
-                      <small>{x.decisionRule}</small>
-                    </div>
+                    {idx < pattern.confusedWith.length - 1 && (
+                      <div className="overview-divider item-divider" />
+                    )}
                   </div>
                 ))}
               </div>
+            </section>
 
-              {/* Interview Traps */}
-              <div className="traps-section">
-                <span className="traps-title">
-                  <AlertTriangle size={14} /> INTERVIEW TRAPS & COMMON MISTAKES
-                </span>
-                <div className="traps-grid">
-                  {pattern.interviewTraps.map(trap => (
-                    <div className="trap-item" key={trap}>
-                      <span className="trap-icon">!</span>
-                      <p>{trap}</p>
-                    </div>
-                  ))}
-                </div>
+            {/* 3. INTERVIEW TRAPS */}
+            <section className="tradeoffs-editorial-section">
+              <span className="overview-label">INTERVIEW TRAPS</span>
+              <div className="tradeoffs-traps-stack">
+                {pattern.interviewTraps.map(trap => (
+                  <div key={trap} className="trap-editorial-item">
+                    <span className="trap-bang">!</span>
+                    <p className="trap-text">{trap}</p>
+                  </div>
+                ))}
               </div>
-            </div>
+              <div className="overview-divider" />
+            </section>
           </div>
         )}
       </main>
