@@ -11,6 +11,7 @@ import type { Perspective } from './pattern-types';
 import { PatternDiagrams } from './PatternDiagrams';
 import { useIsMobile } from './hooks/use-mobile';
 import { PatternDetailPage } from './pages/PatternDetailPage';
+import { PlaygroundPage } from './pages/PlaygroundPage';
 import { AppTooltip } from './components/ui/app-tooltip';
 import {
   PatternOverview,
@@ -293,9 +294,9 @@ function App() {
       <div className={`workspace ${isPatternPage ? 'workspace-studio' : ''}`}>
         <Switch>
           <Route path="/"><Catalog saved={saved} savedOnly={savedOnly} clearSaved={() => setSavedOnly(false)} onBookmark={togglePatternBookmark} onSelect={handleSelectPattern}/></Route>
-          <Route path="/pattern/:id">{(params) => <PatternDetailPage id={params.id} saved={saved} globalPerspective={perspective} onBookmark={togglePatternBookmark} goPlayground={() => setLoc('/playground')} />}</Route>
+          <Route path="/pattern/:id">{(params) => <PatternDetailPage id={params.id} saved={saved} globalPerspective={perspective} onBookmark={togglePatternBookmark} goPlayground={(pid) => setLoc(`/playground?pattern=${pid || params.id}`)} />}</Route>
           <Route path="/decision-engine"><Decision onSelect={handleSelectPattern}/></Route>
-          <Route path="/playground"><Playground saved={saved} setSaved={setSaved}/></Route>
+          <Route path="/playground"><PlaygroundPage saved={saved} setSaved={setSaved}/></Route>
           <Route path="/simulators"><Simulators onSelect={handleSelectPattern}/></Route>
           <Route path="/quiz-lab"><QuizLab saved={saved} setSaved={setSaved}/></Route>
           <Route><NotFound goHome={() => setLoc('/')}/></Route>
@@ -398,25 +399,6 @@ function Decision({ onSelect }: { onSelect: (p: Pattern) => void }) {
       <aside className={`recommend-panel ${show ? 'has-results' : ''}`} aria-live="polite">{show ? <><div className="result-head"><span className="eyebrow">YOUR SHORTLIST</span><span className="result-icon"><Zap size={17}/></span></div><h3>{recommendation[0]?.name || 'A useful place to start'}</h3><p className="result-caption">Begin here, then compare the alternatives below.</p><div className="result-list">{recommendation.slice(0,4).map((p,i)=><button className="recommend-row" key={p.id} onClick={() => onSelect(p)}><span className="recommend-rank">0{i+1}</span><span><b>{p.name}</b><small>{p.memoryHook}</small></span><ArrowUpRight size={15}/></button>)}</div><div className="result-caveat"><ShieldCheck size={16}/><p>Patterns are trade-offs, not rules. Check the “when not to use” notes before committing.</p></div></> : <div className="recommend-empty"><div className="orbit-mini"><Compass size={24}/></div><span className="eyebrow">A SMALL DECISION TREE</span><h3>Start with the pressure.</h3><p>Choose the problem you recognize. We'll point you toward the patterns that make that decision explicit.</p><div className="path-preview"><span>PROBLEM</span><i/><span>PATTERN</span><i/><span>TRADE-OFF</span></div></div>}</aside></div>
     <section className="decision-footnote"><span className="eyebrow">A QUICK HEURISTIC</span><div><span>One object, one variant</span><ArrowRight size={14}/><b>Factory Method</b></div><div><span>A matched set</span><ArrowRight size={14}/><b>Abstract Factory</b></div><div><span>Many optional steps</span><ArrowRight size={14}/><b>Builder</b></div></section>
   </div>;
-}
-function Playground({ saved, setSaved }: { saved: Saved; setSaved: React.Dispatch<React.SetStateAction<Saved>> }) {
-  const [patternId, setPatternId] = useState('factory-method'); const [code, setCode] = useState(''); const [output, setOutput] = useState<string[]>([]); const [hasRun, setHasRun] = useState(false);
-  const pattern = PATTERNS.find(p => p.id === patternId)!;
-  const implementation = pattern.typeScriptImplementation;
-  useEffect(() => { setCode(saved.mode === 'java' ? pattern.javaImplementation.code : (pattern.runnableCode || implementation.code)); setOutput([]); setHasRun(false); }, [patternId, saved.mode, implementation.code, implementation.fileName, pattern.javaImplementation.code, pattern.runnableCode]);
-  const toggleMode = (mode: string) => setSaved(s => ({ ...s, mode }));
-  const run = () => {
-    setHasRun(true);
-    const lines = patternId === 'factory-method' ? ['[S3 Driver] Uploaded 4096 bytes to reports/audit.pdf','Factory selected: S3StorageDriver'] :
-      patternId === 'abstract-factory' ? ['AWS EC2 started','AWS S3 bucket allocated','Compatible cloud resource family created'] :
-      patternId === 'builder' ? ['Built Request: {"method":"GET","headers":{"Authorization":"Bearer secret-token"},"url":"https://api.internal/v1/metrics"}'] :
-      patternId === 'strategy' ? ['Scenic route SF->Monterey via Coast','Strategy swapped without changing Navigator'] :
-      patternId === 'observer' ? ['[Slack Bot]: Service 503 Outage Detected','[Email]: Service 503 Outage Detected'] :
-      patternId === 'command' ? ['After execute: Hello ','After undo: '] :
-      [`${pattern.name} example initialized`, pattern.memoryHook, 'See the example output in this local simulation.'];
-    setOutput(lines);
-  };
-  return <div className="page-content reveal"><PageIntro index="03 / WORKSHOP" title={<>Read the shape.<br/><em>Run the idea.</em></>} text="A small, self-contained example makes the pattern concrete. Edit the code and use the local teaching simulation to inspect its behavior."/><div className="playground-toolbar"><label className="select-wrap"><Code2 size={15}/><select aria-label="Select a pattern example" value={patternId} onChange={e => setPatternId(e.target.value)} data-testid="playground-pattern">{PATTERNS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><ChevronDown size={13}/></label><div className="language-switch" role="group" aria-label="Code language"><button onClick={() => toggleMode('java')} className={saved.mode === 'java' ? 'active' : ''} data-testid="language-java">Java</button><button onClick={() => toggleMode('typescript')} className={saved.mode !== 'java' ? 'active' : ''} data-testid="language-typescript">TypeScript</button></div><span className="local-badge"><i/> LOCAL EXAMPLE</span></div><div className="editor-card"><div className="editor-head"><div><span className="file-dot"/><span className="mono">{saved.mode === 'java' ? pattern.javaImplementation.fileName : implementation.fileName}</span></div><div className="editor-tools"><button className="subtle-btn" onClick={() => navigator.clipboard?.writeText(code)} data-testid="copy-code"><Copy size={14}/> Copy</button><button className="subtle-btn" onClick={() => { setCode(saved.mode === 'java' ? pattern.javaImplementation.code : (pattern.runnableCode || implementation.code)); setOutput([]); setHasRun(false); }} data-testid="reset-code"><RotateCcw size={14}/> Reset</button></div></div><div className="editor-body"><div className="line-numbers" aria-hidden="true">{code.split('\n').map((_,i)=><span key={i}>{String(i+1).padStart(2,'0')}</span>)}</div><textarea spellCheck={false} aria-label="Editable code example" value={code} onChange={e => setCode(e.target.value)} data-testid="code-editor"/></div><div className="editor-footer"><span><span className="footer-check"><Check size={11}/></span> Example source · {pattern.name}</span><button className="run-btn" onClick={run} data-testid="run-example"><Play size={14} fill="currentColor"/> Run example</button></div></div><div className="output-card"><div className="output-head"><div><Terminal size={15}/><b>Output</b><span className="mono"> / console</span></div><button className="clear-output" onClick={() => { setOutput([]); setHasRun(false); }} data-testid="clear-output">Clear</button></div><div className="output-body" aria-live="polite">{hasRun ? output.map((line,i)=><div className="output-line" key={i}><span className="output-caret">›</span>{line}</div>) : <div className="output-placeholder"><span className="terminal-prompt">›</span>{code.trim() ? 'Run the example to see the pattern in action.' : 'Choose an example to begin.'}</div>}</div></div><div className="code-explain"><div className="explain-mark"><Lightbulb size={17}/></div><div><span className="eyebrow">WHAT TO NOTICE</span><p>{saved.mode === 'java' ? pattern.javaImplementation.explanation : implementation.explanation}</p></div><button className="text-button" onClick={() => navigator.clipboard?.writeText(code)}>Copy snippet <Copy size={13}/></button></div></div>;
 }
 function Simulators({ onSelect }: { onSelect: (p: Pattern) => void }) {
   const [scenario, setScenario] = useState(0); const [events, setEvents] = useState<string[]>([]);

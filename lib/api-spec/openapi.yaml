@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: code-runner
+    description: Code execution operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /code/run:
+    post:
+      operationId: executeCode
+      tags: [code-runner]
+      summary: Execute multi-file code project
+      description: Compiles and executes multi-file code projects in an isolated sandbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecuteCodeRequest"
+      responses:
+        "200":
+          description: Code execution completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutionResult"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +54,62 @@ components:
           type: string
       required:
         - status
-
+    CodeFile:
+      type: object
+      required:
+        - name
+        - content
+      properties:
+        name:
+          type: string
+          example: "Main.java"
+        content:
+          type: string
+          example: "public class Main { public static void main(String[] args) { System.out.println(\"Hello\"); } }"
+    ExecuteCodeRequest:
+      type: object
+      required:
+        - language
+        - files
+      properties:
+        language:
+          type: string
+          enum: [java, typescript, python, go, rust, csharp]
+          example: "java"
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/CodeFile"
+        entryPoint:
+          type: string
+          example: "Main.java"
+        stdin:
+          type: string
+          default: ""
+        timeoutMs:
+          type: integer
+          default: 5000
+    ExecutionResult:
+      type: object
+      required:
+        - status
+        - stdout
+        - stderr
+        - exitCode
+        - durationMs
+      properties:
+        status:
+          type: string
+          enum: [success, compile_error, runtime_error, timeout]
+        stdout:
+          type: array
+          items:
+            type: string
+        stderr:
+          type: array
+          items:
+            type: string
+        exitCode:
+          type: integer
+        durationMs:
+          type: number
