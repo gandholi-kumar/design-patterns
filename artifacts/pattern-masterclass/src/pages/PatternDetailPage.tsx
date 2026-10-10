@@ -177,70 +177,61 @@ export function PatternDetailPage({
       {/* 3. Main Viewport-Pinned Tab Workspace */}
       <main className="studio-workspace-area" role="tabpanel">
         {tab === 'overview' && (
-          <div className="studio-bento-grid" data-testid="studio-overview">
-            {/* Column 1: Core Foundation */}
-            <div className="bento-column bento-col-core">
-              <div className="bento-card card-intent">
-                <span className="bento-eyebrow">THE INTENT</span>
-                <blockquote className="bento-intent-quote">
-                  "{pattern.intent}"
-                </blockquote>
-              </div>
-              <div className="bento-card card-problem">
-                <span className="bento-eyebrow">THE PROBLEM</span>
+          <div className="studio-stacked-overview" data-testid="studio-overview">
+            {/* 1. THE INTENT */}
+            <div className="overview-row row-intent">
+              <span className="overview-label">THE INTENT</span>
+              <p className="intent-statement">{pattern.intent}</p>
+            </div>
+
+            {/* 2. THE PROBLEM & THE SOLUTION (2-Column Pair) */}
+            <div className="overview-pair-row">
+              <div className="pair-col">
+                <span className="overview-label">THE PROBLEM</span>
                 <p>{pattern.problem}</p>
               </div>
-              <div className="bento-card card-solution">
-                <span className="bento-eyebrow">THE SOLUTION</span>
+              <div className="pair-col">
+                <span className="overview-label">THE SOLUTION</span>
                 <p>{pattern.solution}</p>
               </div>
             </div>
 
-            {/* Column 2: Application & Usage */}
-            <div className="bento-column bento-col-app">
-              <div className="bento-card card-wild">
-                <span className="bento-eyebrow">IN THE WILD · PRODUCTION SCENARIO</span>
-                <p>{pattern.realWorldEnterpriseScenario}</p>
-              </div>
-              <div className="bento-card card-when">
-                <span className="bento-eyebrow">USE IT WHEN</span>
-                <ul className="bento-bullet-list">
+            {/* 3. IN THE WILD */}
+            <div className="overview-row row-wild">
+              <span className="overview-label">IN THE WILD</span>
+              <p>{pattern.realWorldEnterpriseScenario}</p>
+            </div>
+
+            {/* 4. USE IT WHEN & THINK TWICE WHEN (2-Column Pair) */}
+            <div className="overview-pair-row">
+              <div className="pair-col">
+                <span className="overview-label">USE IT WHEN</span>
+                <div className="bullet-stack">
                   {pattern.whenToUse.map(v => (
-                    <li key={v} className="bento-bullet yes">
+                    <p className="bullet-item yes" key={v}>
                       <Check size={14} />
                       <span>{v}</span>
-                    </li>
+                    </p>
                   ))}
-                </ul>
+                </div>
               </div>
-              <div className="bento-card card-avoid">
-                <span className="bento-eyebrow">THINK TWICE WHEN</span>
-                <ul className="bento-bullet-list">
+              <div className="pair-col">
+                <span className="overview-label">THINK TWICE WHEN</span>
+                <div className="bullet-stack">
                   {pattern.whenNotToUse.map(v => (
-                    <li key={v} className="bento-bullet no">
+                    <p className="bullet-item no" key={v}>
                       <X size={14} />
                       <span>{v}</span>
-                    </li>
+                    </p>
                   ))}
-                </ul>
+                </div>
               </div>
             </div>
 
-            {/* Column 3: Collaboration Shape & Decision Rule */}
-            <div className="bento-column bento-col-shape">
-              <div className="bento-card card-shape">
-                <span className="bento-eyebrow">COLLABORATION SHAPE</span>
-                <pre className="bento-ascii-shape">{pattern.asciiShape}</pre>
-              </div>
-              <div className="bento-card card-rule">
-                <span className="bento-eyebrow">DECISION RULE</span>
-                <p className="bento-rule-text">
-                  <b>Rule:</b> {pattern.memoryHook}
-                </p>
-                <small className="bento-rule-sub">
-                  Applied in {pattern.category.toLowerCase()} architecture boundaries.
-                </small>
-              </div>
+            {/* 5. COLLABORATION SHAPE */}
+            <div className="overview-shape-card">
+              <span className="overview-label">COLLABORATION SHAPE</span>
+              <pre className="shape-ascii">{pattern.asciiShape}</pre>
             </div>
           </div>
         )}

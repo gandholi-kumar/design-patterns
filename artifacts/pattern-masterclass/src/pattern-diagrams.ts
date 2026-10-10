@@ -547,8 +547,8 @@ Visitor <|.. ExportVisitor
 TextNode ..> Visitor : dispatches
 ImageNode ..> Visitor : dispatches`,
     mermaid: `flowchart LR
-Client["Client"] -->|accept(visitor)| Node["Element node"]
-Node -->|double dispatch| Visitor["Visitor operation"]
+Client["Client"] -->|"accept(visitor)"| Node["Element node"]
+Node -->|"double dispatch"| Visitor["Visitor operation"]
 Visitor --> Text["visitText(node)"]
 Visitor --> Image["visitImage(node)"]
 Visitor --> Result["Export / lint / inspect"]`,

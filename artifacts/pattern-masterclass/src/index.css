@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -113,9 +113,9 @@
   --chart-3: 38 88% 53%;
   --chart-4: 215 28% 49%;
   --chart-5: 282 19% 49%;
-  --app-font-sans: 'DM Sans', sans-serif;
-  --app-font-serif: 'Newsreader', Georgia, serif;
-  --app-font-mono: 'DM Mono', monospace;
+  --app-font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --app-font-serif: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --app-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --radius: 0.5rem; /* 8px */
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
   --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
@@ -269,7 +269,7 @@
 
 /* Responsive Base Scaling for Mobile, Desktop, and Projector Screens */
 html {
-  font-size: 16px;
+  font-size: 15px;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
 }
@@ -277,21 +277,21 @@ html {
 /* Widescreen Desktop */
 @media (min-width: 1440px) {
   html {
-    font-size: 17px;
+    font-size: 15px;
   }
 }
 
-/* 1080p Conference Projectors & Large Monitors (>= 1920px) */
+/* 1080p Standard Monitors & Displays (>= 1920px) */
 @media (min-width: 1920px) {
   html {
-    font-size: 19.5px;
+    font-size: 16px;
   }
 }
 
-/* 4K Auditorium Projectors & Ultra-wide Displays (>= 2560px) */
+/* 4K Ultra-wide Displays (>= 2560px) */
 @media (min-width: 2560px) {
   html {
-    font-size: 22.5px;
+    font-size: 18px;
   }
 }
 
@@ -979,7 +979,7 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 12px 32px 0;
+  padding: 24px 36px 0;
   max-width: 1560px;
   margin: 0 auto;
   width: 100%;
@@ -1003,7 +1003,7 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 .studio-counter {
   font: 600 11px var(--app-font-mono);
@@ -1011,8 +1011,8 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   color: hsl(var(--muted-foreground));
 }
 .studio-title {
-  font: 400 clamp(24px, 2.3vw, 32px)/1.08 var(--app-font-serif);
-  letter-spacing: -.03em;
+  font: 600 clamp(22px, 2.2vw, 28px)/1.2 var(--app-font-sans);
+  letter-spacing: -.02em;
   margin: 0;
   color: hsl(var(--foreground));
 }
@@ -1026,7 +1026,7 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   padding: 6px 12px;
   background: hsl(var(--muted));
   color: hsl(var(--accent));
-  font: italic 13.5px var(--app-font-serif);
+  font: 500 13px/1.4 var(--app-font-sans);
   border-radius: 4px;
   border-left: 3px solid hsl(var(--accent));
   flex-shrink: 0;
@@ -1042,14 +1042,14 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   margin-left: 8px;
 }
 .studio-hero-row2 {
-  margin-top: 5px;
+  margin-top: 6px;
   padding-bottom: 8px;
   border-bottom: 1px solid hsl(var(--border));
 }
 .studio-tagline {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 14.5px;
+  line-height: 1.55;
   color: hsl(var(--muted-foreground));
 }
 
@@ -1092,23 +1092,128 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   flex-direction: column;
 }
 
-/* Tab 1: Bento 3-Column Overview */
-.studio-bento-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.22fr) minmax(0, 1.05fr);
-  gap: 12px;
-  height: 100%;
-  min-height: 0;
-}
-.bento-column {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+/* Tab 1: Clean Stacked Overview Layout */
+.studio-stacked-overview {
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 8px 24px 0;
+  scrollbar-gutter: stable;
 }
+
+.overview-row {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow-xs);
+}
+
+.overview-row.row-intent {
+  background: hsl(var(--card));
+  border-left: 3px solid hsl(var(--accent));
+}
+
+.overview-label {
+  display: block;
+  font: 600 11px/1 var(--app-font-mono);
+  letter-spacing: 0.08em;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  margin-top: 0;
+}
+
+.intent-statement {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.62;
+  color: hsl(var(--foreground));
+  font-weight: 450;
+}
+
+.overview-pair-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.pair-col {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-xs);
+}
+
+.pair-col p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+.overview-row.row-wild p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: hsl(var(--foreground));
+}
+
+.bullet-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bullet-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+}
+
+.bullet-item.yes svg {
+  color: #34d399;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.bullet-item.no svg {
+  color: #f87171;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.overview-shape-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow-xs);
+}
+
+.shape-ascii {
+  margin: 0;
+  font: 12px/1.55 var(--app-font-mono);
+  background: hsl(var(--background));
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid hsl(var(--border));
+  overflow-x: auto;
+  white-space: pre-wrap;
+  color: hsl(var(--foreground));
+}
+
+/* Shared cards and eyebrows used across Code & Tradeoffs tabs */
 .bento-card {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
@@ -1127,62 +1232,6 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   margin: 0;
   font-size: 13.5px;
   line-height: 1.55;
-  color: hsl(var(--muted-foreground));
-}
-.bento-intent-quote {
-  font: italic 16px/1.45 var(--app-font-serif);
-  color: hsl(var(--foreground));
-  margin: 0;
-}
-.bento-bullet-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.bento-bullet {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  font-size: 13px;
-  line-height: 1.45;
-  color: hsl(var(--muted-foreground));
-}
-.bento-bullet.yes svg {
-  color: #628169;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.bento-bullet.no svg {
-  color: #ad6c58;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.bento-ascii-shape {
-  margin: 0;
-  font: 11.5px/1.55 var(--app-font-mono);
-  background: hsl(var(--background));
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid hsl(var(--border));
-  overflow-x: auto;
-  white-space: pre-wrap;
-  color: hsl(var(--foreground));
-}
-.bento-rule-text {
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: hsl(var(--foreground)) !important;
-}
-.bento-rule-text b {
-  color: hsl(var(--accent));
-}
-.bento-rule-sub {
-  display: block;
-  margin-top: 4px;
-  font: 11px var(--app-font-mono);
   color: hsl(var(--muted-foreground));
 }
 
@@ -1551,11 +1600,14 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
 
 /* Responsive Adaptive Fallbacks (When screen is narrower or on mobile) */
 @media (max-width: 1180px) {
-  .studio-bento-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  .overview-pair-row {
+    gap: 10px;
   }
-  .bento-col-shape {
-    grid-column: span 2;
+}
+
+@media (max-width: 900px) {
+  .overview-pair-row {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1567,18 +1619,15 @@ kbd { font:11px var(--app-font-mono);border:1px solid hsl(var(--border));padding
   .pattern-studio-layout {
     height: auto;
     overflow: visible;
-    padding: 12px 16px 40px;
+    padding: 16px 16px 40px;
   }
   .studio-hero-row1 {
     flex-direction: column;
     align-items: flex-start;
   }
-  .studio-bento-grid, .studio-code-layout, .studio-tradeoffs-layout {
+  .studio-code-layout, .studio-tradeoffs-layout {
     grid-template-columns: 1fr;
     height: auto;
-  }
-  .bento-col-shape {
-    grid-column: auto;
   }
   .desktop-sidebar-toggle {
     display: none;

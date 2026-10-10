@@ -27,7 +27,7 @@ export function PatternDiagrams({ patternId, patternName, theme }: PatternDiagra
     <section className="pattern-diagrams" aria-label={`${patternName} diagrams`}>
       <div className="diagram-intro">
         <span className="eyebrow">DESIGN MAP / {patternName.toUpperCase()}</span>
-        <p>Compare the class structure with the collaboration flow.</p>
+        <span className="diagram-subtext">Static class structure and dynamic interaction flow</span>
       </div>
       <div className="diagram-tabs" role="tablist" aria-label="Diagram type">
         <button
@@ -108,6 +108,7 @@ function MermaidCanvas({
         if (!isMounted) return;
         mermaid.initialize({
           startOnLoad: false,
+          suppressErrorRendering: true,
           securityLevel: 'strict',
           theme: 'base',
           themeVariables: {
@@ -119,14 +120,17 @@ function MermaidCanvas({
             lineColor: dark ? '#c7bca8' : '#706b63',
             secondaryColor: dark ? '#27332f' : '#e6eee7',
             tertiaryColor: dark ? '#3a2f2b' : '#f3e7df',
-            fontFamily: 'IBM Plex Mono, ui-monospace, monospace',
+            fontFamily: 'JetBrains Mono, IBM Plex Mono, ui-monospace, monospace',
           },
         });
         const { svg: renderedSvg } = await mermaid.render(renderId, source);
         if (isMounted) setSvg(renderedSvg);
       } catch (renderError: unknown) {
+        if (typeof document !== 'undefined') {
+          document.querySelectorAll(`[id^="d${renderId}"], [id^="dpattern-diagram-"]`).forEach(el => el.remove());
+        }
         if (isMounted) {
-          setError(renderError instanceof Error ? renderError.message : 'The diagram could not be rendered.');
+          setError(renderError instanceof Error ? renderError.message : 'Unable to render diagram preview. View raw specification via "View source".');
         }
       }
     };
@@ -134,6 +138,9 @@ function MermaidCanvas({
 
     return () => {
       isMounted = false;
+      if (typeof document !== 'undefined') {
+        document.querySelectorAll(`[id^="d${renderId}"], [id^="dpattern-diagram-"]`).forEach(el => el.remove());
+      }
     };
   }, [id, source, theme]);
 
