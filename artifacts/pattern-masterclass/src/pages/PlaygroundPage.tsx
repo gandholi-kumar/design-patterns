@@ -7,8 +7,6 @@ import {
   ChevronDown,
   Columns,
   Rows,
-  Maximize2,
-  Minimize2,
   Lightbulb,
   Square,
   WrapText,
@@ -51,9 +49,6 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
   });
 
   const isStudioMode = Boolean(saved.studioMode);
-  const toggleStudioMode = () => {
-    setSaved((s: any) => ({ ...s, studioMode: !s.studioMode }));
-  };
 
   const [isWide, setIsWide] = useState<boolean>(() => {
     return localStorage.getItem('gof_playground_wide') === 'true';
@@ -222,17 +217,6 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
           <p>
             A live, multi-file execution environment. Modify code, link classes across tabs, and execute against real {language === 'java' ? 'Java 25 LTS' : 'TypeScript Web Workers'} with instant feedback.
           </p>
-          <button
-            type="button"
-            className={`subtle-btn intro-focus-pill ${isStudioMode ? 'active' : ''}`}
-            onClick={toggleStudioMode}
-            title={isStudioMode ? "Exit Studio Focus Mode (Alt+F)" : "Enter Studio Focus Mode (Alt+F)"}
-            aria-label="Toggle Studio Focus Mode"
-            data-testid="playground-intro-studio-toggle"
-          >
-            {isStudioMode ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-            <span>{isStudioMode ? 'Exit Focus' : 'Focus Studio'}</span>
-          </button>
         </div>
         <div className="intro-stamp">
           <Code2 size={17} />
@@ -311,18 +295,6 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
               <span>Split</span>
             </button>
           </div>
-
-          {/* Studio Focus Mode / Wide Canvas Toggle */}
-          <button
-            type="button"
-            className={`subtle-btn wide-toggle-btn ${isStudioMode ? 'active' : ''}`}
-            onClick={toggleStudioMode}
-            title={isStudioMode ? 'Exit Studio Focus Mode (Alt+F)' : 'Enter Studio Focus Mode (Alt+F)'}
-            aria-label="Toggle Studio Focus Mode"
-            data-testid="playground-studio-toggle"
-          >
-            {isStudioMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-          </button>
         </div>
       </div>
 
