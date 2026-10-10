@@ -1,32 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Eye, EyeOff, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
-import { PATTERN_DIAGRAMS } from './pattern-diagrams';
+import { getPatternDiagram, PATTERN_DIAGRAMS } from './pattern-diagrams';
+import type { Perspective } from './pattern-types';
 
 type DiagramKind = 'uml' | 'mermaid';
 type PatternDiagramsProps = {
   patternId: string;
   patternName: string;
   theme: string;
+  perspective?: Perspective;
 };
 
 let nextRenderId = 0;
 
-export function PatternDiagrams({ patternId, patternName, theme }: PatternDiagramsProps) {
+export function PatternDiagrams({ patternId, patternName, theme, perspective = 'canonical' }: PatternDiagramsProps) {
   const [kind, setKind] = useState<DiagramKind>('uml');
-  const definition = PATTERN_DIAGRAMS[patternId];
+  const definition = getPatternDiagram(patternId, perspective) || PATTERN_DIAGRAMS[patternId];
 
   if (!definition) {
     return <div className="diagram-error" role="alert">Diagrams are not configured for {patternName} yet.</div>;
   }
 
   const isUml = kind === 'uml';
-  const title = isUml ? `${patternName} UML class diagram` : `${patternName} Mermaid collaboration diagram`;
+  const perspectiveLabel = perspective === 'canonical' ? 'Canonical' : 'Enterprise Cloud';
+  const title = isUml
+    ? `${patternName} (${perspectiveLabel}) UML class diagram`
+    : `${patternName} (${perspectiveLabel}) Mermaid collaboration diagram`;
   const source = isUml ? definition.uml : definition.mermaid;
 
   return (
     <section className="pattern-diagrams" aria-label={`${patternName} diagrams`}>
       <div className="diagram-intro">
-        <span className="eyebrow">DESIGN MAP / {patternName.toUpperCase()}</span>
+        <span className="eyebrow">DESIGN MAP / {patternName.toUpperCase()} · {perspectiveLabel.toUpperCase()}</span>
       </div>
       <div className="diagram-tabs" role="tablist" aria-label="Diagram type">
         <button
@@ -56,11 +61,11 @@ export function PatternDiagrams({ patternId, patternName, theme }: PatternDiagra
       </div>
       <div id="pattern-diagram-panel" role="tabpanel" aria-labelledby={isUml ? 'diagram-tab-uml' : 'diagram-tab-mermaid'}>
         <MermaidCanvas
-          key={`${patternId}-${kind}-${theme}`}
-          id={`${patternId}-${kind}`}
+          key={`${patternId}-${kind}-${theme}-${perspective}`}
+          id={`${patternId}-${kind}-${perspective}`}
           title={title}
           source={source}
-          sourceLabel={isUml ? 'UML source' : 'Mermaid source'}
+          sourceLabel={isUml ? `${perspectiveLabel} UML source` : `${perspectiveLabel} Mermaid source`}
           theme={theme}
         />
       </div>

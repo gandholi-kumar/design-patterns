@@ -11,8 +11,14 @@ import {
   X,
   ArrowRight,
   AlertTriangle,
+  Building2,
+  GraduationCap,
+  RotateCcw,
+  Server,
+  Sparkles,
 } from 'lucide-react';
 import { PATTERNS, type Pattern } from '../data';
+import type { Perspective } from '../pattern-types';
 import { PatternDiagrams } from '../PatternDiagrams';
 import { AppTooltip } from '../components/ui/app-tooltip';
 
@@ -30,6 +36,7 @@ interface PatternDetailPageProps {
     theme: 'light' | 'dark';
     bookmarks: string[];
   };
+  globalPerspective?: Perspective;
   onBookmark: (id: string) => void;
   goPlayground: (patternId: string) => void;
 }
@@ -37,6 +44,7 @@ interface PatternDetailPageProps {
 export function PatternDetailPage({
   id,
   saved,
+  globalPerspective = 'canonical',
   onBookmark,
   goPlayground,
 }: PatternDetailPageProps) {
@@ -44,7 +52,45 @@ export function PatternDetailPage({
   const [tab, setTab] = useState<DetailTab>('overview');
   const [codeCopied, setCodeCopied] = useState(false);
 
+  // Decoupled local perspective state: initialized to the active global selection
+  const [localPerspective, setLocalPerspective] = useState<Perspective>(globalPerspective);
+
+  // When switching between patterns using Left/Right arrow, navigation dock, or URL change (id changes),
+  // OR when user toggles the global perspective in the topbar, the pattern ALWAYS resets to the global selection.
+  useEffect(() => {
+    setLocalPerspective(globalPerspective);
+  }, [id, globalPerspective]);
+
+  // Secondary local toggle: explicitly decoupled, affects ONLY the local pattern view and NEVER alters global
+  const handleLocalToggle = (target: Perspective) => {
+    setLocalPerspective(target);
+  };
+
+  const activePerspective = localPerspective;
+
   const pattern = useMemo(() => PATTERNS.find(p => p.id === id), [id]);
+
+  const activeVariant = useMemo(() => {
+    if (!pattern) return null;
+    return activePerspective === 'canonical' ? pattern.canonical : pattern.enterprise;
+  }, [pattern, activePerspective]);
+
+  const sortedSolidPrinciples = useMemo(() => {
+    if (!pattern) return [];
+    const solidOrder = [
+      'Single Responsibility Principle',
+      'Open/Closed Principle',
+      'Liskov Substitution Principle',
+      'Interface Segregation Principle',
+      'Dependency Inversion Principle',
+    ];
+    return [...pattern.solidPrinciples].sort((a, b) => {
+      if (a.impact !== b.impact) {
+        return a.impact === 'adheres' ? -1 : 1;
+      }
+      return solidOrder.indexOf(a.principle) - solidOrder.indexOf(b.principle);
+    });
+  }, [pattern]);
 
   // Extract preserved search and filter parameters from URL
   const queryParams = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -101,9 +147,10 @@ export function PatternDetailPage({
   }, [prevPattern, nextPattern, pattern]);
 
   const handleCopyCode = async () => {
-    if (!pattern?.typeScriptImplementation.code) return;
+    const code = activeVariant?.typeScript.code;
+    if (!code) return;
     try {
-      await navigator.clipboard.writeText(pattern.typeScriptImplementation.code);
+      await navigator.clipboard.writeText(code);
       setCodeCopied(true);
       window.setTimeout(() => setCodeCopied(false), 1800);
     } catch {
@@ -111,7 +158,7 @@ export function PatternDetailPage({
     }
   };
 
-  if (!pattern) {
+  if (!pattern || !activeVariant) {
     return (
       <div className="pattern-studio-layout not-found-studio">
         <span className="eyebrow">404 / PATTERN NOT FOUND</span>
@@ -128,7 +175,7 @@ export function PatternDetailPage({
 
   return (
     <div className="pattern-studio-layout" data-testid="pattern-studio-page">
-      {/* 1. Hero Banner: Layout matching Untitled-1:L3-L8 */}
+      {/* 1. Hero Banner with Perspective Switcher */}
       <header className="studio-hero-banner" role="banner">
         <div className="studio-hero-row1">
           <div className="studio-identity">
@@ -146,15 +193,75 @@ export function PatternDetailPage({
             </h1>
           </div>
 
-          <div className="studio-memory-hook" title="Memory Hook">
-            <Lightbulb size={16} />
-            <span className="memory-text">{pattern.memoryHook}</span>
-            <span className="memory-badge">MEMORY HOOK</span>
+          <div className="studio-hero-actions">
+            {/* Secondary Local Perspective Switcher inside Pattern (Icon-Only Decoupled) */}
+            <div className="studio-perspective-toggle local-pattern-toggle" role="radiogroup" aria-label="Pattern Perspective">
+              {activePerspective !== globalPerspective && (
+                <AppTooltip content={`Locally overridden for this pattern. Click to reset to global default (${globalPerspective === 'canonical' ? 'Canonical' : 'Enterprise Cloud'}).`}>
+                  <button
+                    type="button"
+                    className="perspective-sync-btn"
+                    onClick={() => setLocalPerspective(globalPerspective)}
+                    data-testid="reset-perspective-sync"
+                    aria-label="Reset to global perspective"
+                  >
+                    <RotateCcw size={14} />
+                  </button>
+                </AppTooltip>
+              )}
+
+              <AppTooltip content="Canonical (Refactoring Guru / GoF Academic)">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={activePerspective === 'canonical'}
+                  aria-label="Canonical Refactoring Guru perspective"
+                  className={`perspective-icon-pill ${activePerspective === 'canonical' ? 'active' : ''}`}
+                  onClick={() => handleLocalToggle('canonical')}
+                  data-testid="hero-perspective-canonical"
+                >
+                  <GraduationCap size={15} />
+                </button>
+              </AppTooltip>
+
+              <AppTooltip content="Enterprise Cloud (Production Distributed Systems)">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={activePerspective === 'enterprise'}
+                  aria-label="Enterprise Cloud perspective"
+                  className={`perspective-icon-pill ${activePerspective === 'enterprise' ? 'active' : ''}`}
+                  onClick={() => handleLocalToggle('enterprise')}
+                  data-testid="hero-perspective-enterprise"
+                >
+                  <Building2 size={15} />
+                </button>
+              </AppTooltip>
+            </div>
+
+            <div className="studio-memory-hook" title="Memory Hook">
+              <Lightbulb size={16} />
+              <span className="memory-text">{pattern.memoryHook}</span>
+              <span className="memory-badge">MEMORY HOOK</span>
+            </div>
           </div>
         </div>
 
         <div className="studio-hero-row2">
-          <p className="studio-tagline">{pattern.tagline}</p>
+          {activePerspective === 'canonical' ? (
+            <p className="studio-tagline">{pattern.tagline}</p>
+          ) : (
+            <div className="studio-enterprise-tagline-wrap">
+              <span className="enterprise-context-badge">
+                <Building2 size={13} />
+                <span>PRODUCTION CLOUD ARCHITECTURE</span>
+              </span>
+              <p className="studio-tagline enterprise-tagline">
+                <strong className="text-foreground">{pattern.enterprise.title}:</strong>{' '}
+                <span>{pattern.enterprise.scenario}</span>
+              </p>
+            </div>
+          )}
         </div>
       </header>
 
@@ -180,7 +287,19 @@ export function PatternDetailPage({
           <div className="studio-editorial-overview studio-stacked-overview" data-testid="studio-overview">
             {/* 1. THE INTENT */}
             <section className="editorial-section section-intent">
-              <span className="overview-label">THE INTENT</span>
+              <div className="section-label-row">
+                <span className="overview-label">THE INTENT</span>
+                {activePerspective === 'enterprise' && (
+                  <span className="perspective-flag enterprise">
+                    <Building2 size={12} /> ENTERPRISE SCOPE: {pattern.enterprise.title}
+                  </span>
+                )}
+                {activePerspective === 'canonical' && (
+                  <span className="perspective-flag canonical">
+                    <GraduationCap size={12} /> CANONICAL GoF / REFACTORING GURU
+                  </span>
+                )}
+              </div>
               <p className="intent-statement">{pattern.intent}</p>
             </section>
 
@@ -191,17 +310,19 @@ export function PatternDetailPage({
               <div className="overview-columns">
                 <div className="overview-col">
                   <span className="overview-label">THE PROBLEM</span>
-                  <p>{pattern.problem}</p>
+                  <p>{activeVariant.problem}</p>
                 </div>
                 <div className="overview-col">
                   <span className="overview-label">THE SOLUTION</span>
-                  <p>{pattern.solution}</p>
+                  <p>{activeVariant.solution}</p>
                 </div>
               </div>
 
               <div className="overview-wild">
-                <span className="overview-label">IN THE WILD</span>
-                <p>{pattern.realWorldEnterpriseScenario}</p>
+                <span className="overview-label">
+                  {activePerspective === 'canonical' ? 'IN THE WILD (CLASSIC)' : 'IN THE WILD (ENTERPRISE CLOUD)'}
+                </span>
+                <p>{activeVariant.scenario}</p>
               </div>
             </section>
 
@@ -213,7 +334,7 @@ export function PatternDetailPage({
                 <div className="overview-col">
                   <span className="overview-label">USE IT WHEN</span>
                   <div className="bullet-stack">
-                    {pattern.whenToUse.map(v => (
+                    {activeVariant.whenToUse.map(v => (
                       <p className="bullet-item yes" key={v}>
                         <Check size={15} />
                         <span>{v}</span>
@@ -224,7 +345,7 @@ export function PatternDetailPage({
                 <div className="overview-col">
                   <span className="overview-label">THINK TWICE WHEN</span>
                   <div className="bullet-stack">
-                    {pattern.whenNotToUse.map(v => (
+                    {activeVariant.whenNotToUse.map(v => (
                       <p className="bullet-item no" key={v}>
                         <X size={15} />
                         <span>{v}</span>
@@ -237,8 +358,10 @@ export function PatternDetailPage({
 
             {/* 4. COLLABORATION SHAPE (Single Framed Container) */}
             <section className="editorial-shape-frame">
-              <span className="overview-label">COLLABORATION SHAPE</span>
-              <pre className="shape-ascii">{pattern.asciiShape}</pre>
+              <span className="overview-label">
+                COLLABORATION SHAPE · {activePerspective === 'canonical' ? 'OBJECT GRAPH' : 'CLOUD INFRASTRUCTURE'}
+              </span>
+              <pre className="shape-ascii">{activeVariant.asciiShape}</pre>
             </section>
           </div>
         )}
@@ -248,9 +371,11 @@ export function PatternDetailPage({
             {/* Left Narrative Pane */}
             <div className="code-narrative-pane">
               <div className="bento-card code-spec-card">
-                <span className="bento-eyebrow">IMPLEMENTATION STRATEGY</span>
+                <span className="bento-eyebrow">
+                  IMPLEMENTATION STRATEGY · {activePerspective === 'canonical' ? 'GoF CLASSIC' : 'ENTERPRISE CLOUD'}
+                </span>
                 <p className="code-explanation-text">
-                  {pattern.typeScriptImplementation.explanation}
+                  {activeVariant.typeScript.explanation}
                 </p>
               </div>
 
@@ -262,12 +387,12 @@ export function PatternDetailPage({
                     <b>TypeScript 5.x</b>
                   </div>
                   <div className="meta-row">
-                    <span>Execution</span>
-                    <b>Node / Web Worker</b>
+                    <span>Architecture</span>
+                    <b>{activePerspective === 'canonical' ? 'In-Memory OOP' : 'Distributed Cloud'}</b>
                   </div>
                   <div className="meta-row">
                     <span>File</span>
-                    <code>{pattern.typeScriptImplementation.fileName}</code>
+                    <code>{activeVariant.typeScript.fileName}</code>
                   </div>
                 </div>
               </div>
@@ -292,7 +417,10 @@ export function PatternDetailPage({
                 <div className="editor-file-info">
                   <span className="file-dot" />
                   <span className="editor-filename">
-                    {pattern.typeScriptImplementation.fileName}
+                    {activeVariant.typeScript.fileName}
+                  </span>
+                  <span className="perspective-file-badge">
+                    {activePerspective === 'canonical' ? 'Refactoring Guru' : 'Enterprise Cloud'}
                   </span>
                 </div>
                 <div className="editor-actions">
@@ -309,7 +437,7 @@ export function PatternDetailPage({
                 </div>
               </div>
               <pre className="code-editor-viewport">
-                <code>{pattern.typeScriptImplementation.code}</code>
+                <code>{activeVariant.typeScript.code}</code>
               </pre>
             </div>
           </div>
@@ -321,19 +449,35 @@ export function PatternDetailPage({
               patternId={pattern.id}
               patternName={pattern.name}
               theme={saved.theme}
+              perspective={activePerspective}
             />
           </div>
         )}
 
         {tab === 'trade-offs' && (
           <div className="studio-editorial-tradeoffs studio-tradeoffs-layout" data-testid="studio-tradeoffs">
+            {/* Enterprise Architectural Trade-off Banner */}
+            {activePerspective === 'enterprise' && (
+              <div className="enterprise-tradeoff-banner">
+                <div className="banner-icon">
+                  <Server size={18} />
+                </div>
+                <div className="banner-content">
+                  <span className="banner-eyebrow">ENTERPRISE CLOUD ARCHITECTURAL PROFILE</span>
+                  <p className="banner-text">
+                    In distributed microservices, applying <strong>{pattern.name}</strong> introduces trade-offs between clean domain abstraction and operational complexity: network latency over boundaries, serialization overhead, vendor SDK blast radius, and saga consistency.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* 1. WHAT IT SUPPORTS */}
             <section className="tradeoffs-editorial-section">
               <span className="overview-label">WHAT IT SUPPORTS</span>
               <div className="overview-divider" />
 
               <div className="tradeoffs-solid-stack">
-                {pattern.solidPrinciples.map((x) => (
+                {sortedSolidPrinciples.map((x) => (
                   <div key={x.principle} className="solid-editorial-item">
                     <div className="solid-badge-col">
                       <span className={`tradeoff-impact-badge ${x.impact.toLowerCase()}`}>

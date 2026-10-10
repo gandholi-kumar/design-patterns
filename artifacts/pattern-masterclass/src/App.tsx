@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Route, Switch, useLocation } from 'wouter';
 import {
-  ArrowDownUp, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Check, ChevronDown,
+  ArrowDownUp, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Building2, Check, ChevronDown,
   ChevronLeft, ChevronRight, CircleHelp, Code2, Compass, Copy, Download, FileJson2,
-  Filter, GitBranch, Layers3, Lightbulb, Menu, Moon, PanelLeftClose, PanelLeftOpen, Play, RotateCcw, Search, Settings2,
+  Filter, GitBranch, GraduationCap, Layers3, Lightbulb, Menu, Moon, PanelLeftClose, PanelLeftOpen, Play, RotateCcw, Search, Settings2,
   ShieldCheck, Sun, Terminal, X, Zap,
 } from 'lucide-react';
 import { PATTERNS, QUIZ, type Pattern } from './data';
+import type { Perspective } from './pattern-types';
 import { PatternDiagrams } from './PatternDiagrams';
 import { useIsMobile } from './hooks/use-mobile';
 import { PatternDetailPage } from './pages/PatternDetailPage';
@@ -53,7 +54,16 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     return localStorage.getItem('gof-sidebar-collapsed') === 'true';
   });
+  const [perspective, setPerspective] = useState<Perspective>(() => {
+    const stored = localStorage.getItem('gof-perspective');
+    return stored === 'enterprise' ? 'enterprise' : 'canonical';
+  });
   const isMobile = useIsMobile();
+
+  const handleSetPerspective = (p: Perspective) => {
+    setPerspective(p);
+    localStorage.setItem('gof-perspective', p);
+  };
 
   useEffect(() => {
     localStorage.setItem(STORE, JSON.stringify(saved));
@@ -200,7 +210,16 @@ function App() {
           )}
 
           <div className="crumb">
-            <span>GOF DESIGN PATTERNS</span>
+            <button
+              type="button"
+              className="crumb-root-link"
+              onClick={() => setLoc('/')}
+              title="Go to Library"
+              aria-label="Go to Library"
+              data-testid="crumb-root-link"
+            >
+              GOF DESIGN PATTERNS
+            </button>
             <ChevronRight size={13}/>
             <b>{isPatternPage && activePattern ? activePattern.name.toUpperCase() : (nav.find(n => n.id === page)?.name.toUpperCase())}</b>
           </div>
@@ -236,6 +255,34 @@ function App() {
             </>
           )}
 
+          <div className="topbar-perspective-toggle" role="radiogroup" aria-label="Perspective switch">
+            <AppTooltip content="Canonical (Refactoring Guru / GoF Academic)">
+              <button
+                role="radio"
+                aria-checked={perspective === 'canonical'}
+                aria-label="Canonical perspective"
+                className={`topbar-perspective-btn ${perspective === 'canonical' ? 'active' : ''}`}
+                onClick={() => handleSetPerspective('canonical')}
+                data-testid="global-perspective-canonical"
+              >
+                <GraduationCap size={15} />
+              </button>
+            </AppTooltip>
+
+            <AppTooltip content="Enterprise Cloud (Production Distributed Systems)">
+              <button
+                role="radio"
+                aria-checked={perspective === 'enterprise'}
+                aria-label="Enterprise Cloud perspective"
+                className={`topbar-perspective-btn ${perspective === 'enterprise' ? 'active' : ''}`}
+                onClick={() => handleSetPerspective('enterprise')}
+                data-testid="global-perspective-enterprise"
+              >
+                <Building2 size={15} />
+              </button>
+            </AppTooltip>
+          </div>
+
           <AppTooltip content={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`}>
             <button className="theme-toggle" onClick={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} aria-label={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`} data-testid="toggle-theme">{saved.theme === 'light' ? <Moon size={16}/> : <Sun size={16}/>}<span>{saved.theme === 'light' ? 'Light' : 'Dark'}</span></button>
           </AppTooltip>
@@ -246,7 +293,7 @@ function App() {
       <div className={`workspace ${isPatternPage ? 'workspace-studio' : ''}`}>
         <Switch>
           <Route path="/"><Catalog saved={saved} savedOnly={savedOnly} clearSaved={() => setSavedOnly(false)} onBookmark={togglePatternBookmark} onSelect={handleSelectPattern}/></Route>
-          <Route path="/pattern/:id">{(params) => <PatternDetailPage id={params.id} saved={saved} onBookmark={togglePatternBookmark} goPlayground={() => setLoc('/playground')} />}</Route>
+          <Route path="/pattern/:id">{(params) => <PatternDetailPage id={params.id} saved={saved} globalPerspective={perspective} onBookmark={togglePatternBookmark} goPlayground={() => setLoc('/playground')} />}</Route>
           <Route path="/decision-engine"><Decision onSelect={handleSelectPattern}/></Route>
           <Route path="/playground"><Playground saved={saved} setSaved={setSaved}/></Route>
           <Route path="/simulators"><Simulators onSelect={handleSelectPattern}/></Route>
@@ -258,7 +305,7 @@ function App() {
         <footer className="global-footer"><span>BUILT AROUND THE GANG OF FOUR · 1994</span><span>23 patterns <i/> three families <i/> one shared language</span></footer>
       )}
     </main>
-    {selected && <PatternDialog pattern={selected} saved={saved} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc('/playground'); }}/>}
+    {selected && <PatternDialog pattern={selected} saved={saved} perspective={perspective} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc('/playground'); }}/>}
     {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} />}
   </div>;
 }
@@ -429,7 +476,7 @@ function QuizLab({ saved, setSaved }: { saved: Saved; setSaved: React.Dispatch<R
   const go = (dir: number) => { setIndex(i => (i + dir + questions.length) % questions.length); };
   return <div className="page-content reveal"><PageIntro index="05 / SCENARIO LAB" title={<>Practice the<br/><em>recognition.</em></>} text="Read the constraints before the options. Choose the pattern that fits the forces at play—not the one you last studied."/><div className="quiz-dashboard"><div className="quiz-stat"><span className="eyebrow">SCENARIOS</span><b>{QUIZ.length.toString().padStart(2,'0')}</b><small>three design situations</small></div><div className="quiz-stat"><span className="eyebrow">ATTEMPTS</span><b>{progressListCount(saved)}</b><small>answers recorded</small></div><div className="quiz-stat"><span className="eyebrow">ACCURACY</span><b>{accuracy(saved)}<small>%</small></b><small>of all attempts</small></div><div className="quiz-streak"><span className="eyebrow">A NOTE TO SELF</span><p>“A scenario is a set of constraints wearing a story.”</p><span>FIELD GUIDE / 01</span></div></div><div className="quiz-controls"><div className="quiz-filter">{['All scenarios','Attempted','Bookmarked'].map(f=><button key={f} className={filter===f?'active':''} onClick={()=>{setFilter(f);setIndex(0);}} data-testid={`quiz-filter-${f.toLowerCase()}`}>{f}</button>)}</div><span>SCENARIO {String(index+1).padStart(2,'0')} <i/> {q.category.toUpperCase()} / {q.difficulty.toUpperCase()}</span></div><div className="question-layout"><article className="question-card"><div className="question-top"><span className="question-num">SCENARIO {String(q.scenarioNumber).padStart(2,'0')}</span><span className="difficulty">{q.difficulty}</span><button onClick={() => setSaved(s => {const old=s.progress[q.id] || {attempts:0,correct:0,bookmarked:false,note:'',box:1}; return {...s, progress:{...s.progress,[q.id]:{...old,bookmarked:!old.bookmarked}}};})} className={`quiz-bookmark ${current?.bookmarked?'saved':''}`} aria-label="Bookmark scenario" data-testid="quiz-bookmark"><Bookmark size={16}/></button></div><h2>{q.title}</h2><p className="scenario-text">{q.systemScenario}</p><div className="constraints"><span className="eyebrow">ARCHITECTURAL CONSTRAINTS</span>{q.architecturalConstraints.map((c,i)=><div key={c}><span>{String(i+1).padStart(2,'0')}</span>{c}</div>)}</div><div className="answer-section"><span className="eyebrow">WHICH PATTERN FITS BEST?</span><div className="answer-options">{q.options.map((o,i)=><button disabled={answered} onClick={() => answer(o.id)} className={`answer-option ${selected===o.id ? o.isCorrect?'correct':'incorrect' : answered && o.isCorrect?'correct-reveal':''}`} key={o.id} data-testid={`quiz-answer-${o.id}`}><span className="option-key">{String.fromCharCode(65+i)}</span><b>{o.patternName}</b>{selected===o.id && (o.isCorrect ? <Check size={16}/> : <X size={16}/>)}{answered && o.isCorrect && selected!==o.id && <Check size={15}/>}</button>)}</div></div>{answered && <div className={`feedback ${q.options.find(o=>o.id===selected)?.isCorrect?'feedback-good':'feedback-review'}`} aria-live="polite"><div className="feedback-icon">{q.options.find(o=>o.id===selected)?.isCorrect?<Check size={16}/>:<Lightbulb size={16}/>}</div><div><b>{q.options.find(o=>o.id===selected)?.isCorrect?'Good read.':'Look at the constraint again.'}</b><p>{q.deepExplanation}</p><small>MEMORY RULE · {q.memoryRule}</small></div></div>}<div className="question-nav"><button className="subtle-btn" onClick={() => go(-1)} data-testid="quiz-previous"><ChevronLeft size={15}/> Previous</button><div>{questions.map((item,i)=><button className={`question-dot ${i===index?'current':''} ${saved.progress[item.id]?'done':''}`} key={item.id} onClick={() => setIndex(i)} aria-label={`Go to scenario ${i+1}`}/>)}</div><button className="subtle-btn" onClick={() => go(1)} data-testid="quiz-next">Next <ChevronRight size={15}/></button></div></article><aside className="notes-card"><div className="notes-header"><div><span className="eyebrow">YOUR FIELD NOTES</span><h3>Keep a thought.</h3></div><span className="notes-mark">01</span></div><p>Write down the clue that made this pattern click.</p><textarea aria-label="Personal notes for scenario" placeholder="What did you notice about the constraints?" value={current?.note || ''} onChange={e => setSaved(s => { const old = s.progress[q.id] || {attempts:0,correct:0,bookmarked:false,note:'',box:1}; return {...s, progress:{...s.progress,[q.id]:{...old,note:e.target.value}}};})} data-testid="quiz-notes"/><div className="notes-bottom"><span><Check size={12}/> SAVED LOCALLY</span><span>BOX {current?.box || 1} / 5</span></div><div className="notes-separator"/><div className="notes-meta"><span>RECALL STAGE</span><div className="leitner">{[1,2,3,4,5].map(i=><i className={i <= (current?.box || 1)?'filled':''} key={i}/>)}</div></div><p className="leitner-copy">Correct answers move this card forward. Misses return it to the start.</p></aside></div><div className="quiz-bottom-note"><span className="eyebrow">HOW TO GET BETTER</span><p>Before choosing a name, say the decision out loud: <b>“I need to vary ___ without changing ___.”</b></p><button onClick={() => { if (window.confirm('Clear all quiz attempts, notes, and bookmarks?')) setSaved(s => ({...s, progress:{}, bookmarks:[]})); }} data-testid="reset-progress"><RotateCcw size={14}/> Reset practice</button></div></div>;
 }
-function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode }: { pattern: Pattern; saved: Saved; onClose: () => void; onBookmark: (id: string) => void; goCode: () => void }) {
+function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode, perspective = 'canonical' }: { pattern: Pattern; saved: Saved; onClose: () => void; onBookmark: (id: string) => void; goCode: () => void; perspective?: Perspective }) {
   const [tab, setTab] = useState('overview');
   useEffect(() => { const listener = (e: KeyboardEvent) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', listener); return () => window.removeEventListener('keydown', listener); }, [onClose]);
   const tabs = ['overview', 'code', 'diagrams', 'trade-offs'];
@@ -458,9 +505,9 @@ function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode }: { pat
           ))}
         </div>
         <div className="detail-scroll">
-          {tab === 'overview' && <PatternOverview pattern={p}/>}
-          {tab === 'code' && <PatternCode pattern={p} goCode={goCode}/>}
-          {tab === 'diagrams' && <PatternDiagrams patternId={p.id} patternName={p.name} theme={saved.theme}/>}
+          {tab === 'overview' && <PatternOverview pattern={p} perspective={perspective}/>}
+          {tab === 'code' && <PatternCode pattern={p} goCode={goCode} perspective={perspective}/>}
+          {tab === 'diagrams' && <PatternDiagrams patternId={p.id} patternName={p.name} theme={saved.theme} perspective={perspective}/>}
           {tab === 'trade-offs' && <PatternTradeoffs pattern={p}/>}
         </div>
         <div className="modal-foot">
