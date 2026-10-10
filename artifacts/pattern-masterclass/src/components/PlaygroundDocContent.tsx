@@ -322,7 +322,7 @@ export class PaymentService {
 
           <h3 className="doc-heading">Rule 1: Virtual Module System</h3>
           <p className="doc-text">
-            Each tab is compiled into an in-memory virtual module registered under its base name without extension (e.g. <code>payment-service.ts</code> $\rightarrow$ <code>'./payment-service'</code>).
+            Each tab is compiled into an in-memory virtual module registered under its base name without extension (e.g. <code>payment-service.ts</code> <span className="doc-inline-arrow">→</span> <code>'./payment-service'</code>).
           </p>
 
           <h3 className="doc-heading">Rule 2: Export & Relative Imports</h3>
