@@ -10,6 +10,7 @@ import {
   Lightbulb,
   X,
   ArrowRight,
+  ArrowLeft,
   AlertTriangle,
   Building2,
   GraduationCap,
@@ -95,8 +96,13 @@ export function PatternDetailPage({
   // Extract preserved search and filter parameters from URL
   const queryParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const familyFilter = queryParams.get('family');
+  const fromParam = queryParams.get('from');
 
   const handleBack = () => {
+    if (fromParam === 'decision-engine') {
+      setLoc('/decision-engine');
+      return;
+    }
     const qs = window.location.search;
     setLoc(`/${qs}`);
   };
@@ -180,6 +186,18 @@ export function PatternDetailPage({
         <div className="studio-hero-row1">
           <div className="studio-identity">
             <div className="studio-meta">
+              {fromParam === 'decision-engine' && (
+                <AppTooltip content="Return to Decision Engine">
+                  <button
+                    type="button"
+                    className="inline-back-crumb"
+                    onClick={handleBack}
+                    aria-label="Return to Decision Engine"
+                  >
+                    <ArrowLeft size={13} /> Back to Decision Engine
+                  </button>
+                </AppTooltip>
+              )}
               <span className={`category-tag ${categoryStyle[pattern.category]}`}>
                 {pattern.category.toUpperCase()}
               </span>
@@ -239,11 +257,13 @@ export function PatternDetailPage({
               </AppTooltip>
             </div>
 
-            <div className="studio-memory-hook" title="Memory Hook">
-              <Lightbulb size={16} />
-              <span className="memory-text">{pattern.memoryHook}</span>
-              <span className="memory-badge">MEMORY HOOK</span>
-            </div>
+            <AppTooltip content="Quick recall mnemonic hook">
+              <div className="studio-memory-hook">
+                <Lightbulb size={16} />
+                <span className="memory-text">{pattern.memoryHook}</span>
+                <span className="memory-badge">MEMORY HOOK</span>
+              </div>
+            </AppTooltip>
           </div>
         </div>
 

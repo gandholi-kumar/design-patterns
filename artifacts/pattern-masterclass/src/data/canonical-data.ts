@@ -592,8 +592,8 @@ Adapter -->|"translates & delegates"| Adaptee["Adaptee.specificRequest()"]`,
       'Avoid when there is only a single stable axis of variation, as the extra indirection adds unnecessary cognitive load.',
     ],
     asciiShape: `Remote (Abstraction) ──► Device (Implementor)
-        ├── AdvancedRemote           ├── Tv
-        └── TouchRemote              └── Radio`,
+    ├── AdvancedRemote       ├── Tv
+    └── TouchRemote          └── Radio`,
     typeScript: {
       fileName: 'RemoteBridge.ts',
       explanation: 'Remote abstraction delegates low-level volume and power operations to interchangeable Device implementations.',
@@ -1568,9 +1568,9 @@ Publisher -->|notify event| Sub2["LogListener"]`,
       'Avoid if the state machine has only 2 or 3 states that rarely change, where a simple switch statement is sufficient.',
     ],
     asciiShape: `Context.clickPlay() ──► State.play()
-    ├── LockedState  (unlocks player)
-    ├── PlayingState (pauses audio)
-    └── PausedState  (resumes playback)`,
+                             ├── LockedState  (unlocks player)
+                             ├── PlayingState (pauses audio)
+                             └── PausedState  (resumes playback)`,
     typeScript: {
       fileName: 'AudioPlayerState.ts',
       explanation: 'AudioPlayer delegates button clicks to concrete State classes that handle actions and transition the player.',
@@ -1811,7 +1811,7 @@ Template --> Step3["step3() - common"]`,
       'Avoid if the element class hierarchy changes frequently, as adding a new element forces modifying every visitor class.',
     ],
     asciiShape: `Shape.accept(Visitor) ──► Visitor.visitDot(Dot)
-                       └──► Visitor.visitCircle(Circle)`,
+                      └──► Visitor.visitCircle(Circle)`,
     typeScript: {
       fileName: 'XmlExportVisitor.ts',
       explanation: 'XMLExportVisitor serializes shapes to XML tags without shapes knowing XML details.',

@@ -141,16 +141,14 @@ S3 -->|uploads to| Bucket["AWS S3 Bucket"]`,
     whenNotToUse: [
       'When your infrastructure requirements change frequently by adding new resource types (e.g. Serverless, Queues), requiring updates across all factory classes.',
     ],
-    asciiShape: `CloudDeployment ──► CloudResourceFactory
-                         ├── createCompute()
-                         ├── createStorage()
-                         └── createFirewall()
-            ┌────────────┴────────────┐
-            ▼                         ▼
-    AwsResourceFactory        GcpResourceFactory
-     ├── EC2Compute            ├── GcpCompute
-     ├── S3Bucket              ├── GcsBucket
-     └── AwsSecurityGroup      └── GcpFirewall`,
+    asciiShape: `CloudDeployment ──► CloudResourceFactory ──► { createCompute(), createStorage(), createFirewall() }
+                              │
+                ┌─────────────┴─────────────┐
+                ▼                           ▼
+       AwsResourceFactory          GcpResourceFactory
+        ├── EC2Compute              ├── GcpCompute
+        ├── S3Bucket                ├── GcsBucket
+        └── AwsSecurityGroup        └── GcpFirewall`,
     typeScript: {
       fileName: 'CloudResourceFactory.ts',
       explanation: 'CloudResourceFactory produces compatible compute, storage, and firewall resources for a single cloud vendor.',
@@ -247,10 +245,10 @@ Aws --> S3["S3 Storage Bucket"]`,
       'When creating simple REST GET calls with no custom headers or query parameters.',
     ],
     asciiShape: `RequestBuilder.url("https://api.internal/v1/metrics")
-             .header("X-Correlation-ID", "req_9812")
-             .hmacSignature("secret_key")
-             .timeout(5000)
-             .build() ──► Immutable CloudRequest`,
+              .header("X-Correlation-ID", "req_9812")
+              .hmacSignature("secret_key")
+              .timeout(5000)
+              .build() ──► Immutable CloudRequest`,
     typeScript: {
       fileName: 'CloudRequestBuilder.ts',
       explanation: 'CloudRequestBuilder stages headers, query parameters, timeouts, and signs requests before producing an immutable object.',
@@ -346,11 +344,11 @@ Builder -->|"build()"| Immutable["Validated CloudRequest"]`,
       'When environment configurations have circular dependencies that complicate deep clone operations.',
     ],
     asciiShape: `MasterWorkspaceTemplate.clone()
-         │
-    ┌────┴────┐
-    ▼         ▼
-TenantA   TenantB
-(clone)   (clone)`,
+               │
+         ┌─────┴─────┐
+         ▼           ▼
+      TenantA     TenantB
+      (clone)     (clone)`,
     typeScript: {
       fileName: 'TenantWorkspacePrototype.ts',
       explanation: 'TenantWorkspace implements deep cloning of VPC, IAM roles, and security policies for rapid sandbox provisioning.',
@@ -592,8 +590,8 @@ Adapter -->|"formats tags & calls"| Sdk["DatadogVendorSdk.submitCounter()"]`,
       'When notifications only ever use a single channel with fixed priority rules.',
     ],
     asciiShape: `Notification (Abstraction) ──► DeliveryTransport (Implementor)
-     ├── CriticalAlarm                 ├── AwsSesEmailChannel
-     └── ScheduledSummary              └── TwilioSmsChannel`,
+     ├── CriticalAlarm            ├── AwsSesEmailChannel
+     └── ScheduledSummary         └── TwilioSmsChannel`,
     typeScript: {
       fileName: 'NotificationBridge.ts',
       explanation: 'Notification abstraction delegates message delivery to decoupled DeliveryTransport implementations.',
@@ -1453,7 +1451,7 @@ Mediator --> PaymentService["Payment Gateway (Charge)"]`,
     whenNotToUse: [
       'Massive distributed state graphs where deep snapshotting consumes terabytes of storage.',
     ],
-    asciiShape: `K8sClusterManager ──► exportSnapshot() ──► DeploymentCaretaker
+    asciiShape: `K8sClusterManager ──► exportSnapshot()   ──► DeploymentCaretaker
 K8sClusterManager ◄── rollback(snapshot) ◄── DeploymentCaretaker`,
     typeScript: {
       fileName: 'ClusterRollbackMemento.ts',
@@ -1619,8 +1617,8 @@ Bus --> Billing["BillingConsumer"]`,
       'Simple in-process calls that do not cross network boundaries.',
     ],
     asciiShape: `[ClosedState] ──(Failures > Threshold)──► [OpenState]
-       ▲                                          │
-       │                                          ▼
+       ▲                                        │
+       │                                        ▼
    (Success) ◄─────── [HalfOpenState] ◄───(Timer Expired)`,
     typeScript: {
       fileName: 'CircuitBreakerState.ts',
@@ -1895,7 +1893,7 @@ Template --> S4["loadToDataWarehouse() (Snowflake)"]`,
       'When cloud resource types are constantly being added, because every new node type forces editing all visitor interfaces.',
     ],
     asciiShape: `CloudResource.accept(Visitor) ──► CisComplianceVisitor.visitS3Bucket(S3Node)
-                                └──► CisComplianceVisitor.visitEc2Instance(Ec2Node)`,
+                              └──► CisComplianceVisitor.visitEc2Instance(Ec2Node)`,
     typeScript: {
       fileName: 'IacPolicyVisitor.ts',
       explanation: 'CisComplianceVisitor inspects heterogeneous cloud resource AST nodes without nodes knowing security policies.',

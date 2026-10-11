@@ -2,22 +2,22 @@
 
 **Project Type**: Database & ORM Layer (Drizzle ORM)  
 **Location**: `lib/db`  
-**Primary Files**: [drizzle.config.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/drizzle.config.ts), [src/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/src/index.ts), [src/schema/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/src/schema/index.ts)
+**Primary Files**: [drizzle.config.ts](../drizzle.config.ts), [src/index.ts](../src/index.ts), [src/schema/index.ts](../src/schema/index.ts)
 
 ---
 
 ## 1. Current State & Gaps
 
-1. **Empty Schema**: [src/schema/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/src/schema/index.ts) contains only comment templates and exports `{}`.
-2. **Missing Migration Scripts**: [package.json](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/package.json) contains `push` and `push-force`, but no `generate` or `migrate` scripts. In team environments or production CI/CD, raw `drizzle-kit push` can risk silent data loss compared to versioned SQL migration files.
-3. **Unbounded Connection Pool**: [src/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/src/index.ts) instantiates `new Pool({ connectionString })` with default settings (unbounded connection lifetime, no timeouts, no max limit).
+1. **Empty Schema**: [src/schema/index.ts](../src/schema/index.ts) contains only comment templates and exports `{}`.
+2. **Missing Migration Scripts**: [package.json](../package.json) contains `push` and `push-force`, but no `generate` or `migrate` scripts. In team environments or production CI/CD, raw `drizzle-kit push` can risk silent data loss compared to versioned SQL migration files.
+3. **Unbounded Connection Pool**: [src/index.ts](../src/index.ts) instantiates `new Pool({ connectionString })` with default settings (unbounded connection lifetime, no timeouts, no max limit).
 
 ---
 
 ## 2. Refactoring Actions
 
 ### Action 1: Add Production Connection Pool Limits
-Configure robust connection parameters in [src/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/src/index.ts):
+Configure robust connection parameters in [src/index.ts](../src/index.ts):
 
 ```typescript
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -44,7 +44,7 @@ export * from "./schema";
 ---
 
 ### Action 2: Add Versioned Migration Scripts to `package.json`
-Update [package.json](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/package.json):
+Update [package.json](../package.json):
 
 ```json
 {
@@ -99,4 +99,4 @@ export const bookmarksTable = pgTable("user_bookmarks", {
   userBookmarkIdx: uniqueIndex("user_bookmark_idx").on(table.userId, table.patternId),
 }));
 ```
-Export both from [src/schema/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/src/schema/index.ts).
+Export both from [src/schema/index.ts](../src/schema/index.ts).
