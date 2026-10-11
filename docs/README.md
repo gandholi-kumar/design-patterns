@@ -20,51 +20,51 @@ docs/
 ---
 
 ### A. Setup & Run Guide (Start Here)
-* **[Getting Started: Setup & Running Guide](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/setup-guide/getting-started.md)**: Complete developer onboarding guide covering prerequisites (Node.js, pnpm, JDK), clone and install instructions, step-by-step commands for starting the frontend Vite dev server and backend Express server, environment variable reference, quality gates (typecheck and build), API codegen workflow, port map, and 7 troubleshooting scenarios.
+* **[Getting Started: Setup & Running Guide](./setup-guide/getting-started.md)**: Complete developer onboarding guide covering prerequisites (Node.js, pnpm, JDK), clone and install instructions, step-by-step commands for starting the frontend Vite dev server and backend Express server, environment variable reference, quality gates (typecheck and build), API codegen workflow, port map, and 7 troubleshooting scenarios.
 
 ---
 
 ### B. Architecture & System Topology
-* **[System Architecture & Design Specification](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/architecture/system-architecture.md)**: High-level monorepo layout, client engines, sequence diagrams for Web Worker execution and zero-trust AI debate flows, and architectural quality attributes.
-* **[Current Implementation Details & Feature Catalog](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/architecture/current-implementation.md)**: Deep dive into all 5 feature screens, the dual canonical/cloud perspective model, normalized SOLID principles matrix with literature citations, and shared scaffolding.
+* **[System Architecture & Design Specification](./architecture/system-architecture.md)**: High-level monorepo layout, client engines, sequence diagrams for Web Worker execution and zero-trust AI debate flows, and architectural quality attributes.
+* **[Current Implementation Details & Feature Catalog](./architecture/current-implementation.md)**: Deep dive into all 5 feature screens, the dual canonical/cloud perspective model, normalized SOLID principles matrix with literature citations, and shared scaffolding.
 
 ---
 
 ### C. Interactive Code Playground & Multi-File Architecture
-* **[Code Playground User Guide: Code Editor & Multi-File Architecture](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/code-editor/code-editor-and-multi-file-guide.md)**: Operational guide for the dual-mode layout (Stacked vs. Resizable Split with `react-resizable-panels`), single-scroll standard, multi-file virtual tabs, ⭐ Entry points, Java default package rules, and TypeScript in-memory bundler contracts.
+* **[Code Playground User Guide: Code Editor & Multi-File Architecture](./code-editor/code-editor-and-multi-file-guide.md)**: Operational guide for the dual-mode layout (Stacked vs. Resizable Split with `react-resizable-panels`), single-scroll standard, multi-file virtual tabs, ⭐ Entry points, Java default package rules, and TypeScript in-memory bundler contracts.
 
 ---
 
 ### D. GoF Decision Engine & Zero-Trust Copilot
-* **[Production Architectural Specification: GoF Decision Engine & Copilot](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/decision-engine/decision-engine-architecture.md)**: Detailed specification for the 3 core pillars (Diagnostic Wizard, 16+ Production Scenarios, 7 Sibling Dilemmas), natural language AI debate copilot, Zero-Trust in-memory RAM key manager, dynamic Gemini model discovery with self-healing JSON mode fallbacks, session decision ledger, slide-over NotesDrawer, and mobile bottom sheet.
-* **[Stage-2 Wireframes & Investigation Document](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/decision-engine/decision-engine-stage-2-wireframes.md)**: Historical architectural wireframes, design rationale, and step-by-step UX flows leading from Stage-2 through Stage-7.
+* **[Production Architectural Specification: GoF Decision Engine & Copilot](./decision-engine/decision-engine-architecture.md)**: Detailed specification for the 3 core pillars (Diagnostic Wizard, 16+ Production Scenarios, 7 Sibling Dilemmas), natural language AI debate copilot, Zero-Trust in-memory RAM key manager, dynamic Gemini model discovery with self-healing JSON mode fallbacks, session decision ledger, slide-over NotesDrawer, and mobile bottom sheet.
+* **[Stage-2 Wireframes & Investigation Document](./decision-engine/decision-engine-stage-2-wireframes.md)**: Historical architectural wireframes, design rationale, and step-by-step UX flows leading from Stage-2 through Stage-7.
 
 ---
 
 ### E. Product Requirements Documents (PRD)
-* **[PRD: Interactive Multi-File Code Playground Engine](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/prd/prd-interactive-code-playground.md)**: Product vision, OneCompiler benchmark analysis, user stories, dual execution engine requirements, and multi-language roadmap.
-* **[PRD: GoF Decision Engine & Zero-Trust Copilot](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/prd/prd-decision-engine.md)**: Product specification covering functional requirements (FR-1 through FR-8), zero-disk RAM security requirements, mobile responsiveness, and solid UI standards.
+* **[PRD: Interactive Multi-File Code Playground Engine](./prd/prd-interactive-code-playground.md)**: Product vision, OneCompiler benchmark analysis, user stories, dual execution engine requirements, and multi-language roadmap.
+* **[PRD: GoF Decision Engine & Zero-Trust Copilot](./prd/prd-decision-engine.md)**: Product specification covering functional requirements (FR-1 through FR-8), zero-disk RAM security requirements, mobile responsiveness, and solid UI standards.
 
 ---
 
 ### F. Future Extensions & Full-Stack Roadmap
-* **[Future Extensions, Architecture Roadmap & Migration Guide](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/future-extensions/roadmap-and-extensions.md)**: Actionable 5-step blueprint for wiring PostgreSQL persistence via Drizzle ORM, multi-language sandbox runners (Python Pyodide WASM, Go, Rust, C#), interactive visual simulator engines, and Leitner spaced repetition quiz lab.
+* **[Future Extensions, Architecture Roadmap & Migration Guide](./future-extensions/roadmap-and-extensions.md)**: Actionable 5-step blueprint for wiring PostgreSQL persistence via Drizzle ORM, multi-language sandbox runners (Python Pyodide WASM, Go, Rust, C#), interactive visual simulator engines, and Leitner spaced repetition quiz lab.
 
 ---
 
 ### G. Architectural Research & Investigation
-* **[Enterprise Cloud Validation Report](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/investigation/enterprise-cloud-validation-report.md)**: Formal verification and mapping of all 23 patterns to cloud-native microservice and Kubernetes primitives.
-* **[Pattern Authenticity & Dual-Example Architecture](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/investigation/pattern-authenticity-and-dual-example-architecture.md)**: Original GoF literature analysis ensuring historical fidelity and modern relevance.
+* **[Enterprise Cloud Validation Report](./investigation/enterprise-cloud-validation-report.md)**: Formal verification and mapping of all 23 patterns to cloud-native microservice and Kubernetes primitives.
+* **[Pattern Authenticity & Dual-Example Architecture](./investigation/pattern-authenticity-and-dual-example-architecture.md)**: Original GoF literature analysis ensuring historical fidelity and modern relevance.
 
 ---
 
 ## 2. Package Refactoring Guides
 
-* **[pattern-masterclass Refactoring Notes](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/pattern-masterclass/refactoring/REFACTORING_NOTES.md)**: God Component decomposition, Zod backup validation, and custom store hooks.
-* **[api-server Refactoring Notes](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/api-server/refactoring/REFACTORING_NOTES.md)**: Express 5 error handling middleware, graceful shutdown, and Java execution sandbox.
-* **[mockup-sandbox Refactoring Notes](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/mockup-sandbox/refactoring/REFACTORING_NOTES.md)**: React error boundary protection and responsive viewport controls.
-* **[db Library Refactoring Notes](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/refactoring/REFACTORING_NOTES.md)**: Connection pool parameters, migration scripts, and schema design.
-* **[api-spec Library Refactoring Notes](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/api-spec/refactoring/REFACTORING_NOTES.md)**: OpenAPI spec expansion and Orval build-time codegen automation.
+* **[pattern-masterclass Refactoring Notes](../artifacts/pattern-masterclass/refactoring/REFACTORING_NOTES.md)**: God Component decomposition, Zod backup validation, and custom store hooks.
+* **[api-server Refactoring Notes](../artifacts/api-server/refactoring/REFACTORING_NOTES.md)**: Express 5 error handling middleware, graceful shutdown, and Java execution sandbox.
+* **[mockup-sandbox Refactoring Notes](../artifacts/mockup-sandbox/refactoring/REFACTORING_NOTES.md)**: React error boundary protection and responsive viewport controls.
+* **[db Library Refactoring Notes](../lib/db/refactoring/REFACTORING_NOTES.md)**: Connection pool parameters, migration scripts, and schema design.
+* **[api-spec Library Refactoring Notes](../lib/api-spec/refactoring/REFACTORING_NOTES.md)**: OpenAPI spec expansion and Orval build-time codegen automation.
 
 ---
 

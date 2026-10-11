@@ -126,16 +126,16 @@ The Decision Engine incorporates a **Zero-Trust Bring-Your-Own-Key (BYOK)** mode
 
 ## 📚 Documentation Index
 
-Detailed technical documentation is partitioned into dedicated domain folders under [`docs/`](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/):
+Detailed technical documentation is partitioned into dedicated domain folders under [`docs/`](./docs/):
 
 | Category | Key Documents |
 | :--- | :--- |
-| **🚀 Setup & Run Guide** | • [Getting Started: Setup & Running Guide](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/setup-guide/getting-started.md) — Prerequisites, installation, frontend & backend startup, env vars, troubleshooting |
-| **System Architecture** | • [System Architecture Specification](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/architecture/system-architecture.md)<br>• [Current Implementation & Feature Catalog](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/architecture/current-implementation.md) |
-| **Code Playground** | • [Code Editor & Multi-File Architecture Guide](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/code-editor/code-editor-and-multi-file-guide.md)<br>• [PRD: Interactive Code Playground](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/prd/prd-interactive-code-playground.md) |
-| **Decision Engine** | • [GoF Decision Engine & Copilot Specification](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/decision-engine/decision-engine-architecture.md)<br>• [PRD: GoF Decision Engine](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/prd/prd-decision-engine.md)<br>• [Stage-2 Wireframes & Investigation](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/decision-engine/decision-engine-stage-2-wireframes.md) |
-| **Future Extensions** | • [Roadmap, Full-Stack PostgreSQL & Migration Guide](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/future-extensions/roadmap-and-extensions.md) |
-| **Research & Reports** | • [Enterprise Cloud Validation Report](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/investigation/enterprise-cloud-validation-report.md)<br>• [Pattern Authenticity & Dual-Example Architecture](file:///h:/System%20design/design-pattern/replet/design-patterns/docs/investigation/pattern-authenticity-and-dual-example-architecture.md) |
+| **🚀 Setup & Run Guide** | • [Getting Started: Setup & Running Guide](./docs/setup-guide/getting-started.md) — Prerequisites, installation, frontend & backend startup, env vars, troubleshooting |
+| **System Architecture** | • [System Architecture Specification](./docs/architecture/system-architecture.md)<br>• [Current Implementation & Feature Catalog](./docs/architecture/current-implementation.md) |
+| **Code Playground** | • [Code Editor & Multi-File Architecture Guide](./docs/code-editor/code-editor-and-multi-file-guide.md)<br>• [PRD: Interactive Code Playground](./docs/prd/prd-interactive-code-playground.md) |
+| **Decision Engine** | • [GoF Decision Engine & Copilot Specification](./docs/decision-engine/decision-engine-architecture.md)<br>• [PRD: GoF Decision Engine](./docs/prd/prd-decision-engine.md)<br>• [Stage-2 Wireframes & Investigation](./docs/decision-engine/decision-engine-stage-2-wireframes.md) |
+| **Future Extensions** | • [Roadmap, Full-Stack PostgreSQL & Migration Guide](./docs/future-extensions/roadmap-and-extensions.md) |
+| **Research & Reports** | • [Enterprise Cloud Validation Report](./docs/investigation/enterprise-cloud-validation-report.md)<br>• [Pattern Authenticity & Dual-Example Architecture](./docs/investigation/pattern-authenticity-and-dual-example-architecture.md) |
 
 ---
 
