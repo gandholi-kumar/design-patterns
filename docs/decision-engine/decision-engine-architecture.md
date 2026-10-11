@@ -7,7 +7,7 @@
 
 ## 1. What We Achieved (Current Application Status)
 
-The **GoF Decision Engine** ([artifacts/pattern-masterclass/src/pages/DecisionEnginePage.tsx](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/pattern-masterclass/src/pages/DecisionEnginePage.tsx)) is a production-grade architectural guidance system engineered to help software developers and architects choose, validate, and debate the optimal design pattern for any system challenge.
+The **GoF Decision Engine** ([artifacts/pattern-masterclass/src/pages/DecisionEnginePage.tsx](../../artifacts/pattern-masterclass/src/pages/DecisionEnginePage.tsx)) is a production-grade architectural guidance system engineered to help software developers and architects choose, validate, and debate the optimal design pattern for any system challenge.
 
 ### 1.1 The 3 Core Pillars of Heuristic Pattern Selection
 1. **Pillar 1: Diagnostic Wizard (`DiagnosticWizard.tsx`)**:

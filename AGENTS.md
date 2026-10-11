@@ -36,7 +36,7 @@ design-patterns/
 When proposing or generating code changes in this repository, always enforce:
 
 1. **Strict Type Safety**: Never use `any`. Use `unknown` with runtime type narrowing or derive types directly from schemas (Zod or Drizzle).
-2. **Contract-First APIs**: Never write ad-hoc API types. Add endpoints to [lib/api-spec/openapi.yaml](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/api-spec/openapi.yaml) first, then regenerate with `pnpm --filter @workspace/api-spec run codegen`.
+2. **Contract-First APIs**: Never write ad-hoc API types. Add endpoints to [lib/api-spec/openapi.yaml](./lib/api-spec/openapi.yaml) first, then regenerate with `pnpm --filter @workspace/api-spec run codegen`.
 3. **Modular Component Architecture**: Avoid "God components". Decompose UI screens into focused components under `src/components/` and routes under `src/pages/`.
 4. **Boundary Validation**: Every external input (HTTP request body, query parameter, uploaded backup file) must be validated using Zod at runtime.
 5. **No Premature Optimization or Hallucinated Dependencies**: Do not install unverified third-party libraries. Utilize the existing catalog defined in `pnpm-workspace.yaml`.
@@ -45,13 +45,13 @@ When proposing or generating code changes in this repository, always enforce:
 
 ## 3. Modular Rule Index
 
-Specific engineering standards are partitioned into modular rules inside [`.agents/rules/`](file:///h:/System%20design/design-pattern/replet/design-patterns/.agents/rules/):
+Specific engineering standards are partitioned into modular rules inside [`.agents/rules/`](./.agents/rules/):
 
 | Rule Document | Domain & Scope |
 | :--- | :--- |
-| **[frontend.md](file:///h:/System%20design/design-pattern/replet/design-patterns/.agents/rules/frontend.md)** | React 19 best practices, JSX hygiene, custom hooks, accessible UI primitives, and Tailwind CSS v4 design tokens. |
-| **[state-management.md](file:///h:/System%20design/design-pattern/replet/design-patterns/.agents/rules/state-management.md)** | The 4-Layer State Architecture: TanStack Query (server), Zustand (global client), `useState`/`useReducer` (local), and Context (static values). |
-| **[backend.md](file:///h:/System%20design/design-pattern/replet/design-patterns/.agents/rules/backend.md)** | Node.js & Express 5 standards, Clean Architecture layers, Drizzle ORM queries, error middleware, and graceful shutdown. |
+| **[frontend.md](./.agents/rules/frontend.md)** | React 19 best practices, JSX hygiene, custom hooks, accessible UI primitives, and Tailwind CSS v4 design tokens. |
+| **[state-management.md](./.agents/rules/state-management.md)** | The 4-Layer State Architecture: TanStack Query (server), Zustand (global client), `useState`/`useReducer` (local), and Context (static values). |
+| **[backend.md](./.agents/rules/backend.md)** | Node.js & Express 5 standards, Clean Architecture layers, Drizzle ORM queries, error middleware, and graceful shutdown. |
 
 ---
 

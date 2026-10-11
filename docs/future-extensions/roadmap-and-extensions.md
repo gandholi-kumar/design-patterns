@@ -37,7 +37,7 @@ This guide provides concrete, step-by-step instructions for extending the **GoF 
 Follow this 5-step workflow to connect frontend state to the PostgreSQL database via contract-first OpenAPI and Drizzle ORM:
 
 ### Step 1: Define Endpoints in `lib/api-spec/openapi.yaml`
-Add routes for progress and decision ledgers to [lib/api-spec/openapi.yaml](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/api-spec/openapi.yaml):
+Add routes for progress and decision ledgers to [lib/api-spec/openapi.yaml](../../lib/api-spec/openapi.yaml):
 
 ```yaml
 paths:

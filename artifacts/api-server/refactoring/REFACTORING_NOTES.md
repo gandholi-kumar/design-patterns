@@ -2,7 +2,7 @@
 
 **Project Type**: Node.js / Express 5 API Backend  
 **Location**: `artifacts/api-server`  
-**Primary Files**: [src/app.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/api-server/src/app.ts), [src/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/api-server/src/index.ts)
+**Primary Files**: [src/app.ts](../src/app.ts), [src/index.ts](../src/index.ts)
 
 ---
 
@@ -11,7 +11,7 @@
 ### Current Strengths
 1. **Modern Express Version**: Uses Express 5.2.1, which natively supports async route handlers and automatic promise rejection forwarding without requiring `express-async-errors`.
 2. **High-Performance Structured Logging**: Uses `pino` and `pino-http` with request/response serializers, avoiding verbose console logs.
-3. **Optimized Production Bundling**: Uses [build.mjs](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/api-server/build.mjs) via `esbuild` for fast single-bundle production output.
+3. **Optimized Production Bundling**: Uses [build.mjs](../build.mjs) via `esbuild` for fast single-bundle production output.
 
 ### Key Gaps & Vulnerabilities
 1. **Missing Centralized Error-Handling Middleware**: If an error is thrown in an async route, Express default error handling triggers, which may leak internal error details.
@@ -47,7 +47,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 };
 ```
 
-Mount it at the end of [src/app.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/api-server/src/app.ts):
+Mount it at the end of [src/app.ts](../src/app.ts):
 ```typescript
 app.use("/api", router);
 app.use(errorHandler); // Must be placed after all routes
@@ -56,7 +56,7 @@ app.use(errorHandler); // Must be placed after all routes
 ---
 
 ### Action 2: Implement Graceful Shutdown & Database Teardown
-Update [src/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/api-server/src/index.ts):
+Update [src/index.ts](../src/index.ts):
 
 ```typescript
 import app from "./app";

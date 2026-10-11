@@ -24,7 +24,7 @@
 Ensure the following tools are installed on your machine before proceeding:
 
 | Tool | Minimum Version | Purpose | Install |
-|------|----------------|---------|---------|
+| ------ | ---------------- | --------- | --------- |
 | **Node.js** | `v20.x LTS` or higher | JavaScript runtime | [nodejs.org](https://nodejs.org/) |
 | **pnpm** | `v9.x` or `v10.x` | Monorepo package manager | `npm install -g pnpm` |
 | **Git** | `2.x+` | Source control | [git-scm.com](https://git-scm.com/) |
@@ -106,7 +106,7 @@ On successful startup, Vite will display:
 ### Application modules available
 
 | Module | Route | Status |
-|--------|-------|--------|
+| -------- | ------- | -------- |
 | The Library | `/` | ✅ Production |
 | Interactive Code Playground | `/playground` | ✅ Production |
 | GoF Decision Engine | `/decision` | ✅ Production |
@@ -124,16 +124,19 @@ The backend is an **Express 5 + Node.js** service (`@workspace/api-server`) that
 ### Step 1: Set the PORT environment variable
 
 **macOS / Linux / WSL:**
+
 ```bash
 export PORT=3000
 ```
 
 **Windows (PowerShell):**
+
 ```powershell
- = "3000"
+set PORT="3000"
 ```
 
 **Windows (Command Prompt):**
+
 ```cmd
 set PORT=3000
 ```
@@ -145,6 +148,7 @@ pnpm --filter @workspace/api-server run dev
 ```
 
 The `dev` script performs two steps automatically:
+
 1. **Build** — Compiles TypeScript via `esbuild` (`node ./build.mjs`)
 2. **Start** — Launches the compiled server (`node --enable-source-maps ./dist/index.mjs`)
 
@@ -167,12 +171,14 @@ pnpm --filter @workspace/api-server run dev | npx pino-pretty
 The frontend Vite dev server is pre-configured to proxy all `/api` requests to `http://localhost:3000`, so no manual CORS setup is needed.
 
 **Terminal 1 — Backend:**
+
 ```bash
 export PORT=3000
 pnpm --filter @workspace/api-server run dev
 ```
 
 **Terminal 2 — Frontend:**
+
 ```bash
 pnpm run dev
 ```
@@ -201,7 +207,7 @@ server: {
 ### Frontend (`pattern-masterclass`)
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| ---------- | --------- | ------------- |
 | `PORT` | `5173` | Port for the Vite dev server |
 | `BASE_PATH` | `/` | Base URL path prefix for subdirectory deployments |
 | `NODE_ENV` | `development` | Enables/disables Replit dev plugins |
@@ -209,7 +215,7 @@ server: {
 ### Backend (`api-server`)
 
 | Variable | Required | Description |
-|----------|----------|-------------|
+| ---------- | ---------- | ------------- |
 | `PORT` | **Required** | Port for the Express server (e.g. `3000`) |
 | `NODE_ENV` | Recommended | Set to `development` or `production` |
 | `DATABASE_URL` | Future | PostgreSQL connection string for full-stack persistence |
@@ -283,6 +289,7 @@ pnpm --filter @workspace/db run generate
 **Cause:** Starting the API server without setting `PORT`.
 
 **Fix:**
+
 ```bash
 export PORT=3000 && pnpm --filter @workspace/api-server run dev
 # PowerShell:
@@ -294,6 +301,7 @@ export PORT=3000 && pnpm --filter @workspace/api-server run dev
 ### Error: pnpm: command not found
 
 **Fix:** Use npx to run pnpm without a global install:
+
 ```bash
 npx -y pnpm@10 install
 npx -y pnpm@10 run dev
@@ -304,6 +312,7 @@ npx -y pnpm@10 run dev
 ### Error: Port 5173 / 3000 already in use
 
 **Fix:** Kill the occupying process or use a different port:
+
 ```bash
 PORT=5174 pnpm run dev          # different frontend port
 PORT=3001 pnpm --filter @workspace/api-server run dev  # different backend port
@@ -318,6 +327,7 @@ Remember to update the Vite proxy `target` in `vite.config.ts` if you change the
 **Cause:** Stale `*.tsbuildinfo` cache files.
 
 **Fix:**
+
 ```bash
 # macOS/Linux:
 find . -name "*.tsbuildinfo" -delete && pnpm run typecheck
@@ -334,6 +344,7 @@ pnpm run typecheck
 **Cause:** JDK not installed or `java` is not on your PATH.
 
 **Fix:**
+
 1. Download and install [JDK 25 LTS](https://openjdk.org/projects/jdk/25/)
 2. Verify: `java --version`
 3. Ensure `JAVA_HOME` is correctly set in your shell profile
@@ -347,6 +358,7 @@ TypeScript execution still works without Java — only Java snippets require a J
 **Cause:** A deprecated model name was used.
 
 **How the app handles this:** The application uses **dynamic model discovery** — it calls the Gemini Models API to list available models at runtime, so it automatically adapts to new model versions. If you still see this error:
+
 1. Open the BYOK key manager in the Decision Engine
 2. Enter a valid Google Gemini API key
 3. Click Connect — the app will run a live test and auto-discover available models
@@ -364,7 +376,7 @@ TypeScript execution still works without Java — only Java snippets require a J
 ## 10. Project Port Map
 
 | Service | Default Port | URL | Environment Variable |
-|---------|-------------|-----|---------------------|
+| --------- | ------------- | ----- | --------------------- |
 | Frontend dev server | `5173` | `http://localhost:5173` | `PORT` |
 | Backend API server | `3000` | `http://localhost:3000` | `PORT` |
 | Frontend preview (prod) | `5173` | `http://localhost:5173` | `PORT` |
@@ -374,7 +386,7 @@ TypeScript execution still works without Java — only Java snippets require a J
 ## Related Documentation
 
 | Document | Description |
-|----------|-------------|
+| ---------- | ------------- |
 | [System Architecture](../architecture/system-architecture.md) | High-level monorepo topology and sequence diagrams |
 | [Current Implementation](../architecture/current-implementation.md) | All 5 feature screens and implementation catalog |
 | [Code Editor Guide](../code-editor/code-editor-and-multi-file-guide.md) | Interactive playground operations and execution engines |

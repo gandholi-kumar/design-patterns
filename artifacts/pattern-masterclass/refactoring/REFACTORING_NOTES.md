@@ -9,7 +9,7 @@
 ## 1. Architectural Diagnosis
 
 ### 1.1 The "God Component" Anti-Pattern
-[src/App.tsx](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/pattern-masterclass/src/App.tsx) currently houses **15+ distinct components, utilities, and models** in a single file:
+[src/App.tsx](../src/App.tsx) currently houses **15+ distinct components, utilities, and models** in a single file:
 * **Views**: `Catalog`, `Decision`, `Playground`, `Simulators`, `QuizLab`, `NotFound`
 * **Modals**: `PatternDialog`, `BackupDialog`
 * **Sub-views**: `PatternOverview`, `PatternCode`, `PatternTradeoffs`, `PageIntro`, `PatternCard`
@@ -302,5 +302,5 @@ export const SIMULATORS: Record<string, SimulatorDriver> = {
 
 ### Action 5: Prune Unused UI Components
 There are 55 components in `src/components/ui/`. Either:
-1. Replace hand-rolled elements in `App.tsx` (`<div className="modal-backdrop">`) with `<Dialog>` from [src/components/ui/dialog.tsx](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/pattern-masterclass/src/components/ui/dialog.tsx) to gain proper ARIA accessibility and focus traps.
+1. Replace hand-rolled elements in `App.tsx` (`<div className="modal-backdrop">`) with `<Dialog>` from [src/components/ui/dialog.tsx](../src/components/ui/dialog.tsx) to gain proper ARIA accessibility and focus traps.
 2. Or delete unused files in `src/components/ui/` to eliminate dead code.

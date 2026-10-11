@@ -8,7 +8,7 @@ This document details the concrete implementation state across all packages and 
 
 ### 1.1 Five Primary Application Views
 
-The client application ([artifacts/pattern-masterclass/](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/pattern-masterclass)) is structured around five core views mounted in `App.tsx`:
+The client application ([artifacts/pattern-masterclass/](../../artifacts/pattern-masterclass)) is structured around five core views mounted in `App.tsx`:
 
 | View | Route | Current Status | Key Features |
 | :--- | :--- | :--- | :--- |
@@ -95,7 +95,7 @@ The application employs a 4-layer state management model:
 4. **Zero-Trust Ephemeral Key State**: AI API keys are held strictly in React RAM within `BYOKModal.tsx` and purged upon tab closure.
 
 ### 2.2 Shared Backend Infrastructure (`artifacts/api-server`)
-* **Framework**: Node.js with Express 5 ([src/app.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/api-server/src/app.ts)).
+* **Framework**: Node.js with Express 5 ([src/app.ts](../../artifacts/api-server/src/app.ts)).
 * **Logging**: Structured JSON logging powered by `pino` and `pino-http`.
 * **Middlewares**: CORS, JSON body parsers, URL-encoded parsers, error boundary middleware.
 * **Endpoints**:
@@ -104,8 +104,8 @@ The application employs a 4-layer state management model:
 
 ### 2.3 Database Layer (`lib/db`)
 * **Driver**: Node Postgres (`pg` module using connection pooling via `new Pool()`).
-* **ORM**: **Drizzle ORM** ([src/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/src/index.ts)).
-* **Configuration**: [drizzle.config.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/db/drizzle.config.ts) expects a `DATABASE_URL` environment variable.
+* **ORM**: **Drizzle ORM** ([src/index.ts](../../lib/db/src/index.ts)).
+* **Configuration**: [drizzle.config.ts](../../lib/db/drizzle.config.ts) expects a `DATABASE_URL` environment variable.
 
 ---
 

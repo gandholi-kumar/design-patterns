@@ -6,7 +6,7 @@ This document provides a comprehensive operational guide for the **GoF Design Pa
 
 ## 1. What We Achieved (Current Application Status)
 
-The Code Playground ([artifacts/pattern-masterclass/src/pages/PlaygroundPage.tsx](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/pattern-masterclass/src/pages/PlaygroundPage.tsx)) is a production-grade, interactive, multi-file virtual workspace embedded directly in the Masterclass application.
+The Code Playground ([artifacts/pattern-masterclass/src/pages/PlaygroundPage.tsx](../../artifacts/pattern-masterclass/src/pages/PlaygroundPage.tsx)) is a production-grade, interactive, multi-file virtual workspace embedded directly in the Masterclass application.
 
 ### Key Milestones Achieved:
 1. **Real Execution Engines (Zero Static Mocking)**:

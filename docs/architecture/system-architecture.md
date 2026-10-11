@@ -99,7 +99,7 @@ graph TB
 ## 3. How It Is (Technical Subsystems & Data Flow)
 
 ### 3.1 Contract-First API & Code Generation Pipeline
-All backend endpoints are contractually governed by [lib/api-spec/openapi.yaml](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/api-spec/openapi.yaml):
+All backend endpoints are contractually governed by [lib/api-spec/openapi.yaml](../../lib/api-spec/openapi.yaml):
 
 ```mermaid
 flowchart LR
@@ -114,10 +114,10 @@ flowchart LR
 
 | Package | Role | Key File |
 | :--- | :--- | :--- |
-| **`lib/api-spec`** | Single Source of Truth for all API endpoints and schemas. | [openapi.yaml](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/api-spec/openapi.yaml) |
-| **`lib/api-zod`** | Compiles schemas into runtime validators for input/output boundaries. | [src/index.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/api-zod/src/index.ts) |
-| **`lib/api-client-react`** | Auto-generates React Query hooks with automatic caching and retry logic. | [src/custom-fetch.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/lib/api-client-react/src/custom-fetch.ts) |
-| **`artifacts/api-server`** | Implements route handlers, middlewares (CORS, Pino logging), and Java execution sandbox. | [src/app.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/api-server/src/app.ts) |
+| **`lib/api-spec`** | Single Source of Truth for all API endpoints and schemas. | [openapi.yaml](../../lib/api-spec/openapi.yaml) |
+| **`lib/api-zod`** | Compiles schemas into runtime validators for input/output boundaries. | [src/index.ts](../../lib/api-zod/src/index.ts) |
+| **`lib/api-client-react`** | Auto-generates React Query hooks with automatic caching and retry logic. | [src/custom-fetch.ts](../../lib/api-client-react/src/custom-fetch.ts) |
+| **`artifacts/api-server`** | Implements route handlers, middlewares (CORS, Pino logging), and Java execution sandbox. | [src/app.ts](../../artifacts/api-server/src/app.ts) |
 
 ---
 

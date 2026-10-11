@@ -2,7 +2,7 @@
 
 **Project Type**: Vite + React Prototyping Sandbox  
 **Location**: `artifacts/mockup-sandbox`  
-**Primary Files**: [src/App.tsx](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/mockup-sandbox/src/App.tsx), [mockupPreviewPlugin.ts](file:///h:/System%20design/design-pattern/replet/design-patterns/artifacts/mockup-sandbox/mockupPreviewPlugin.ts)
+**Primary Files**: [src/App.tsx](../src/App.tsx), [mockupPreviewPlugin.ts](../mockupPreviewPlugin.ts)
 
 ---
 
