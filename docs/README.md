@@ -14,6 +14,7 @@ docs/
 ├── decision-engine/        # 3-Pillar Decision Engine specs, zero-trust BYOK, stage-2 wireframes
 ├── prd/                    # Product Requirements Documents (PRD) for all core modules
 ├── future-extensions/      # Full-stack PostgreSQL guide, multi-language expansion roadmap
+├── audit/                  # Architecture, code standards, security & quality gate audit reports
 └── investigation/          # Architectural validation reports & cloud enterprise research
 ```
 
@@ -49,12 +50,19 @@ docs/
 
 ### F. Future Extensions & Full-Stack Roadmap
 * **[Future Extensions, Architecture Roadmap & Migration Guide](./future-extensions/roadmap-and-extensions.md)**: Actionable 5-step blueprint for wiring PostgreSQL persistence via Drizzle ORM, multi-language sandbox runners (Python Pyodide WASM, Go, Rust, C#), interactive visual simulator engines, and Leitner spaced repetition quiz lab.
+* **[Cloud Deployment, Dockerization & High-Scale Architecture Plan](./future-extensions/cloud-deployment-and-architecture-plan.md)**: Complete guide covering free frontend/backend hosting platform evaluations (Cloudflare Pages, Render, Koyeb, Neon), multi-stage Dockerfile with OpenJDK runtime, code adjustments for cloud portability, and high-load microservices scaling architecture.
+
 
 ---
 
 ### G. Architectural Research & Investigation
 * **[Enterprise Cloud Validation Report](./investigation/enterprise-cloud-validation-report.md)**: Formal verification and mapping of all 23 patterns to cloud-native microservice and Kubernetes primitives.
 * **[Pattern Authenticity & Dual-Example Architecture](./investigation/pattern-authenticity-and-dual-example-architecture.md)**: Original GoF literature analysis ensuring historical fidelity and modern relevance.
+
+---
+
+### H. Architecture & Code Standards Audits
+* **[Comprehensive Architecture & Code Standards Audit](./audit/codebase-architecture-standards-audit.md)**: In-depth evaluation of monorepo topology, contract-first enforcement, 4-layer state management gap analysis, backend Clean Architecture compliance, dependency CVE scan, Java sandbox security assessment, and prioritized remediation roadmap.
 
 ---
 
