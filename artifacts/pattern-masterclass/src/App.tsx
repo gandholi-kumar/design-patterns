@@ -1,13 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Route, Switch, useLocation } from 'wouter';
 import {
-  ArrowDownUp, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Check, ChevronDown,
+  ArrowDownUp, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Building2, Check, ChevronDown,
   ChevronLeft, ChevronRight, CircleHelp, Code2, Compass, Copy, Download, FileJson2,
-  Filter, GitBranch, Layers3, Lightbulb, Menu, Moon, Play, RotateCcw, Search, Settings2,
+  Filter, GitBranch, GraduationCap, Layers3, Lightbulb, Menu, Moon, PanelLeftClose, PanelLeftOpen, Play, RotateCcw, Search, Settings2,
   ShieldCheck, Sun, Terminal, X, Zap,
 } from 'lucide-react';
 import { PATTERNS, QUIZ, type Pattern } from './data';
+import type { Perspective } from './pattern-types';
 import { PatternDiagrams } from './PatternDiagrams';
+import { useIsMobile } from './hooks/use-mobile';
+import { PatternDetailPage } from './pages/PatternDetailPage';
+import { AppTooltip } from './components/ui/app-tooltip';
+import {
+  PatternOverview,
+  PatternCode,
+  PatternTradeoffs,
+} from './components/PatternDetailSections';
 
 type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz';
 type Progress = { attempts: number; correct: number; bookmarked: boolean; note: string; box: number };
@@ -42,10 +51,76 @@ function App() {
   const [mobileNav, setMobileNav] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
-  useEffect(() => { localStorage.setItem(STORE, JSON.stringify(saved)); document.documentElement.classList.toggle('dark', saved.theme === 'dark'); }, [saved]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('gof-sidebar-collapsed') === 'true';
+  });
+  const [perspective, setPerspective] = useState<Perspective>(() => {
+    const stored = localStorage.getItem('gof-perspective');
+    return stored === 'enterprise' ? 'enterprise' : 'canonical';
+  });
+  const isMobile = useIsMobile();
+
+  const handleSetPerspective = (p: Perspective) => {
+    setPerspective(p);
+    localStorage.setItem('gof-perspective', p);
+  };
+
+  useEffect(() => {
+    localStorage.setItem(STORE, JSON.stringify(saved));
+    document.documentElement.classList.toggle('dark', saved.theme === 'dark');
+  }, [saved]);
+
+  useEffect(() => {
+    localStorage.setItem('gof-sidebar-collapsed', String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  // Global Ctrl+B / Cmd+B keyboard shortcut for toggling sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        setSidebarCollapsed(c => !c);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const patchSaved = (f: (s: Saved) => Saved) => setSaved(s => f(s));
   const togglePatternBookmark = (id: string) => patchSaved(s => ({ ...s, bookmarks: s.bookmarks.includes(id) ? s.bookmarks.filter(x => x !== id) : [...s.bookmarks, id] }));
-  const page = nav.find(n => n.path === loc)?.id || 'catalog';
+  const handleSelectPattern = (pattern: Pattern) => {
+    if (isMobile) {
+      setSelected(pattern);
+    } else {
+      const qs = window.location.search;
+      setLoc(`/pattern/${pattern.id}${qs}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const isPatternPage = loc.startsWith('/pattern/');
+  const patternIdFromUrl = isPatternPage ? loc.split('/pattern/')[1]?.split('?')[0] : null;
+  const activePattern = patternIdFromUrl ? PATTERNS.find(p => p.id === patternIdFromUrl) : null;
+
+  const queryParams = useMemo(() => new URLSearchParams(window.location.search), [loc]);
+  const familyFilter = queryParams.get('family');
+  const searchQuery = queryParams.get('q');
+  const backLabel = useMemo(() => {
+    if (familyFilter && familyFilter !== 'All patterns') {
+      return `Back to ${familyFilter} patterns`;
+    }
+    if (searchQuery) {
+      return `Back to results ("${searchQuery}")`;
+    }
+    return 'Back to library';
+  }, [familyFilter, searchQuery]);
+
+  const handleBack = () => {
+    const qs = window.location.search;
+    setLoc(`/${qs}`);
+  };
+
+  const page = isPatternPage ? 'catalog' : (nav.find(n => n.path === loc)?.id || 'catalog');
   const progressList = Object.values(saved.progress);
   const onExport = () => {
     const blob = new Blob([JSON.stringify({ version: '1.0.0', exportTimestamp: new Date().toISOString(), ...saved, settings: { theme: saved.theme, codeExperienceMode: saved.mode, activeCategoryFilter: 'All' }, quizProgress: saved.progress }, null, 2)], { type: 'application/json' });
@@ -75,9 +150,25 @@ function App() {
     link.download = 'pattern-masterclass-workspace-source.zip';
     link.click();
   };
-  return <div className="app-frame grain">
+  return <div className={`app-frame grain ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
-      <div className="brand-row"><div className="brand-mark"><Layers3 size={20}/></div><div><strong>Pattern</strong><span>MASTERCLASS / 01</span></div><button className="icon-btn mobile-close" aria-label="Close navigation" onClick={() => setMobileNav(false)}><X size={18}/></button></div>
+      <div className="brand-row">
+        <Link
+          href="/"
+          className="brand-link"
+          onClick={() => {
+            setMobileNav(false);
+            setSavedOnly(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          aria-label="Go to pattern catalog homepage"
+          data-testid="brand-home-link"
+        >
+          <div className="brand-mark"><Layers3 size={20}/></div>
+          <div><strong>Pattern</strong><span>MASTERCLASS / 01</span></div>
+        </Link>
+        <button className="icon-btn mobile-close" aria-label="Close navigation" onClick={() => setMobileNav(false)}><X size={18}/></button>
+      </div>
       <div className="side-kicker">LEARNING PATH</div>
       <nav className="side-nav" aria-label="Main navigation">{nav.map(item => { const Icon = item.icon; return <Link key={item.id} href={item.path} onClick={() => { setMobileNav(false); setSavedOnly(false); }} className={`nav-item ${page === item.id ? 'active' : ''}`} data-testid={`nav-${item.id}`}><Icon size={17}/><span>{item.name}</span>{item.id === 'catalog' && <span className="nav-count">23</span>}</Link>; })}</nav>
       <div className="side-divider"/>
@@ -90,32 +181,170 @@ function App() {
     </aside>
     {mobileNav && <button className="scrim" aria-label="Close navigation" onClick={() => setMobileNav(false)}/>}
     <main className="main-column">
-      <header className="topbar"><button className="icon-btn mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={20}/></button><div className="crumb"><span>GOF DESIGN PATTERNS</span><ChevronRight size={13}/><b>{nav.find(n => n.id === page)?.name.toUpperCase()}</b></div><div className="top-actions"><button className="theme-toggle" onClick={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} aria-label={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`} data-testid="toggle-theme">{saved.theme === 'light' ? <Moon size={16}/> : <Sun size={16}/>}<span>{saved.theme === 'light' ? 'Light' : 'Dark'}</span></button><button className="avatar" title="Your learning space">M</button></div></header>
-      <div className="workspace">
+      <header className="topbar">
+        <div className="topbar-left">
+          <button className="icon-btn mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={20}/></button>
+          
+          <AppTooltip content={sidebarCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"} shortcut="Ctrl+B">
+            <button
+              className="icon-btn desktop-sidebar-toggle"
+              onClick={() => setSidebarCollapsed(c => !c)}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              data-testid="toggle-sidebar"
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={18}/> : <PanelLeftClose size={18}/>}
+            </button>
+          </AppTooltip>
+
+          {isPatternPage && (
+            <AppTooltip content={`${backLabel} (Esc)`} shortcut="Esc">
+              <button
+                className="icon-btn topbar-back-btn"
+                onClick={handleBack}
+                aria-label={backLabel}
+                data-testid="topbar-back-btn"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            </AppTooltip>
+          )}
+
+          <div className="crumb">
+            <button
+              type="button"
+              className="crumb-root-link"
+              onClick={() => setLoc('/')}
+              title="Go to Library"
+              aria-label="Go to Library"
+              data-testid="crumb-root-link"
+            >
+              GOF DESIGN PATTERNS
+            </button>
+            <ChevronRight size={13}/>
+            <b>{isPatternPage && activePattern ? activePattern.name.toUpperCase() : (nav.find(n => n.id === page)?.name.toUpperCase())}</b>
+          </div>
+        </div>
+
+        <div className="top-actions">
+          {isPatternPage && activePattern && (
+            <>
+              <AppTooltip
+                content={saved.bookmarks.includes(activePattern.id) ? "Saved in bookmarks (B)" : "Save to bookmarks (B)"}
+                shortcut="B"
+              >
+                <button
+                  className={`icon-btn topbar-action-btn ${saved.bookmarks.includes(activePattern.id) ? 'saved' : ''}`}
+                  onClick={() => togglePatternBookmark(activePattern.id)}
+                  aria-label={saved.bookmarks.includes(activePattern.id) ? "Remove bookmark" : "Save pattern"}
+                  data-testid="topbar-bookmark-btn"
+                >
+                  {saved.bookmarks.includes(activePattern.id) ? <BookmarkCheck size={17} /> : <Bookmark size={17} />}
+                </button>
+              </AppTooltip>
+
+              <AppTooltip content="Open in live playground (P)" shortcut="P">
+                <button
+                  className="icon-btn topbar-action-btn playground-btn"
+                  onClick={() => setLoc('/playground')}
+                  aria-label="Open in playground"
+                  data-testid="topbar-playground-btn"
+                >
+                  <Code2 size={17} />
+                </button>
+              </AppTooltip>
+            </>
+          )}
+
+          <div className="topbar-perspective-toggle" role="radiogroup" aria-label="Perspective switch">
+            <AppTooltip content="Canonical (Refactoring Guru / GoF Academic)">
+              <button
+                role="radio"
+                aria-checked={perspective === 'canonical'}
+                aria-label="Canonical perspective"
+                className={`topbar-perspective-btn ${perspective === 'canonical' ? 'active' : ''}`}
+                onClick={() => handleSetPerspective('canonical')}
+                data-testid="global-perspective-canonical"
+              >
+                <GraduationCap size={15} />
+              </button>
+            </AppTooltip>
+
+            <AppTooltip content="Enterprise Cloud (Production Distributed Systems)">
+              <button
+                role="radio"
+                aria-checked={perspective === 'enterprise'}
+                aria-label="Enterprise Cloud perspective"
+                className={`topbar-perspective-btn ${perspective === 'enterprise' ? 'active' : ''}`}
+                onClick={() => handleSetPerspective('enterprise')}
+                data-testid="global-perspective-enterprise"
+              >
+                <Building2 size={15} />
+              </button>
+            </AppTooltip>
+          </div>
+
+          <AppTooltip content={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`}>
+            <button className="theme-toggle" onClick={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} aria-label={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`} data-testid="toggle-theme">{saved.theme === 'light' ? <Moon size={16}/> : <Sun size={16}/>}<span>{saved.theme === 'light' ? 'Light' : 'Dark'}</span></button>
+          </AppTooltip>
+
+          <button className="avatar" title="Your learning space">M</button>
+        </div>
+      </header>
+      <div className={`workspace ${isPatternPage ? 'workspace-studio' : ''}`}>
         <Switch>
-          <Route path="/"><Catalog saved={saved} savedOnly={savedOnly} clearSaved={() => setSavedOnly(false)} onBookmark={togglePatternBookmark} onSelect={setSelected}/></Route>
-          <Route path="/decision-engine"><Decision onSelect={setSelected}/></Route>
+          <Route path="/"><Catalog saved={saved} savedOnly={savedOnly} clearSaved={() => setSavedOnly(false)} onBookmark={togglePatternBookmark} onSelect={handleSelectPattern}/></Route>
+          <Route path="/pattern/:id">{(params) => <PatternDetailPage id={params.id} saved={saved} globalPerspective={perspective} onBookmark={togglePatternBookmark} goPlayground={() => setLoc('/playground')} />}</Route>
+          <Route path="/decision-engine"><Decision onSelect={handleSelectPattern}/></Route>
           <Route path="/playground"><Playground saved={saved} setSaved={setSaved}/></Route>
-          <Route path="/simulators"><Simulators onSelect={setSelected}/></Route>
+          <Route path="/simulators"><Simulators onSelect={handleSelectPattern}/></Route>
           <Route path="/quiz-lab"><QuizLab saved={saved} setSaved={setSaved}/></Route>
           <Route><NotFound goHome={() => setLoc('/')}/></Route>
         </Switch>
       </div>
-      <footer className="global-footer"><span>BUILT AROUND THE GANG OF FOUR · 1994</span><span>23 patterns <i/> three families <i/> one shared language</span></footer>
+      {!isPatternPage && (
+        <footer className="global-footer"><span>BUILT AROUND THE GANG OF FOUR · 1994</span><span>23 patterns <i/> three families <i/> one shared language</span></footer>
+      )}
     </main>
-    {selected && <PatternDialog pattern={selected} saved={saved} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc('/playground'); }}/>}
+    {selected && <PatternDialog pattern={selected} saved={saved} perspective={perspective} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc('/playground'); }}/>}
     {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} />}
   </div>;
 }
 
 function Catalog({ saved, savedOnly, clearSaved, onBookmark, onSelect }: { saved: Saved; savedOnly: boolean; clearSaved: () => void; onBookmark: (id: string) => void; onSelect: (p: Pattern) => void }) {
-  const [filter, setFilter] = useState('All patterns'); const [query, setQuery] = useState(''); const [sort, setSort] = useState('A–Z');
+  const [filter, setFilter] = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('family') || 'All patterns';
+  });
+  const [query, setQuery] = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('q') || '';
+  });
+  const [searchInput, setSearchInput] = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('q') || '';
+  });
+  const [sort, setSort] = useState(() => {
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('sort') || 'A–Z';
+  });
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); searchRef.current?.focus(); } };
     window.addEventListener('keydown', shortcut);
     return () => window.removeEventListener('keydown', shortcut);
   }, []);
+  useEffect(() => {
+    if (window.location.pathname !== '/') return;
+    const sp = new URLSearchParams(window.location.search);
+    if (filter !== 'All patterns') sp.set('family', filter); else sp.delete('family');
+    if (query.trim()) sp.set('q', query.trim()); else sp.delete('q');
+    if (sort !== 'A–Z') sp.set('sort', sort); else sp.delete('sort');
+    const qs = sp.toString() ? `?${sp.toString()}` : '/';
+    window.history.replaceState(null, '', qs);
+  }, [filter, query, sort]);
+  const handleSearch = () => {
+    setQuery(searchInput.trim());
+  };
   const list = useMemo(() => {
     let items = PATTERNS.filter(p => (filter === 'All patterns' || p.category === filter) && (!savedOnly || saved.bookmarks.includes(p.id)) && (!query || `${p.name} ${p.category} ${p.tagline} ${p.intent}`.toLowerCase().includes(query.toLowerCase())));
     if (sort === 'A–Z') items = [...items].sort((a,b) => a.name.localeCompare(b.name));
@@ -124,12 +353,20 @@ function Catalog({ saved, savedOnly, clearSaved, onBookmark, onSelect }: { saved
     return items;
   }, [filter, query, sort, saved.bookmarks, savedOnly]);
   const families = ['Creational','Structural','Behavioral'] as const;
+  const clearFilters = () => {
+    setSearchInput('');
+    setQuery('');
+    setFilter('All patterns');
+    setSort('A–Z');
+    window.history.replaceState(null, '', '/');
+    if (savedOnly) clearSaved();
+  };
   return <div className="page-content reveal">
     <section className="catalog-hero"><div className="hero-copy"><div className="eyebrow"><span className="eyebrow-line"/>THE ORIGINAL 23 · REIMAGINED FOR PRACTICE</div><h1>Patterns are<br/><em>decisions</em> made visible.</h1><p>A field guide to the recurring problems behind resilient software. Learn the shape, know the trade-off, recognize when it fits.</p><div className="hero-meta"><span><b>23</b> classic patterns</span><span><b>03</b> pattern families</span><span><b>01</b> working vocabulary</span></div></div><div className="orbit-art" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit orbit-three"/><div className="orbit-core"><Layers3 size={25}/></div><span className="orbit-node n1">01</span><span className="orbit-node n2">02</span><span className="orbit-node n3">03</span></div></section>
-    <section className="catalog-toolbar"><div className="toolbar-title"><span className="eyebrow">THE LIBRARY</span><h2>{savedOnly ? 'Your saved patterns' : 'Browse the collection'} <span>{list.length.toString().padStart(2,'0')}</span></h2></div><div className="toolbar-controls"><label className="searchbox"><Search size={16}/><input ref={searchRef} aria-label="Search patterns" placeholder="Find a pattern…" value={query} onChange={e => setQuery(e.target.value)} data-testid="pattern-search"/><kbd>⌘ K</kbd></label><label className="select-wrap"><Filter size={14}/><select aria-label="Sort patterns" value={sort} onChange={e => setSort(e.target.value)} data-testid="pattern-sort"><option>A–Z</option><option>Family</option><option>Saved first</option></select><ChevronDown size={13}/></label></div></section>
+    <section className="catalog-toolbar"><div className="toolbar-title"><span className="eyebrow">THE LIBRARY</span><h2>{savedOnly ? 'Your saved patterns' : 'Browse the collection'} <span>{list.length.toString().padStart(2,'0')}</span></h2></div><div className="toolbar-controls"><div className="searchbox" role="search"><input ref={searchRef} aria-label="Search patterns" placeholder="Find a pattern…" value={searchInput} onChange={e => { setSearchInput(e.target.value); if (e.target.value === '') setQuery(''); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }} data-testid="pattern-search"/><button type="button" className="search-btn" onClick={handleSearch} title="Search patterns (Enter)" aria-label="Search patterns" data-testid="search-btn"><Search size={16}/></button></div><label className="select-wrap"><Filter size={14}/><select aria-label="Sort patterns" value={sort} onChange={e => setSort(e.target.value)} data-testid="pattern-sort"><option>A–Z</option><option>Family</option><option>Saved first</option></select><ChevronDown size={13}/></label></div></section>
     <div className="filter-row" role="group" aria-label="Filter by pattern family">{['All patterns',...families].map(f => <button className={`filter-pill ${filter === f ? 'chosen' : ''}`} key={f} onClick={() => setFilter(f)} data-testid={`filter-${f.toLowerCase().replace(' ','-')}`}>{f}{f !== 'All patterns' && <span>{PATTERNS.filter(p => p.category === f).length}</span>}</button>)}</div>
     {families.filter(f => filter === 'All patterns' || filter === f).map(family => { const entries = list.filter(p => p.category === family); if (!entries.length) return null; return <section className={`family-section family-${family.toLowerCase()}`} key={family}><div className="family-heading"><div className="family-index">{family === 'Creational' ? 'I' : family === 'Structural' ? 'II' : 'III'}</div><div><div className="family-label">{family.toUpperCase()} PATTERNS</div><h3>{family === 'Creational' ? 'How things come to be.' : family === 'Structural' ? 'How parts fit together.' : 'How objects collaborate.'}</h3></div><span className="family-total">{entries.length} patterns <ArrowDownUp size={13}/></span></div><div className="pattern-grid">{entries.map((p, i) => <PatternCard key={p.id} pattern={p} index={i} isSaved={saved.bookmarks.includes(p.id)} onBookmark={() => onBookmark(p.id)} onOpen={() => onSelect(p)}/>)}</div></section>; })}
-     {list.length === 0 && <div className="empty-state"><div className="empty-icon"><Search size={21}/></div><h3>Nothing in this corner.</h3><p>{savedOnly ? 'Save a pattern with the bookmark icon and it will be waiting here.' : 'Try a different phrase, or clear the family filter.'}</p><button className="text-button" onClick={() => { setQuery(''); setFilter('All patterns'); if (savedOnly) clearSaved(); }}>Clear filters <ArrowRight size={14}/></button></div>}
+     {list.length === 0 && <div className="empty-state"><div className="empty-icon"><Search size={21}/></div><h3>Nothing in this corner.</h3><p>{savedOnly ? 'Save a pattern with the bookmark icon and it will be waiting here.' : 'Try a different phrase, or clear the family filter.'}</p><button className="text-button" onClick={clearFilters}>Clear filters <ArrowRight size={14}/></button></div>}
     <div className="catalog-note"><Lightbulb size={17}/><p><b>A useful question:</b> what is changing, and which part of the system should own that change?</p><span>START HERE</span></div>
   </div>;
 }
@@ -239,7 +476,7 @@ function QuizLab({ saved, setSaved }: { saved: Saved; setSaved: React.Dispatch<R
   const go = (dir: number) => { setIndex(i => (i + dir + questions.length) % questions.length); };
   return <div className="page-content reveal"><PageIntro index="05 / SCENARIO LAB" title={<>Practice the<br/><em>recognition.</em></>} text="Read the constraints before the options. Choose the pattern that fits the forces at play—not the one you last studied."/><div className="quiz-dashboard"><div className="quiz-stat"><span className="eyebrow">SCENARIOS</span><b>{QUIZ.length.toString().padStart(2,'0')}</b><small>three design situations</small></div><div className="quiz-stat"><span className="eyebrow">ATTEMPTS</span><b>{progressListCount(saved)}</b><small>answers recorded</small></div><div className="quiz-stat"><span className="eyebrow">ACCURACY</span><b>{accuracy(saved)}<small>%</small></b><small>of all attempts</small></div><div className="quiz-streak"><span className="eyebrow">A NOTE TO SELF</span><p>“A scenario is a set of constraints wearing a story.”</p><span>FIELD GUIDE / 01</span></div></div><div className="quiz-controls"><div className="quiz-filter">{['All scenarios','Attempted','Bookmarked'].map(f=><button key={f} className={filter===f?'active':''} onClick={()=>{setFilter(f);setIndex(0);}} data-testid={`quiz-filter-${f.toLowerCase()}`}>{f}</button>)}</div><span>SCENARIO {String(index+1).padStart(2,'0')} <i/> {q.category.toUpperCase()} / {q.difficulty.toUpperCase()}</span></div><div className="question-layout"><article className="question-card"><div className="question-top"><span className="question-num">SCENARIO {String(q.scenarioNumber).padStart(2,'0')}</span><span className="difficulty">{q.difficulty}</span><button onClick={() => setSaved(s => {const old=s.progress[q.id] || {attempts:0,correct:0,bookmarked:false,note:'',box:1}; return {...s, progress:{...s.progress,[q.id]:{...old,bookmarked:!old.bookmarked}}};})} className={`quiz-bookmark ${current?.bookmarked?'saved':''}`} aria-label="Bookmark scenario" data-testid="quiz-bookmark"><Bookmark size={16}/></button></div><h2>{q.title}</h2><p className="scenario-text">{q.systemScenario}</p><div className="constraints"><span className="eyebrow">ARCHITECTURAL CONSTRAINTS</span>{q.architecturalConstraints.map((c,i)=><div key={c}><span>{String(i+1).padStart(2,'0')}</span>{c}</div>)}</div><div className="answer-section"><span className="eyebrow">WHICH PATTERN FITS BEST?</span><div className="answer-options">{q.options.map((o,i)=><button disabled={answered} onClick={() => answer(o.id)} className={`answer-option ${selected===o.id ? o.isCorrect?'correct':'incorrect' : answered && o.isCorrect?'correct-reveal':''}`} key={o.id} data-testid={`quiz-answer-${o.id}`}><span className="option-key">{String.fromCharCode(65+i)}</span><b>{o.patternName}</b>{selected===o.id && (o.isCorrect ? <Check size={16}/> : <X size={16}/>)}{answered && o.isCorrect && selected!==o.id && <Check size={15}/>}</button>)}</div></div>{answered && <div className={`feedback ${q.options.find(o=>o.id===selected)?.isCorrect?'feedback-good':'feedback-review'}`} aria-live="polite"><div className="feedback-icon">{q.options.find(o=>o.id===selected)?.isCorrect?<Check size={16}/>:<Lightbulb size={16}/>}</div><div><b>{q.options.find(o=>o.id===selected)?.isCorrect?'Good read.':'Look at the constraint again.'}</b><p>{q.deepExplanation}</p><small>MEMORY RULE · {q.memoryRule}</small></div></div>}<div className="question-nav"><button className="subtle-btn" onClick={() => go(-1)} data-testid="quiz-previous"><ChevronLeft size={15}/> Previous</button><div>{questions.map((item,i)=><button className={`question-dot ${i===index?'current':''} ${saved.progress[item.id]?'done':''}`} key={item.id} onClick={() => setIndex(i)} aria-label={`Go to scenario ${i+1}`}/>)}</div><button className="subtle-btn" onClick={() => go(1)} data-testid="quiz-next">Next <ChevronRight size={15}/></button></div></article><aside className="notes-card"><div className="notes-header"><div><span className="eyebrow">YOUR FIELD NOTES</span><h3>Keep a thought.</h3></div><span className="notes-mark">01</span></div><p>Write down the clue that made this pattern click.</p><textarea aria-label="Personal notes for scenario" placeholder="What did you notice about the constraints?" value={current?.note || ''} onChange={e => setSaved(s => { const old = s.progress[q.id] || {attempts:0,correct:0,bookmarked:false,note:'',box:1}; return {...s, progress:{...s.progress,[q.id]:{...old,note:e.target.value}}};})} data-testid="quiz-notes"/><div className="notes-bottom"><span><Check size={12}/> SAVED LOCALLY</span><span>BOX {current?.box || 1} / 5</span></div><div className="notes-separator"/><div className="notes-meta"><span>RECALL STAGE</span><div className="leitner">{[1,2,3,4,5].map(i=><i className={i <= (current?.box || 1)?'filled':''} key={i}/>)}</div></div><p className="leitner-copy">Correct answers move this card forward. Misses return it to the start.</p></aside></div><div className="quiz-bottom-note"><span className="eyebrow">HOW TO GET BETTER</span><p>Before choosing a name, say the decision out loud: <b>“I need to vary ___ without changing ___.”</b></p><button onClick={() => { if (window.confirm('Clear all quiz attempts, notes, and bookmarks?')) setSaved(s => ({...s, progress:{}, bookmarks:[]})); }} data-testid="reset-progress"><RotateCcw size={14}/> Reset practice</button></div></div>;
 }
-function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode }: { pattern: Pattern; saved: Saved; onClose: () => void; onBookmark: (id: string) => void; goCode: () => void }) {
+function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode, perspective = 'canonical' }: { pattern: Pattern; saved: Saved; onClose: () => void; onBookmark: (id: string) => void; goCode: () => void; perspective?: Perspective }) {
   const [tab, setTab] = useState('overview');
   useEffect(() => { const listener = (e: KeyboardEvent) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', listener); return () => window.removeEventListener('keydown', listener); }, [onClose]);
   const tabs = ['overview', 'code', 'diagrams', 'trade-offs'];
@@ -268,9 +505,9 @@ function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode }: { pat
           ))}
         </div>
         <div className="detail-scroll">
-          {tab === 'overview' && <PatternOverview pattern={p}/>}
-          {tab === 'code' && <PatternCode pattern={p} goCode={goCode}/>}
-          {tab === 'diagrams' && <PatternDiagrams patternId={p.id} patternName={p.name} theme={saved.theme}/>}
+          {tab === 'overview' && <PatternOverview pattern={p} perspective={perspective}/>}
+          {tab === 'code' && <PatternCode pattern={p} goCode={goCode} perspective={perspective}/>}
+          {tab === 'diagrams' && <PatternDiagrams patternId={p.id} patternName={p.name} theme={saved.theme} perspective={perspective}/>}
           {tab === 'trade-offs' && <PatternTradeoffs pattern={p}/>}
         </div>
         <div className="modal-foot">
@@ -280,44 +517,6 @@ function PatternDialog({ pattern: p, saved, onClose, onBookmark, goCode }: { pat
       </section>
     </div>
   );
-}
-function PatternOverview({ pattern: p }: { pattern: Pattern }) {
-  return <>
-    <div className="detail-block"><span className="eyebrow">THE INTENT</span><p className="intent-quote">{p.intent}</p></div>
-    <div className="detail-pair">
-      <div><span className="eyebrow">THE PROBLEM</span><p>{p.problem}</p></div>
-      <div><span className="eyebrow">THE SOLUTION</span><p>{p.solution}</p></div>
-    </div>
-    <div className="detail-block"><span className="eyebrow">IN THE WILD</span><p>{p.realWorldEnterpriseScenario}</p></div>
-    <div className="detail-pair usage-pair">
-      <div><span className="eyebrow">USE IT WHEN</span>{p.whenToUse.map(v => <p className="bullet" key={v}><Check size={13}/>{v}</p>)}</div>
-      <div><span className="eyebrow">THINK TWICE WHEN</span>{p.whenNotToUse.map(v => <p className="bullet no" key={v}><X size={13}/>{v}</p>)}</div>
-    </div>
-    <div className="detail-block diagram"><span className="eyebrow">COLLABORATION SHAPE</span><pre>{p.asciiShape}</pre></div>
-  </>;
-}
-function PatternCode({ pattern: p, goCode }: { pattern: Pattern; goCode: () => void }) {
-  return <>
-    <p className="code-explanation">{p.typeScriptImplementation.explanation}</p>
-    <div className="detail-code">
-      <div><span className="file-dot"/> {p.typeScriptImplementation.fileName}</div>
-      <pre>{p.typeScriptImplementation.code}</pre>
-    </div>
-    <button className="primary-btn modal-run" onClick={goCode}><Code2 size={15}/> Open in playground <ArrowRight size={15}/></button>
-  </>;
-}
-function PatternTradeoffs({ pattern: p }: { pattern: Pattern }) {
-  return <>
-    <div className="detail-block">
-      <span className="eyebrow">WHAT IT SUPPORTS</span>
-      {p.solidPrinciples.map(x => <div className="solid-row" key={x.principle}><span className={`impact ${x.impact}`}>{x.impact}</span><div><b>{x.principle}</b><p>{x.explanation}</p></div></div>)}
-    </div>
-    <div className="detail-block">
-      <span className="eyebrow">EASY TO CONFUSE WITH</span>
-      {p.confusedWith.map(x => <div className="confused-row" key={x.targetPattern}><b>{x.targetPattern}</b><p>{x.keyDifference}</p><small>DECISION RULE · {x.decisionRule}</small></div>)}
-    </div>
-    <div className="detail-block traps"><span className="eyebrow">INTERVIEW TRAPS</span>{p.interviewTraps.map(t => <p key={t}><span>!</span>{t}</p>)}</div>
-  </>;
 }
 function PageIntro({ index, title, text }: { index: string; title: React.ReactNode; text: string }) { return <section className="page-intro"><span className="eyebrow"><i className="eyebrow-line"/>{index}</span><h1>{title}</h1><p>{text}</p><div className="intro-stamp"><Layers3 size={17}/><span>THE FIELD<br/>GUIDE</span></div></section>; }
 function BackupDialog({ onClose, onExport, onRestore, onZip, onDownloadSource, zipBusy, theme, toggleTheme }: { onClose: () => void; onExport: () => void; onRestore: (f?: File) => void; onZip: () => void; onDownloadSource: () => void; zipBusy: boolean; theme: string; toggleTheme: () => void }) {
