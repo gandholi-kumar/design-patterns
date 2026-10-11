@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, X, FileCode, Star, Edit2 } from 'lucide-react';
+import { AppTooltip } from './ui/app-tooltip';
 
 export interface ProjectFile {
   id: string;
@@ -140,34 +141,38 @@ export const PlaygroundFileTabs: React.FC<PlaygroundFileTabsProps> = ({
               <span className="tab-name">{file.name}</span>
 
               {file.isEntryPoint ? (
-                <span className="tab-badge" title="Primary Entry Class">
-                  <Star size={10} fill="currentColor" /> Entry
-                </span>
+                <AppTooltip content="Primary Entry Class (Main execution entrypoint)">
+                  <span className="tab-badge">
+                    <Star size={10} fill="currentColor" /> Entry
+                  </span>
+                </AppTooltip>
               ) : (
                 <div className="tab-actions">
-                  <button
-                    type="button"
-                    className="tab-action-btn"
-                    onClick={(e) => handleStartRename(file, e)}
-                    title="Rename file"
-                    aria-label={`Rename ${file.name}`}
-                  >
-                    <Edit2 size={11} />
-                  </button>
-                  <button
-                    type="button"
-                    className="tab-action-btn tab-close-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm(`Delete "${file.name}"?`)) {
-                        onDeleteFile(file.id);
-                      }
-                    }}
-                    title="Delete file"
-                    aria-label={`Delete ${file.name}`}
-                  >
-                    <X size={12} />
-                  </button>
+                  <AppTooltip content="Rename file">
+                    <button
+                      type="button"
+                      className="tab-action-btn"
+                      onClick={(e) => handleStartRename(file, e)}
+                      aria-label={`Rename ${file.name}`}
+                    >
+                      <Edit2 size={11} />
+                    </button>
+                  </AppTooltip>
+                  <AppTooltip content="Delete file">
+                    <button
+                      type="button"
+                      className="tab-action-btn tab-close-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete "${file.name}"?`)) {
+                          onDeleteFile(file.id);
+                        }
+                      }}
+                      aria-label={`Delete ${file.name}`}
+                    >
+                      <X size={12} />
+                    </button>
+                  </AppTooltip>
                 </div>
               )}
             </div>
@@ -192,16 +197,18 @@ export const PlaygroundFileTabs: React.FC<PlaygroundFileTabsProps> = ({
             />
           </div>
         ) : (
-          <button
-            type="button"
-            className="playground-add-tab-btn"
-            onClick={handleStartAdd}
-            title={`Add new ${language === 'java' ? 'Java' : 'TypeScript'} file`}
-            data-testid="add-file-tab"
-          >
-            <Plus size={13} />
-            <span>New File</span>
-          </button>
+          <AppTooltip content={`Add new ${language === 'java' ? 'Java' : 'TypeScript'} file`}>
+            <button
+              type="button"
+              className="playground-add-tab-btn"
+              onClick={handleStartAdd}
+              data-testid="add-file-tab"
+              aria-label={`Add new ${language === 'java' ? 'Java' : 'TypeScript'} file`}
+            >
+              <Plus size={13} />
+              <span>New File</span>
+            </button>
+          </AppTooltip>
         )}
       </div>
     </div>

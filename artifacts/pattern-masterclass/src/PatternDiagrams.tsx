@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Eye, EyeOff, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { getPatternDiagram, PATTERN_DIAGRAMS } from './pattern-diagrams';
 import type { Perspective } from './pattern-types';
+import { AppTooltip } from './components/ui/app-tooltip';
 
 type DiagramKind = 'uml' | 'mermaid';
 type PatternDiagramsProps = {
@@ -228,36 +229,41 @@ function MermaidCanvas({
         <span className="diagram-title">{title}</span>
         <div className="diagram-toolbar-actions">
           <div className="diagram-zoom-controls" role="group" aria-label="Diagram zoom controls">
-            <button
-              type="button"
-              onClick={zoomOut}
-              disabled={zoom <= 0.5}
-              aria-label="Zoom out diagram"
-              title="Zoom out"
-              data-testid="diagram-zoom-out"
-            >
-              <ZoomOut size={13} />
-            </button>
-            <span className="diagram-zoom-badge" title="Current zoom level">{Math.round(zoom * 100)}%</span>
-            <button
-              type="button"
-              onClick={zoomIn}
-              disabled={zoom >= 2.5}
-              aria-label="Zoom in diagram"
-              title="Zoom in"
-              data-testid="diagram-zoom-in"
-            >
-              <ZoomIn size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={resetZoom}
-              aria-label="Reset diagram zoom and position"
-              title="Reset view (100%)"
-              data-testid="diagram-zoom-reset"
-            >
-              <RotateCcw size={13} />
-            </button>
+            <AppTooltip content="Zoom out">
+              <button
+                type="button"
+                onClick={zoomOut}
+                disabled={zoom <= 0.5}
+                aria-label="Zoom out diagram"
+                data-testid="diagram-zoom-out"
+              >
+                <ZoomOut size={13} />
+              </button>
+            </AppTooltip>
+            <AppTooltip content="Current zoom level">
+              <span className="diagram-zoom-badge">{Math.round(zoom * 100)}%</span>
+            </AppTooltip>
+            <AppTooltip content="Zoom in">
+              <button
+                type="button"
+                onClick={zoomIn}
+                disabled={zoom >= 2.5}
+                aria-label="Zoom in diagram"
+                data-testid="diagram-zoom-in"
+              >
+                <ZoomIn size={13} />
+              </button>
+            </AppTooltip>
+            <AppTooltip content="Reset view (100%)">
+              <button
+                type="button"
+                onClick={resetZoom}
+                aria-label="Reset diagram zoom and position"
+                data-testid="diagram-zoom-reset"
+              >
+                <RotateCcw size={13} />
+              </button>
+            </AppTooltip>
           </div>
           <button type="button" onClick={() => setShowSource(value => !value)} aria-expanded={showSource}>
             {showSource ? <EyeOff size={13} /> : <Eye size={13} />}

@@ -24,6 +24,7 @@ import { NotesDrawer } from '../components/NotesDrawer';
 import { PlaygroundDocContent } from '../components/PlaygroundDocContent';
 import { useCodeRunner } from '../hooks/useCodeRunner';
 import { buildProjectFiles } from '../data/playground-starters';
+import { AppTooltip } from '../components/ui/app-tooltip';
 
 interface PlaygroundPageProps {
   initialPatternId?: string;
@@ -299,60 +300,67 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
         </div>
 
         {/* Run Button */}
-        <button
-          type="button"
-          className={`run-btn playground-run-action ${isRunning ? 'running' : ''}`}
-          onClick={handleRun}
-          data-testid="run-example"
-          title="Run code (Ctrl + Enter)"
-        >
-          {isRunning ? (
-            <>
-              <Square size={13} fill="currentColor" /> Stop
-            </>
-          ) : (
-            <>
-              <Play size={14} fill="currentColor" /> Run code
-            </>
-          )}
-        </button>
+        <AppTooltip content="Execute code in browser sandbox" shortcut="Ctrl+Enter">
+          <button
+            type="button"
+            className={`run-btn playground-run-action ${isRunning ? 'running' : ''}`}
+            onClick={handleRun}
+            data-testid="run-example"
+            aria-label="Run code"
+          >
+            {isRunning ? (
+              <>
+                <Square size={13} fill="currentColor" /> Stop
+              </>
+            ) : (
+              <>
+                <Play size={14} fill="currentColor" /> Run code
+              </>
+            )}
+          </button>
+        </AppTooltip>
 
         {/* Layout Switcher (Stacked vs Side-by-Side Split) */}
         <div className="playground-view-controls">
           <div className="layout-toggle-group" role="group" aria-label="Editor layout mode">
-            <button
-              type="button"
-              className={`layout-btn ${layoutMode === 'stacked' ? 'active' : ''}`}
-              onClick={() => toggleLayoutMode('stacked')}
-              title="Stacked vertical flow (Full width, single scroll)"
-              data-testid="layout-stacked"
-            >
-              <Rows size={14} />
-              <span>Stacked</span>
-            </button>
-            <button
-              type="button"
-              className={`layout-btn ${layoutMode === 'split' ? 'active' : ''}`}
-              onClick={() => toggleLayoutMode('split')}
-              title="Side-by-side resizable split view (Sliding window)"
-              data-testid="layout-split"
-            >
-              <Columns size={14} />
-              <span>Split</span>
-            </button>
+            <AppTooltip content="Stacked vertical flow (Full width, single scroll)">
+              <button
+                type="button"
+                className={`layout-btn ${layoutMode === 'stacked' ? 'active' : ''}`}
+                onClick={() => toggleLayoutMode('stacked')}
+                data-testid="layout-stacked"
+                aria-label="Stacked layout"
+              >
+                <Rows size={14} />
+                <span>Stacked</span>
+              </button>
+            </AppTooltip>
+            <AppTooltip content="Side-by-side resizable split view (Sliding window)">
+              <button
+                type="button"
+                className={`layout-btn ${layoutMode === 'split' ? 'active' : ''}`}
+                onClick={() => toggleLayoutMode('split')}
+                data-testid="layout-split"
+                aria-label="Split layout"
+              >
+                <Columns size={14} />
+                <span>Split</span>
+              </button>
+            </AppTooltip>
           </div>
 
-          <button
-            type="button"
-            className="subtle-btn playground-guide-trigger"
-            onClick={() => setIsGuideOpen(true)}
-            title="Open Playground Guide & Language Standards (F1)"
-            aria-label="Open Playground Guide & Language Standards"
-            data-testid="playground-guide-button"
-          >
-            <BookOpen size={13} />
-            <span>Guide & Rules</span>
-          </button>
+          <AppTooltip content="Open Playground Guide & Language Standards" shortcut="F1">
+            <button
+              type="button"
+              className="subtle-btn playground-guide-trigger"
+              onClick={() => setIsGuideOpen(true)}
+              aria-label="Open Playground Guide & Language Standards"
+              data-testid="playground-guide-button"
+            >
+              <BookOpen size={13} />
+              <span>Guide & Rules</span>
+            </button>
+          </AppTooltip>
         </div>
       </div>
 
@@ -381,57 +389,65 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                     <span className="file-type-badge">{language.toUpperCase()}</span>
                   </div>
                   <div className="editor-tools">
-                    <button
-                      type="button"
-                      className={`subtle-btn ${wordWrap ? 'active' : ''}`}
-                      onClick={toggleWordWrap}
-                      title="Toggle Word Wrap (Alt+Z)"
-                      aria-label="Toggle Word Wrap"
-                    >
-                      <WrapText size={13} /> Wrap: {wordWrap ? 'On' : 'Off'}
-                    </button>
-                    <button
-                      type="button"
-                      className={`subtle-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
-                      onClick={handleCopyActiveFile}
-                      title={`Copy active file (${activeFile?.name}) to clipboard`}
-                      data-testid="copy-code"
-                    >
-                      {copiedMode === 'file' ? (
-                        <>
-                          <Check size={13} /> Copied!
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={13} /> Copy
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className={`subtle-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
-                      onClick={handleCopyAllFiles}
-                      title="Copy all project files combined to clipboard"
-                      data-testid="copy-all-code"
-                    >
-                      {copiedMode === 'all' ? (
-                        <>
-                          <Check size={13} /> All copied!
-                        </>
-                      ) : (
-                        <>
-                          <Files size={13} /> Copy all
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className="subtle-btn"
-                      onClick={handleResetProject}
-                      data-testid="reset-code"
-                    >
-                      <RotateCcw size={13} /> Reset
-                    </button>
+                    <AppTooltip content="Toggle Word Wrap" shortcut="Alt+Z">
+                      <button
+                        type="button"
+                        className={`subtle-btn ${wordWrap ? 'active' : ''}`}
+                        onClick={toggleWordWrap}
+                        aria-label="Toggle Word Wrap"
+                      >
+                        <WrapText size={13} /> Wrap: {wordWrap ? 'On' : 'Off'}
+                      </button>
+                    </AppTooltip>
+                    <AppTooltip content={`Copy active file (${activeFile?.name}) to clipboard`}>
+                      <button
+                        type="button"
+                        className={`subtle-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
+                        onClick={handleCopyActiveFile}
+                        data-testid="copy-code"
+                        aria-label="Copy active file"
+                      >
+                        {copiedMode === 'file' ? (
+                          <>
+                            <Check size={13} /> Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={13} /> Copy
+                          </>
+                        )}
+                      </button>
+                    </AppTooltip>
+                    <AppTooltip content="Copy all project files combined to clipboard">
+                      <button
+                        type="button"
+                        className={`subtle-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
+                        onClick={handleCopyAllFiles}
+                        data-testid="copy-all-code"
+                        aria-label="Copy all files"
+                      >
+                        {copiedMode === 'all' ? (
+                          <>
+                            <Check size={13} /> All copied!
+                          </>
+                        ) : (
+                          <>
+                            <Files size={13} /> Copy all
+                          </>
+                        )}
+                      </button>
+                    </AppTooltip>
+                    <AppTooltip content="Reset project files to clean starter code">
+                      <button
+                        type="button"
+                        className="subtle-btn"
+                        onClick={handleResetProject}
+                        data-testid="reset-code"
+                        aria-label="Reset files to default code"
+                      >
+                        <RotateCcw size={13} /> Reset
+                      </button>
+                    </AppTooltip>
                   </div>
                 </div>
 
@@ -461,9 +477,11 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
 
             {/* Draggable Sliding Window Handle */}
             <PanelResizeHandle className="playground-resize-handle">
-              <div className="resize-handle-pill" title="Drag to adjust editor/console width">
-                <span />
-              </div>
+              <AppTooltip content="Drag to adjust editor/console width">
+                <div className="resize-handle-pill">
+                  <span />
+                </div>
+              </AppTooltip>
             </PanelResizeHandle>
 
             {/* Right Panel: Terminal Output */}
@@ -493,57 +511,65 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                 <span className="file-type-badge">{language.toUpperCase()}</span>
               </div>
               <div className="editor-tools">
-                <button
-                  type="button"
-                  className={`subtle-btn ${wordWrap ? 'active' : ''}`}
-                  onClick={toggleWordWrap}
-                  title="Toggle Word Wrap (Alt+Z)"
-                  aria-label="Toggle Word Wrap"
-                >
-                  <WrapText size={13} /> Wrap: {wordWrap ? 'On' : 'Off'}
-                </button>
-                <button
-                  type="button"
-                  className={`subtle-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
-                  onClick={handleCopyActiveFile}
-                  title={`Copy active file (${activeFile?.name}) to clipboard`}
-                  data-testid="copy-code"
-                >
-                  {copiedMode === 'file' ? (
-                    <>
-                      <Check size={13} /> Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={13} /> Copy
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className={`subtle-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
-                  onClick={handleCopyAllFiles}
-                  title="Copy all project files combined to clipboard"
-                  data-testid="copy-all-code"
-                >
-                  {copiedMode === 'all' ? (
-                    <>
-                      <Check size={13} /> All copied!
-                    </>
-                  ) : (
-                    <>
-                      <Files size={13} /> Copy all
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="subtle-btn"
-                  onClick={handleResetProject}
-                  data-testid="reset-code"
-                >
-                  <RotateCcw size={13} /> Reset
-                </button>
+                <AppTooltip content="Toggle Word Wrap" shortcut="Alt+Z">
+                  <button
+                    type="button"
+                    className={`subtle-btn ${wordWrap ? 'active' : ''}`}
+                    onClick={toggleWordWrap}
+                    aria-label="Toggle Word Wrap"
+                  >
+                    <WrapText size={13} /> Wrap: {wordWrap ? 'On' : 'Off'}
+                  </button>
+                </AppTooltip>
+                <AppTooltip content={`Copy active file (${activeFile?.name}) to clipboard`}>
+                  <button
+                    type="button"
+                    className={`subtle-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
+                    onClick={handleCopyActiveFile}
+                    data-testid="copy-code"
+                    aria-label="Copy active file"
+                  >
+                    {copiedMode === 'file' ? (
+                      <>
+                        <Check size={13} /> Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={13} /> Copy
+                      </>
+                    )}
+                  </button>
+                </AppTooltip>
+                <AppTooltip content="Copy all project files combined to clipboard">
+                  <button
+                    type="button"
+                    className={`subtle-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
+                    onClick={handleCopyAllFiles}
+                    data-testid="copy-all-code"
+                    aria-label="Copy all files"
+                  >
+                    {copiedMode === 'all' ? (
+                      <>
+                        <Check size={13} /> All copied!
+                      </>
+                    ) : (
+                      <>
+                        <Files size={13} /> Copy all
+                      </>
+                    )}
+                  </button>
+                </AppTooltip>
+                <AppTooltip content="Reset project files to clean starter code">
+                  <button
+                    type="button"
+                    className="subtle-btn"
+                    onClick={handleResetProject}
+                    data-testid="reset-code"
+                    aria-label="Reset files to default code"
+                  >
+                    <RotateCcw size={13} /> Reset
+                  </button>
+                </AppTooltip>
               </div>
             </div>
 

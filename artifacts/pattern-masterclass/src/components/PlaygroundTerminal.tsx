@@ -1,6 +1,7 @@
 import React from 'react';
 import { Terminal, Copy, Trash2, CheckCircle2, AlertTriangle, XCircle, Clock, Loader2 } from 'lucide-react';
 import type { RunResult } from '../hooks/useCodeRunner';
+import { AppTooltip } from './ui/app-tooltip';
 
 interface PlaygroundTerminalProps {
   result: RunResult;
@@ -76,27 +77,31 @@ export const PlaygroundTerminal: React.FC<PlaygroundTerminalProps> = ({
 
         <div className="output-tools">
           {hasOutput && (
+            <AppTooltip content="Copy output to clipboard">
+              <button
+                type="button"
+                className="subtle-btn terminal-btn"
+                onClick={handleCopy}
+                aria-label="Copy output to clipboard"
+              >
+                <Copy size={12} />
+                <span>Copy</span>
+              </button>
+            </AppTooltip>
+          )}
+          <AppTooltip content="Clear console output">
             <button
               type="button"
-              className="subtle-btn terminal-btn"
-              onClick={handleCopy}
-              title="Copy output to clipboard"
+              className="clear-output"
+              onClick={onClear}
+              disabled={!hasOutput && !isRunning}
+              data-testid="clear-output"
+              aria-label="Clear console output"
             >
-              <Copy size={12} />
-              <span>Copy</span>
+              <Trash2 size={12} />
+              <span>Clear</span>
             </button>
-          )}
-          <button
-            type="button"
-            className="clear-output"
-            onClick={onClear}
-            disabled={!hasOutput && !isRunning}
-            data-testid="clear-output"
-            title="Clear console output"
-          >
-            <Trash2 size={12} />
-            <span>Clear</span>
-          </button>
+          </AppTooltip>
         </div>
       </div>
 

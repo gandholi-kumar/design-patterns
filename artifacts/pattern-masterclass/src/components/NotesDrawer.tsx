@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { AppTooltip } from './ui/app-tooltip';
 
 export interface NotesDrawerProps {
   isOpen: boolean;
@@ -89,15 +90,17 @@ export function NotesDrawer({
             </div>
             <div className="notes-drawer-controls">
               {headerActions}
-              <button
-                type="button"
-                className="icon-btn notes-drawer-close-btn"
-                onClick={onClose}
-                aria-label="Close notes drawer"
-                data-testid="close-notes-drawer"
-              >
-                <X size={18} />
-              </button>
+              <AppTooltip content="Close drawer (Esc)" shortcut="Esc">
+                <button
+                  type="button"
+                  className="icon-btn notes-drawer-close-btn"
+                  onClick={onClose}
+                  aria-label="Close notes drawer"
+                  data-testid="close-notes-drawer"
+                >
+                  <X size={18} />
+                </button>
+              </AppTooltip>
             </div>
           </div>
 
