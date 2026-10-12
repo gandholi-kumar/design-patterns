@@ -7,8 +7,19 @@
  */
 
 export * from './codeFile';
+export * from './errorResponse';
 export * from './executeCodeRequest';
 export * from './executeCodeRequestLanguage';
 export * from './executionResult';
 export * from './executionResultStatus';
 export * from './healthStatus';
+export * from './noteBlock';
+export * from './noteBlockChildrenItem';
+export * from './noteBlockContentItem';
+export * from './noteBlockProps';
+export * from './notesExportPayload';
+export * from './notesImportRequest';
+export * from './notesImportResponse';
+export * from './patternNote';
+export * from './patternNotesListResponse';
+export * from './upsertPatternNoteRequest';
