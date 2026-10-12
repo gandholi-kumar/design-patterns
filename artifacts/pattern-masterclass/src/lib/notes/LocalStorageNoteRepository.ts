@@ -102,9 +102,32 @@ export class LocalStorageNoteRepository implements NoteRepository {
     await mediaStorage.deleteImage(assetId);
   }
 
-  async exportAll(): Promise<NotesExportPayload> {
-    const notes = await this.getAll();
-    const media = await mediaStorage.getAllImagesAsBase64();
+  async exportAll(patternIds?: string[]): Promise<NotesExportPayload> {
+    const allNotes = await this.getAll();
+    const notes =
+      patternIds && patternIds.length > 0
+        ? allNotes.filter((n) => patternIds.includes(n.patternId))
+        : allNotes;
+
+    // Collect media IDs referenced in blocks for selective export
+    const neededMediaIds = new Set<string>();
+    for (const note of notes) {
+      for (const block of note.blocks) {
+        if (block.type === "image" && typeof (block.props as any)?.url === "string") {
+          const url = (block.props as any).url as string;
+          const match = url.match(/asset-[a-zA-Z0-9_-]+/);
+          if (match) neededMediaIds.add(match[0]);
+        }
+      }
+    }
+
+    const allMedia = await mediaStorage.getAllImagesAsBase64();
+    const media: Record<string, string> = {};
+    for (const [id, base64] of Object.entries(allMedia)) {
+      if (!patternIds || patternIds.length === 0 || neededMediaIds.has(id)) {
+        media[id] = base64;
+      }
+    }
 
     return {
       version: 1,
@@ -114,16 +137,47 @@ export class LocalStorageNoteRepository implements NoteRepository {
     };
   }
 
-  async importBundle(payload: NotesExportPayload): Promise<NotesImportResult> {
+  async importBundle(
+    payload: NotesExportPayload,
+    strategy: "append" | "overwrite" | "skip" = "append"
+  ): Promise<NotesImportResult> {
     const validated = NotesExportPayloadSchema.parse(payload);
     const mediaCount = await mediaStorage.importImagesFromBase64(validated.media);
 
     const all = this.loadAllFromStorage();
     let importedCount = 0;
 
-    for (const note of validated.notes) {
-      all[note.patternId] = note;
-      importedCount++;
+    for (const incoming of validated.notes) {
+      const existing = all[incoming.patternId];
+
+      if (!existing) {
+        all[incoming.patternId] = incoming;
+        importedCount++;
+      } else if (strategy === "overwrite") {
+        all[incoming.patternId] = incoming;
+        importedCount++;
+      } else if (strategy === "append") {
+        const dividerBlock = {
+          id: `div-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          type: "paragraph",
+          props: { textColor: "default", backgroundColor: "default" },
+          content: [
+            {
+              type: "text",
+              text: `--- Appended Imported Notes (${new Date().toLocaleDateString()}) ---`,
+              styles: { italic: true },
+            },
+          ],
+          children: [],
+        };
+        all[incoming.patternId] = {
+          ...existing,
+          lastModified: new Date().toISOString(),
+          blocks: [...existing.blocks, dividerBlock, ...incoming.blocks],
+        };
+        importedCount++;
+      }
+      // If 'skip', do nothing for existing note
     }
 
     this.saveAllToStorage(all);

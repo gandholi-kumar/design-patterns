@@ -11009,5 +11009,16 @@ kbd {
   width: 100% !important;
 }
 
+/* 10s Toast countdown progress animation */
+@keyframes toastCountdown {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}
+
+
 
 

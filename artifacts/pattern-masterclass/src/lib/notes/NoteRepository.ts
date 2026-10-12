@@ -52,12 +52,17 @@ export interface NoteRepository {
   deleteMedia(assetId: string): Promise<void>;
 
   /**
-   * Exports all notes and inlines media into a self-contained portable bundle.
+   * Exports notes and inlines media into a self-contained portable bundle.
+   * If patternIds is provided, exports only the selected notes and their associated media.
    */
-  exportAll(): Promise<NotesExportPayload>;
+  exportAll(patternIds?: string[]): Promise<NotesExportPayload>;
 
   /**
    * Imports a notes bundle, validating schemas and extracting media.
+   * Handles existing note collisions using strategy: 'append' (default), 'overwrite', or 'skip'.
    */
-  importBundle(payload: NotesExportPayload): Promise<NotesImportResult>;
+  importBundle(
+    payload: NotesExportPayload,
+    strategy?: "append" | "overwrite" | "skip"
+  ): Promise<NotesImportResult>;
 }

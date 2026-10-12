@@ -9,14 +9,25 @@ import {
   Calendar,
   ExternalLink,
   Trash2,
-  CheckCircle2,
   PenTool,
   FolderOpen,
+  CheckSquare,
+  Square,
+  Settings,
+  ChevronDown,
+  Sparkles,
+  Check,
 } from "lucide-react";
 import { PATTERNS } from "../data";
 import { useNoteRepository } from "../lib/notes/NoteRepositoryContext";
-import type { PatternNote } from "../lib/notes/notes-schema";
+import type { PatternNote, NotesExportPayload } from "../lib/notes/notes-schema";
 import { AppTooltip } from "../components/ui/app-tooltip";
+import { appToast } from "../components/ui/app-toaster";
+import { DeleteConfirmDialog } from "../components/notes/DeleteConfirmDialog";
+import {
+  ImportConflictDialog,
+  type ImportCollisionStrategy,
+} from "../components/notes/ImportConflictDialog";
 
 export function NotesWorkspacePage() {
   const [, setLoc] = useLocation();
@@ -27,9 +38,45 @@ export function NotesWorkspacePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "annotated" | "unannotated">("all");
-  const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  // Multi-selection state
+  const [selectedPatternIds, setSelectedPatternIds] = useState<Set<string>>(new Set());
+
+  // Dialog states
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [pendingImport, setPendingImport] = useState<{
+    payload: NotesExportPayload;
+    conflictingNames: string[];
+  } | null>(null);
+
+  // Import Collision Policy
+  const [importPolicy, setImportPolicy] = useState<ImportCollisionStrategy | "ask">(() => {
+    const saved = localStorage.getItem("gof-notes-import-policy");
+    if (saved === "append" || saved === "overwrite" || saved === "skip") {
+      return saved as ImportCollisionStrategy;
+    }
+    return "append"; // Default strategy is append
+  });
+  const [policyMenuOpen, setPolicyMenuOpen] = useState(false);
+  const [testMenuOpen, setTestMenuOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const policyMenuRef = useRef<HTMLDivElement>(null);
+  const testMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close menus on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (policyMenuRef.current && !policyMenuRef.current.contains(e.target as Node)) {
+        setPolicyMenuOpen(false);
+      }
+      if (testMenuRef.current && !testMenuRef.current.contains(e.target as Node)) {
+        setTestMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Load all notes from repository
   const loadNotes = () => {
@@ -97,34 +144,89 @@ export function NotesWorkspacePage() {
 
   const totalAnnotated = Object.keys(notesMap).length;
 
-  // Export all notes as self-contained JSON
-  const handleExportJson = async () => {
+  // Toggle selection for a single pattern
+  const togglePatternSelect = (patternId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedPatternIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(patternId)) {
+        next.delete(patternId);
+      } else {
+        next.add(patternId);
+      }
+      return next;
+    });
+  };
+
+  // Toggle select all visible patterns
+  const toggleSelectAll = () => {
+    if (selectedPatternIds.size === filteredPatterns.length && filteredPatterns.length > 0) {
+      setSelectedPatternIds(new Set());
+    } else {
+      setSelectedPatternIds(new Set(filteredPatterns.map((p) => p.id)));
+    }
+  };
+
+  // Clear selection
+  const clearSelection = () => {
+    setSelectedPatternIds(new Set());
+  };
+
+  // Export JSON Bundle (all or selective)
+  const handleExportJson = async (targetPatternIds?: string[]) => {
     try {
-      const payload = await repository.exportAll();
+      const ids = targetPatternIds ?? (selectedPatternIds.size > 0 ? Array.from(selectedPatternIds) : undefined);
+      const payload = await repository.exportAll(ids);
+      const count = payload.notes.length;
+
+      if (count === 0) {
+        appToast.warning("No notes to export", "Annotate at least one pattern note before exporting.");
+        return;
+      }
+
       const blob = new Blob([JSON.stringify(payload, null, 2)], {
         type: "application/json",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `gof-pattern-notes-bundle-${new Date().toISOString().split("T")[0]}.json`;
+      const dateStr = new Date().toISOString().split("T")[0];
+      const filename = ids && ids.length === 1
+        ? `gof-${ids[0]}-note-${dateStr}.json`
+        : `gof-pattern-notes-bundle-${ids ? `${count}-selected-` : "all-"}${dateStr}.json`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+
+      appToast.success(
+        `Exported ${count} ${count === 1 ? "pattern note" : "pattern notes"}`,
+        `Self-contained JSON bundle with embedded diagrams & media assets.`
+      );
     } catch (err) {
       console.error("Export JSON failed:", err);
+      appToast.error("Export failed", "Could not assemble JSON notes bundle.");
     }
   };
 
-  // Export all notes as Master Markdown
-  const handleExportAllMarkdown = async () => {
+  // Export Markdown Bundle (all or selective)
+  const handleExportMarkdown = async (targetPatternIds?: string[]) => {
     try {
-      const notes = await repository.getAll();
+      const ids = targetPatternIds ?? (selectedPatternIds.size > 0 ? Array.from(selectedPatternIds) : undefined);
+      const targetPatterns = ids
+        ? PATTERNS.filter((p) => ids.includes(p.id) && Boolean(notesMap[p.id]))
+        : PATTERNS.filter((p) => Boolean(notesMap[p.id]));
+
+      if (targetPatterns.length === 0) {
+        appToast.warning("No notes to export", "Annotate at least one pattern note before exporting Markdown.");
+        return;
+      }
+
       let md = `# GoF Design Patterns Masterclass — Study Notes Bundle\n\n`;
       md += `*Exported on:* ${new Date().toLocaleString()}\n`;
-      md += `*Annotated Patterns:* ${notes.length} of ${PATTERNS.length}\n\n`;
+      md += `*Patterns Included:* ${targetPatterns.length} of ${PATTERNS.length}\n\n`;
       md += `---\n\n`;
 
-      for (const p of PATTERNS) {
+      for (const p of targetPatterns) {
         const n = notesMap[p.id];
         if (!n) continue;
 
@@ -163,47 +265,160 @@ export function NotesWorkspacePage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `gof-all-notes-${new Date().toISOString().split("T")[0]}.md`;
+      const dateStr = new Date().toISOString().split("T")[0];
+      const filename = ids && ids.length === 1
+        ? `gof-${ids[0]}-note-${dateStr}.md`
+        : `gof-notes-${ids ? `${targetPatterns.length}-selected-` : "all-"}${dateStr}.md`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+
+      appToast.success(
+        `Exported Markdown document`,
+        `Formatted Markdown file for ${targetPatterns.length} pattern notes.`
+      );
     } catch (err) {
       console.error("Export Markdown failed:", err);
+      appToast.error("Export failed", "Could not compile Markdown document.");
     }
   };
 
-  // Import JSON bundle
+  // Inspect incoming file for collisions
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       const text = await file.text();
-      const json = JSON.parse(text);
-      const result = await repository.importBundle(json);
-      setImportStatus(`Successfully imported ${result.importedCount} notes!`);
-      loadNotes();
-      setTimeout(() => setImportStatus(null), 4000);
+      const payload = JSON.parse(text) as NotesExportPayload;
+
+      if (!payload.notes || !Array.isArray(payload.notes)) {
+        throw new Error("Invalid bundle structure: missing notes array");
+      }
+
+      // Check which pattern notes conflict with existing ones
+      const conflictingNames = payload.notes
+        .filter((n) => Boolean(notesMap[n.patternId]))
+        .map((n) => PATTERNS.find((p) => p.id === n.patternId)?.name || n.patternId);
+
+      if (conflictingNames.length > 0 && importPolicy === "ask") {
+        // Prompt user with custom theme-reactive modal
+        setPendingImport({ payload, conflictingNames });
+      } else {
+        // Use current policy (default is "append")
+        const strategy = importPolicy === "ask" ? "append" : importPolicy;
+        await executeImport(payload, strategy);
+      }
     } catch (err) {
       console.error("Import failed:", err);
-      setImportStatus("Import failed: Invalid bundle file");
-      setTimeout(() => setImportStatus(null), 4000);
+      appToast.error(
+        "Import failed",
+        "The uploaded file is not a valid GoF Notes JSON bundle."
+      );
     }
 
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Delete note
-  const handleDeleteNote = async (patternId: string, e: React.MouseEvent) => {
+  // Execute the import with given strategy
+  const executeImport = async (
+    payload: NotesExportPayload,
+    strategy: ImportCollisionStrategy
+  ) => {
+    try {
+      const result = await repository.importBundle(payload, strategy);
+      loadNotes();
+
+      const strategyLabel =
+        strategy === "append"
+          ? "appended and merged"
+          : strategy === "overwrite"
+          ? "overwritten"
+          : "skipped existing";
+
+      appToast.success(
+        `Imported ${result.importedCount} notes successfully`,
+        `Collision policy applied: ${strategyLabel}.`
+      );
+    } catch (err) {
+      console.error("Import bundle failed:", err);
+      appToast.error("Import error", "Failed to restore notes and media assets.");
+    }
+  };
+
+  // Confirm collision dialog
+  const handleConfirmCollision = async (
+    strategy: ImportCollisionStrategy,
+    rememberAsDefault: boolean
+  ) => {
+    if (!pendingImport) return;
+
+    if (rememberAsDefault) {
+      localStorage.setItem("gof-notes-import-policy", strategy);
+      setImportPolicy(strategy);
+      appToast.info(
+        "Default policy saved",
+        `Future imports will automatically use '${strategy}' strategy.`
+      );
+    }
+
+    const payload = pendingImport.payload;
+    setPendingImport(null);
+    await executeImport(payload, strategy);
+  };
+
+  // Delete note with custom confirmation modal
+  const handleRequestDelete = (patternId: string, patternName: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete notes for this pattern?")) return;
-    await repository.delete(patternId);
+    setDeleteTarget({ id: patternId, name: patternName });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const name = deleteTarget.name;
+    const id = deleteTarget.id;
+    setDeleteTarget(null);
+
+    await repository.delete(id);
     loadNotes();
+    setSelectedPatternIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+    appToast.info(
+      `Deleted note for ${name}`,
+      `Your notes and diagrams for this pattern were removed.`
+    );
+  };
+
+  // Change default collision policy from header
+  const handleSelectPolicy = (newPolicy: ImportCollisionStrategy | "ask") => {
+    setImportPolicy(newPolicy);
+    if (newPolicy === "ask") {
+      localStorage.removeItem("gof-notes-import-policy");
+    } else {
+      localStorage.setItem("gof-notes-import-policy", newPolicy);
+    }
+    setPolicyMenuOpen(false);
+
+    const desc =
+      newPolicy === "append"
+        ? "Appends new blocks below existing notes (Recommended default)"
+        : newPolicy === "overwrite"
+        ? "Overwrites existing notes with incoming version"
+        : newPolicy === "skip"
+        ? "Skips imported notes if an existing note exists"
+        : "Always prompts for confirmation when collisions occur";
+
+    appToast.info(`Import policy: ${newPolicy.toUpperCase()}`, desc);
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-y-auto bg-background text-foreground select-text">
+    <div className="flex flex-col min-h-screen bg-background text-foreground select-text">
       {/* Top Header */}
-      <header className="border-b border-border/80 bg-card/60 backdrop-blur-md px-6 py-4 flex-shrink-0">
+      <header className="border-b border-border/80 bg-card/60 backdrop-blur-md px-6 py-4 flex-shrink-0 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
@@ -217,9 +432,9 @@ export function NotesWorkspacePage() {
 
             <div>
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-amber-400" />
+                <FileText className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                 <h1 className="text-lg font-bold tracking-tight">Study Notes Workspace</h1>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                   {totalAnnotated} / {PATTERNS.length} Annotated
                 </span>
               </div>
@@ -231,25 +446,225 @@ export function NotesWorkspacePage() {
 
           {/* Header Action Buttons */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Import Policy Selector Dropdown */}
+            <div className="relative" ref={policyMenuRef}>
+              <button
+                type="button"
+                onClick={() => setPolicyMenuOpen((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-foreground transition-colors"
+                title="Configure collision strategy for bundle imports"
+              >
+                <Settings className="w-3.5 h-3.5 text-slate-400 dark:text-slate-300" />
+                <span>
+                  Policy:{" "}
+                  <strong className="capitalize text-amber-600 dark:text-amber-400">
+                    {importPolicy === "ask" ? "Always Ask" : importPolicy}
+                  </strong>
+                </span>
+                <ChevronDown className="w-3 h-3 text-muted-foreground" />
+              </button>
+
+              {policyMenuOpen && (
+                <div className="absolute right-0 mt-1.5 w-68 rounded-xl bg-card border border-border/80 shadow-2xl p-1.5 z-50 text-xs flex flex-col gap-1 backdrop-blur-md">
+                  <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
+                    Import Collision Strategy
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPolicy("append")}
+                    className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
+                      importPolicy === "append"
+                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
+                        : "hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    <Check
+                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                        importPolicy === "append" ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span>Append (Merge)</span>
+                        <span className="text-[10px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-normal">
+                          Default
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground font-normal block mt-0.5">
+                        Preserves notes; appends imported blocks below a divider
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPolicy("overwrite")}
+                    className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
+                      importPolicy === "overwrite"
+                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
+                        : "hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    <Check
+                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                        importPolicy === "overwrite" ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                    <div>
+                      <span>Overwrite (Replace)</span>
+                      <span className="text-[11px] text-muted-foreground font-normal block mt-0.5">
+                        Replaces existing notes with incoming version
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPolicy("skip")}
+                    className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
+                      importPolicy === "skip"
+                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
+                        : "hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    <Check
+                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                        importPolicy === "skip" ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                    <div>
+                      <span>Skip Existing</span>
+                      <span className="text-[11px] text-muted-foreground font-normal block mt-0.5">
+                        Leaves current notes untouched; only imports new ones
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPolicy("ask")}
+                    className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
+                      importPolicy === "ask"
+                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
+                        : "hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    <Check
+                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                        importPolicy === "ask" ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                    <div>
+                      <span>Always Ask on Conflict</span>
+                      <span className="text-[11px] text-muted-foreground font-normal block mt-0.5">
+                        Show dialog to choose strategy for each import
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Test Toasters Dropdown (Interactive verification for user) */}
+            <div className="relative" ref={testMenuRef}>
+              <button
+                type="button"
+                onClick={() => setTestMenuOpen((prev) => !prev)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                title="Test 10s interactive toaster notifications with hover pause"
+                data-testid="test-toaster-btn"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Test Toaster</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+
+              {testMenuOpen && (
+                <div className="absolute right-0 mt-1.5 w-60 rounded-xl bg-card border border-border/80 shadow-2xl p-1.5 z-50 text-xs flex flex-col gap-1 backdrop-blur-md">
+                  <div className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
+                    Test 10s Toast (Hover to pause!)
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      appToast.success(
+                        "Notes bundle exported",
+                        "Includes self-contained diagrams & notes payload."
+                      );
+                      setTestMenuOpen(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg text-left hover:bg-emerald-500/15 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors"
+                  >
+                    🟢 Success Toast (10s)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      appToast.warning(
+                        "Import collision detected",
+                        "Existing notes found. Merging via append divider."
+                      );
+                      setTestMenuOpen(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg text-left hover:bg-amber-500/15 hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
+                  >
+                    🟡 Warning Toast (10s)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      appToast.error(
+                        "Import validation failed",
+                        "The uploaded file schema does not match GoF bundle format."
+                      );
+                      setTestMenuOpen(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg text-left hover:bg-rose-500/15 hover:text-rose-600 dark:hover:text-rose-300 transition-colors"
+                  >
+                    🔴 Error Toast (10s)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      appToast.info(
+                        "Hover pause active",
+                        "Hover over this toaster to halt progress bar and 10s timer!"
+                      );
+                      setTestMenuOpen(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg text-left hover:bg-blue-500/15 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+                  >
+                    🔵 Info Toast (10s)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Export JSON Button */}
             <button
               type="button"
-              onClick={handleExportJson}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted/80 text-xs font-medium text-foreground transition-colors"
+              onClick={() => handleExportJson()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-foreground transition-colors"
+              title="Export all annotated pattern notes as a portable JSON bundle"
             >
-              <Download className="w-3.5 h-3.5 text-amber-400" />
-              <span>Export JSON Bundle</span>
+              <Download className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+              <span>Export JSON</span>
             </button>
 
+            {/* Export Markdown Button */}
             <button
               type="button"
-              onClick={handleExportAllMarkdown}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted/80 text-xs font-medium text-foreground transition-colors"
+              onClick={() => handleExportMarkdown()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-foreground transition-colors"
+              title="Export all annotated pattern notes as a single Markdown document"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <Download className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
               <span>Export Markdown</span>
             </button>
 
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-medium text-amber-300 cursor-pointer transition-colors">
+            {/* Import Bundle Button */}
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-medium text-amber-700 dark:text-amber-300 cursor-pointer transition-colors">
               <Upload className="w-3.5 h-3.5" />
               <span>Import Bundle</span>
               <input
@@ -258,33 +673,47 @@ export function NotesWorkspacePage() {
                 accept=".json"
                 onChange={handleFileImport}
                 className="hidden"
+                data-testid="import-bundle-file-input"
               />
             </label>
           </div>
         </div>
-
-        {importStatus && (
-          <div className="max-w-7xl mx-auto mt-3 p-2 rounded-lg bg-emerald-950/60 border border-emerald-800 text-xs text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{importStatus}</span>
-          </div>
-        )}
       </header>
 
       {/* Main Workspace Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-6 flex flex-col gap-6">
         {/* Controls Toolbar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card/40 p-3.5 rounded-xl border border-border/60">
-          {/* Search Box */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search notes and patterns..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-background border border-border/80 focus:outline-none focus:border-amber-400"
-            />
+          {/* Search Box & Select All toggle */}
+          <div className="flex items-center gap-3 flex-1 max-w-md">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="p-1.5 rounded-lg border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title={
+                selectedPatternIds.size === filteredPatterns.length && filteredPatterns.length > 0
+                  ? "Deselect all visible patterns"
+                  : "Select all visible patterns"
+              }
+            >
+              {selectedPatternIds.size > 0 &&
+              selectedPatternIds.size === filteredPatterns.length ? (
+                <CheckSquare className="w-4 h-4 text-amber-500" />
+              ) : (
+                <Square className="w-4 h-4" />
+              )}
+            </button>
+
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search notes and patterns..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-background border border-border/80 focus:outline-none focus:border-amber-400"
+              />
+            </div>
           </div>
 
           {/* Filter Pills */}
@@ -297,7 +726,7 @@ export function NotesWorkspacePage() {
                   onClick={() => setCategoryFilter(cat)}
                   className={`px-2.5 py-1 text-xs rounded-md capitalize font-medium transition-colors ${
                     categoryFilter === cat
-                      ? "bg-amber-500/20 text-amber-300"
+                      ? "bg-amber-500/20 text-amber-700 dark:text-amber-300"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -344,9 +773,10 @@ export function NotesWorkspacePage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20">
             {filteredPatterns.map((pattern) => {
               const note = notesMap[pattern.id];
+              const isSelected = selectedPatternIds.has(pattern.id);
               const snippet = note ? extractSnippet(note.blocks) : "";
               const formattedDate = note
                 ? new Date(note.lastModified).toLocaleDateString([], {
@@ -362,25 +792,42 @@ export function NotesWorkspacePage() {
                   key={pattern.id}
                   onClick={() => setLoc(`/pattern/${pattern.id}?notes=open`)}
                   className={`group relative flex flex-col justify-between p-4 rounded-xl border transition-all cursor-pointer ${
-                    note
+                    isSelected
+                      ? "ring-2 ring-amber-500 bg-amber-500/5 border-amber-500/60 shadow-md"
+                      : note
                       ? "bg-card/70 border-amber-500/30 hover:border-amber-500/60 shadow-sm"
                       : "bg-card/30 border-border/50 hover:border-border hover:bg-card/50 opacity-80 hover:opacity-100"
                   }`}
                 >
                   <div>
-                    {/* Card Header */}
+                    {/* Card Header with Checkbox */}
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground">
-                          {pattern.category}
-                        </span>
-                        <h3 className="text-sm font-bold text-foreground group-hover:text-amber-400 transition-colors">
-                          {pattern.name}
-                        </h3>
+                      <div className="flex items-start gap-2.5">
+                        <button
+                          type="button"
+                          onClick={(e) => togglePatternSelect(pattern.id, e)}
+                          className="mt-0.5 text-muted-foreground hover:text-amber-500 transition-colors"
+                          title={isSelected ? "Deselect pattern" : "Select pattern for selective export"}
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="w-4 h-4 text-amber-500" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+
+                        <div>
+                          <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground">
+                            {pattern.category}
+                          </span>
+                          <h3 className="text-sm font-bold text-foreground group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors">
+                            {pattern.name}
+                          </h3>
+                        </div>
                       </div>
 
                       {note ? (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                           <PenTool className="w-2.5 h-2.5" />
                           <span>Notes</span>
                         </span>
@@ -416,12 +863,29 @@ export function NotesWorkspacePage() {
                       <span>Pattern #{pattern.id}</span>
                     )}
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
+                      {/* Individual pattern quick export */}
+                      {note && (
+                        <AppTooltip content="Export this pattern's notes (JSON)">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExportJson([pattern.id]);
+                            }}
+                            className="p-1 rounded text-muted-foreground hover:text-amber-500 transition-colors"
+                          >
+                            <Download className="w-3 h-3" />
+                          </button>
+                        </AppTooltip>
+                      )}
+
+                      {/* Delete note trigger */}
                       {note && (
                         <AppTooltip content="Delete note">
                           <button
                             type="button"
-                            onClick={(e) => handleDeleteNote(pattern.id, e)}
+                            onClick={(e) => handleRequestDelete(pattern.id, pattern.name, e)}
                             className="p-1 rounded text-muted-foreground hover:text-rose-400 transition-colors"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -429,7 +893,7 @@ export function NotesWorkspacePage() {
                         </AppTooltip>
                       )}
 
-                      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-400 group-hover:underline">
+                      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 group-hover:underline">
                         <span>Open</span>
                         <ExternalLink className="w-3 h-3" />
                       </span>
@@ -441,6 +905,68 @@ export function NotesWorkspacePage() {
           </div>
         )}
       </main>
+
+      {/* Floating Selective Export Action Bar */}
+      {selectedPatternIds.size > 0 && (
+        <aside
+          aria-label="Selective Notes Actions"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-full bg-slate-900/95 dark:bg-card/95 border border-amber-500/40 shadow-2xl backdrop-blur-md text-white text-xs animate-in fade-in slide-in-from-bottom-4 duration-200"
+        >
+          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40">
+            {selectedPatternIds.size} Selected
+          </span>
+
+          <div className="h-4 w-px bg-white/20" />
+
+          <button
+            type="button"
+            onClick={() => handleExportJson()}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export JSON ({selectedPatternIds.size})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleExportMarkdown()}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export Markdown ({selectedPatternIds.size})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="px-2 py-1 text-slate-400 hover:text-white transition-colors"
+          >
+            Clear
+          </button>
+        </aside>
+      )}
+
+      {/* Custom Themed Delete Confirmation Dialog */}
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          isOpen={true}
+          patternName={deleteTarget.name}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
+
+      {/* Custom Themed Import Collision Dialog */}
+      {pendingImport && (
+        <ImportConflictDialog
+          isOpen={true}
+          conflictingPatternNames={pendingImport.conflictingNames}
+          totalIncoming={pendingImport.payload.notes.length}
+          initialStrategy="append"
+          onCancel={() => setPendingImport(null)}
+          onConfirm={handleConfirmCollision}
+        />
+      )}
     </div>
   );
 }

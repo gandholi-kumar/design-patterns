@@ -16,6 +16,7 @@ import { DecisionEnginePage } from './pages/DecisionEnginePage';
 import { NotesWorkspacePage } from './pages/NotesWorkspacePage';
 import { NoteRepositoryProvider } from './lib/notes/NoteRepositoryContext';
 import { AppTooltip } from './components/ui/app-tooltip';
+import { AppToaster } from './components/ui/app-toaster';
 import { WipModulePlaceholder } from './components/WipModulePlaceholder';
 import {
   PatternOverview,
@@ -401,6 +402,7 @@ function App() {
     </main>
     {selected && <PatternDialog pattern={selected} saved={saved} perspective={perspective} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc(`/playground?pattern=${selected.id}`); }}/>}
     {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} />}
+    <AppToaster />
       </div>
     </NoteRepositoryProvider>
   );
