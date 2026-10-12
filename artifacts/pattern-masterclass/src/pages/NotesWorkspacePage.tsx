@@ -3,8 +3,8 @@ import { useLocation } from "wouter";
 import {
   FileText,
   Search,
-  Download,
   Upload,
+  Download,
   ArrowLeft,
   Calendar,
   ExternalLink,
@@ -15,7 +15,6 @@ import {
   Square,
   Settings,
   ChevronDown,
-  Sparkles,
   Check,
 } from "lucide-react";
 import { PATTERNS } from "../data";
@@ -58,20 +57,15 @@ export function NotesWorkspacePage() {
     return "append"; // Default strategy is append
   });
   const [policyMenuOpen, setPolicyMenuOpen] = useState(false);
-  const [testMenuOpen, setTestMenuOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const policyMenuRef = useRef<HTMLDivElement>(null);
-  const testMenuRef = useRef<HTMLDivElement>(null);
 
   // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (policyMenuRef.current && !policyMenuRef.current.contains(e.target as Node)) {
         setPolicyMenuOpen(false);
-      }
-      if (testMenuRef.current && !testMenuRef.current.contains(e.target as Node)) {
-        setTestMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -446,7 +440,7 @@ export function NotesWorkspacePage() {
 
           {/* Header Action Buttons */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Import Policy Selector Dropdown */}
+            {/* Import Policy Selector Dropdown (Solid background overlay) */}
             <div className="relative" ref={policyMenuRef}>
               <button
                 type="button"
@@ -465,8 +459,8 @@ export function NotesWorkspacePage() {
               </button>
 
               {policyMenuOpen && (
-                <div className="absolute right-0 mt-1.5 w-68 rounded-xl bg-card border border-border/80 shadow-2xl p-1.5 z-50 text-xs flex flex-col gap-1 backdrop-blur-md">
-                  <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
+                <div className="absolute right-0 mt-2 w-72 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 text-xs flex flex-col gap-1 text-slate-900 dark:text-slate-100">
+                  <div className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                     Import Collision Strategy
                   </div>
 
@@ -476,7 +470,7 @@ export function NotesWorkspacePage() {
                     className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
                       importPolicy === "append"
                         ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-muted text-foreground"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
                     }`}
                   >
                     <Check
@@ -491,7 +485,7 @@ export function NotesWorkspacePage() {
                           Default
                         </span>
                       </div>
-                      <span className="text-[11px] text-muted-foreground font-normal block mt-0.5">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal block mt-0.5">
                         Preserves notes; appends imported blocks below a divider
                       </span>
                     </div>
@@ -503,7 +497,7 @@ export function NotesWorkspacePage() {
                     className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
                       importPolicy === "overwrite"
                         ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-muted text-foreground"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
                     }`}
                   >
                     <Check
@@ -513,7 +507,7 @@ export function NotesWorkspacePage() {
                     />
                     <div>
                       <span>Overwrite (Replace)</span>
-                      <span className="text-[11px] text-muted-foreground font-normal block mt-0.5">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal block mt-0.5">
                         Replaces existing notes with incoming version
                       </span>
                     </div>
@@ -525,7 +519,7 @@ export function NotesWorkspacePage() {
                     className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
                       importPolicy === "skip"
                         ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-muted text-foreground"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
                     }`}
                   >
                     <Check
@@ -535,7 +529,7 @@ export function NotesWorkspacePage() {
                     />
                     <div>
                       <span>Skip Existing</span>
-                      <span className="text-[11px] text-muted-foreground font-normal block mt-0.5">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal block mt-0.5">
                         Leaves current notes untouched; only imports new ones
                       </span>
                     </div>
@@ -547,7 +541,7 @@ export function NotesWorkspacePage() {
                     className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
                       importPolicy === "ask"
                         ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-muted text-foreground"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
                     }`}
                   >
                     <Check
@@ -557,7 +551,7 @@ export function NotesWorkspacePage() {
                     />
                     <div>
                       <span>Always Ask on Conflict</span>
-                      <span className="text-[11px] text-muted-foreground font-normal block mt-0.5">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal block mt-0.5">
                         Show dialog to choose strategy for each import
                       </span>
                     </div>
@@ -566,106 +560,31 @@ export function NotesWorkspacePage() {
               )}
             </div>
 
-            {/* Test Toasters Dropdown (Interactive verification for user) */}
-            <div className="relative" ref={testMenuRef}>
-              <button
-                type="button"
-                onClick={() => setTestMenuOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                title="Test 10s interactive toaster notifications with hover pause"
-                data-testid="test-toaster-btn"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Test Toaster</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
-
-              {testMenuOpen && (
-                <div className="absolute right-0 mt-1.5 w-60 rounded-xl bg-card border border-border/80 shadow-2xl p-1.5 z-50 text-xs flex flex-col gap-1 backdrop-blur-md">
-                  <div className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
-                    Test 10s Toast (Hover to pause!)
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      appToast.success(
-                        "Notes bundle exported",
-                        "Includes self-contained diagrams & notes payload."
-                      );
-                      setTestMenuOpen(false);
-                    }}
-                    className="px-2.5 py-1.5 rounded-lg text-left hover:bg-emerald-500/15 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors"
-                  >
-                    🟢 Success Toast (10s)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      appToast.warning(
-                        "Import collision detected",
-                        "Existing notes found. Merging via append divider."
-                      );
-                      setTestMenuOpen(false);
-                    }}
-                    className="px-2.5 py-1.5 rounded-lg text-left hover:bg-amber-500/15 hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
-                  >
-                    🟡 Warning Toast (10s)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      appToast.error(
-                        "Import validation failed",
-                        "The uploaded file schema does not match GoF bundle format."
-                      );
-                      setTestMenuOpen(false);
-                    }}
-                    className="px-2.5 py-1.5 rounded-lg text-left hover:bg-rose-500/15 hover:text-rose-600 dark:hover:text-rose-300 transition-colors"
-                  >
-                    🔴 Error Toast (10s)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      appToast.info(
-                        "Hover pause active",
-                        "Hover over this toaster to halt progress bar and 10s timer!"
-                      );
-                      setTestMenuOpen(false);
-                    }}
-                    className="px-2.5 py-1.5 rounded-lg text-left hover:bg-blue-500/15 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
-                  >
-                    🔵 Info Toast (10s)
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Export JSON Button */}
+            {/* Export JSON Button (Upload / Outward icon) */}
             <button
               type="button"
               onClick={() => handleExportJson()}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-foreground transition-colors"
               title="Export all annotated pattern notes as a portable JSON bundle"
             >
-              <Download className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+              <Upload className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span>Export JSON</span>
             </button>
 
-            {/* Export Markdown Button */}
+            {/* Export Markdown Button (Upload / Outward icon) */}
             <button
               type="button"
               onClick={() => handleExportMarkdown()}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-foreground transition-colors"
               title="Export all annotated pattern notes as a single Markdown document"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+              <Upload className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
               <span>Export Markdown</span>
             </button>
 
-            {/* Import Bundle Button */}
+            {/* Import Bundle Button (Download / Inward icon) */}
             <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-medium text-amber-700 dark:text-amber-300 cursor-pointer transition-colors">
-              <Upload className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5" />
               <span>Import Bundle</span>
               <input
                 ref={fileInputRef}
@@ -864,7 +783,7 @@ export function NotesWorkspacePage() {
                     )}
 
                     <div className="flex items-center gap-2">
-                      {/* Individual pattern quick export */}
+                      {/* Individual pattern quick export (Upload / Outward icon) */}
                       {note && (
                         <AppTooltip content="Export this pattern's notes (JSON)">
                           <button
@@ -875,7 +794,7 @@ export function NotesWorkspacePage() {
                             }}
                             className="p-1 rounded text-muted-foreground hover:text-amber-500 transition-colors"
                           >
-                            <Download className="w-3 h-3" />
+                            <Upload className="w-3.5 h-3.5" />
                           </button>
                         </AppTooltip>
                       )}
@@ -906,40 +825,40 @@ export function NotesWorkspacePage() {
         )}
       </main>
 
-      {/* Floating Selective Export Action Bar */}
+      {/* Floating Selective Export Action Bar (100% Solid Opaque background) */}
       {selectedPatternIds.size > 0 && (
         <aside
           aria-label="Selective Notes Actions"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-full bg-slate-900/95 dark:bg-card/95 border border-amber-500/40 shadow-2xl backdrop-blur-md text-white text-xs animate-in fade-in slide-in-from-bottom-4 duration-200"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3.5 px-5 py-3 rounded-full bg-slate-950 dark:bg-slate-950 border-2 border-amber-500 shadow-2xl text-white text-xs animate-in fade-in slide-in-from-bottom-4 duration-200"
         >
-          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40">
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/25 text-amber-300 font-semibold border border-amber-500/40">
             {selectedPatternIds.size} Selected
           </span>
 
-          <div className="h-4 w-px bg-white/20" />
+          <div className="h-4 w-px bg-white/30" />
 
           <button
             type="button"
             onClick={() => handleExportJson()}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold transition-colors shadow-sm"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Upload className="w-3.5 h-3.5" />
             <span>Export JSON ({selectedPatternIds.size})</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleExportMarkdown()}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors shadow-sm"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Upload className="w-3.5 h-3.5" />
             <span>Export Markdown ({selectedPatternIds.size})</span>
           </button>
 
           <button
             type="button"
             onClick={clearSelection}
-            className="px-2 py-1 text-slate-400 hover:text-white transition-colors"
+            className="px-2.5 py-1 text-slate-300 hover:text-white transition-colors"
           >
             Clear
           </button>
