@@ -26,6 +26,7 @@ import { AppTooltip } from '../components/ui/app-tooltip';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { PatternNotesPanel } from '../components/notes/PatternNotesPanel';
 import { useNoteRepository } from '../lib/notes/NoteRepositoryContext';
+import { ErrorBoundary } from '../components/error-boundary';
 
 export type DetailTab = 'overview' | 'code' | 'diagrams' | 'trade-offs';
 
@@ -660,19 +661,21 @@ export function PatternDetailPage({
               minSize={25}
               className="overflow-hidden flex flex-col"
             >
-              <PatternNotesPanel
-                patternId={pattern.id}
-                patternName={pattern.name}
-                category={pattern.category}
-                direction={notesDirection}
-                theme={saved.theme}
-                onToggleOrientation={() => {
-                  const next = notesDirection === 'horizontal' ? 'vertical' : 'horizontal';
-                  setNotesDirection(next);
-                  localStorage.setItem('gof-notes-panel-orientation', next);
-                }}
-                onClose={() => setIsNotesOpen(false)}
-              />
+              <ErrorBoundary resetKey={pattern.id}>
+                <PatternNotesPanel
+                  patternId={pattern.id}
+                  patternName={pattern.name}
+                  category={pattern.category}
+                  direction={notesDirection}
+                  theme={saved.theme}
+                  onToggleOrientation={() => {
+                    const next = notesDirection === 'horizontal' ? 'vertical' : 'horizontal';
+                    setNotesDirection(next);
+                    localStorage.setItem('gof-notes-panel-orientation', next);
+                  }}
+                  onClose={() => setIsNotesOpen(false)}
+                />
+              </ErrorBoundary>
             </Panel>
           </>
         )}

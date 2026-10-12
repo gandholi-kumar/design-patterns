@@ -59,3 +59,5 @@ export default defineConfig({
     host: '0.0.0.0',
   },
 });
+// Vite config reloaded
+
