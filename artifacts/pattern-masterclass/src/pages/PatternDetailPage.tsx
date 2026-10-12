@@ -17,11 +17,15 @@ import {
   RotateCcw,
   Server,
   Sparkles,
+  PenLine,
 } from 'lucide-react';
 import { PATTERNS, type Pattern } from '../data';
 import type { Perspective } from '../pattern-types';
 import { PatternDiagrams } from '../PatternDiagrams';
 import { AppTooltip } from '../components/ui/app-tooltip';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { PatternNotesPanel } from '../components/notes/PatternNotesPanel';
+import { useNoteRepository } from '../lib/notes/NoteRepositoryContext';
 
 export type DetailTab = 'overview' | 'code' | 'diagrams' | 'trade-offs';
 
@@ -52,6 +56,51 @@ export function PatternDetailPage({
   const [, setLoc] = useLocation();
   const [tab, setTab] = useState<DetailTab>('overview');
   const [codeCopied, setCodeCopied] = useState(false);
+
+  // Per-Pattern Notes panel integration
+  const noteRepo = useNoteRepository();
+  const [hasNote, setHasNote] = useState(false);
+  const [isNotesOpen, setIsNotesOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('notes') === 'open') return true;
+    return localStorage.getItem('gof-notes-panel-open') === 'true';
+  });
+  const [notesDirection, setNotesDirection] = useState<'horizontal' | 'vertical'>(() => {
+    if (typeof window === 'undefined') return 'horizontal';
+    return (localStorage.getItem('gof-notes-panel-orientation') as 'horizontal' | 'vertical') || 'horizontal';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('gof-notes-panel-open', String(isNotesOpen));
+  }, [isNotesOpen]);
+
+  useEffect(() => {
+    noteRepo.get(id).then(n => setHasNote(Boolean(n && n.blocks.length > 0))).catch(() => setHasNote(false));
+  }, [id, noteRepo]);
+
+  // Global N key listener to toggle notes panel
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (!e.shiftKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        setIsNotesOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Decoupled local perspective state: initialized to the active global selection
   const [localPerspective, setLocalPerspective] = useState<Perspective>(globalPerspective);
@@ -287,22 +336,56 @@ export function PatternDetailPage({
 
       {/* 2. The 4 Standard Tabs Bar */}
       <div className="studio-tabs-bar" role="tablist" aria-label="Pattern detail tabs">
-        {tabs.map(t => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            className={`studio-tab-pill ${tab === t ? 'active' : ''}`}
-            onClick={() => setTab(t)}
-            data-testid={`studio-tab-${t}`}
-          >
-            {t}
-          </button>
-        ))}
+        <div className="flex items-center gap-1">
+          {tabs.map(t => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              className={`studio-tab-pill ${tab === t ? 'active' : ''}`}
+              onClick={() => setTab(t)}
+              data-testid={`studio-tab-${t}`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div className="studio-tabs-right ml-auto flex items-center gap-2">
+          <AppTooltip content={isNotesOpen ? "Collapse study notes (N)" : "Open study notes (N)"}>
+            <button
+              type="button"
+              onClick={() => setIsNotesOpen(prev => !prev)}
+              data-testid="toggle-notes-panel-btn"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                isNotesOpen
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              }`}
+            >
+              <PenLine className="w-3.5 h-3.5" />
+              <span>Notes</span>
+              {hasNote && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.8)]" />
+              )}
+              <kbd className="text-[10px] text-muted-foreground/70 font-mono">N</kbd>
+            </button>
+          </AppTooltip>
+        </div>
       </div>
 
-      {/* 3. Main Viewport-Pinned Tab Workspace */}
-      <main className="studio-workspace-area" role="tabpanel">
+      {/* 3. Main Viewport-Pinned Tab Workspace with Dual-Orientation Split */}
+      <PanelGroup
+        direction={notesDirection}
+        autoSaveId={notesDirection === 'horizontal' ? 'notes-panel-h' : 'notes-panel-v'}
+        className="flex-1 min-h-0 relative overflow-hidden"
+      >
+        <Panel
+          defaultSize={isNotesOpen ? (notesDirection === 'horizontal' ? 65 : 60) : 100}
+          minSize={35}
+          className="overflow-hidden flex flex-col"
+        >
+          <main className="studio-workspace-area h-full overflow-y-auto" role="tabpanel">
         {tab === 'overview' && (
           <div className="studio-editorial-overview studio-stacked-overview" data-testid="studio-overview">
             {/* 1. THE INTENT */}
@@ -551,7 +634,49 @@ export function PatternDetailPage({
             </section>
           </div>
         )}
-      </main>
+          </main>
+        </Panel>
+
+        {isNotesOpen && (
+          <>
+            <PanelResizeHandle
+              className={
+                notesDirection === 'horizontal'
+                  ? 'w-1.5 hover:w-2 bg-border/40 hover:bg-amber-500/80 transition-all cursor-col-resize flex items-center justify-center flex-shrink-0 z-10'
+                  : 'h-1.5 hover:h-2 bg-border/40 hover:bg-amber-500/80 transition-all cursor-row-resize flex items-center justify-center flex-shrink-0 z-10'
+              }
+            >
+              <div
+                className={
+                  notesDirection === 'horizontal'
+                    ? 'w-0.5 h-6 rounded-full bg-muted-foreground/30'
+                    : 'h-0.5 w-6 rounded-full bg-muted-foreground/30'
+                }
+              />
+            </PanelResizeHandle>
+
+            <Panel
+              defaultSize={notesDirection === 'horizontal' ? 35 : 40}
+              minSize={25}
+              className="overflow-hidden flex flex-col"
+            >
+              <PatternNotesPanel
+                patternId={pattern.id}
+                patternName={pattern.name}
+                category={pattern.category}
+                direction={notesDirection}
+                theme={saved.theme}
+                onToggleOrientation={() => {
+                  const next = notesDirection === 'horizontal' ? 'vertical' : 'horizontal';
+                  setNotesDirection(next);
+                  localStorage.setItem('gof-notes-panel-orientation', next);
+                }}
+                onClose={() => setIsNotesOpen(false)}
+              />
+            </Panel>
+          </>
+        )}
+      </PanelGroup>
 
       {/* 4. Pinned Bottom Navigation Dock (2.625rem) */}
       <footer className="studio-bottom-dock" role="navigation" aria-label="Sequential pattern navigation">
