@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { useCreateBlockNote } from "@blocknote/react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  useCreateBlockNote,
+  SuggestionMenuController,
+  getDefaultReactSlashMenuItems,
+} from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import type { PartialBlock } from "@blocknote/core";
 import "@blocknote/core/fonts/inter.css";
@@ -61,15 +65,46 @@ export function NotesEditor({
   }, [editor]);
 
   // Handle document changes
-  const handleChange = () => {
+  const handleChange = useCallback(() => {
     if (!editor) return;
-    const documentBlocks = editor.document as unknown as NoteBlock[];
-    onBlocksChange(documentBlocks);
-  };
+    try {
+      const documentBlocks = editor.document as unknown as NoteBlock[];
+      onBlocksChange(documentBlocks);
+    } catch (err) {
+      console.warn("Could not serialize document blocks:", err);
+    }
+  }, [editor, onBlocksChange]);
+
+  // Curated, safe slash menu items for design pattern documentation
+  const getSlashMenuItems = useCallback(
+    async (query: string) => {
+      if (!editor) return [];
+      const queryLower = query.toLowerCase().trim();
+      const defaultItems = getDefaultReactSlashMenuItems(editor);
+
+      return defaultItems.filter((item) => {
+        const titleLower = item.title.toLowerCase();
+        // Exclude unneeded binary media blocks prone to media player or upload crashes
+        if (titleLower === "audio" || titleLower === "video" || titleLower === "file") {
+          return false;
+        }
+
+        if (!queryLower) return true;
+
+        const matchesTitle = titleLower.includes(queryLower);
+        const matchesAliases =
+          item.aliases &&
+          item.aliases.some((alias) => alias.toLowerCase().includes(queryLower));
+
+        return Boolean(matchesTitle || matchesAliases);
+      });
+    },
+    [editor]
+  );
 
   if (!editor || !isReady) {
     return (
-      <div className="flex items-center justify-center h-48 text-xs text-muted-foreground animate-pulse">
+      <div className="flex items-center justify-center h-full min-h-[160px] text-xs text-muted-foreground animate-pulse">
         Initializing notes editor...
       </div>
     );
@@ -77,15 +112,32 @@ export function NotesEditor({
 
   return (
     <div
-      className="notes-editor-wrapper h-full w-full overflow-y-auto"
+      className="notes-editor-wrapper h-full w-full min-h-full flex flex-col overflow-y-auto cursor-text"
       data-testid="blocknote-editor"
+      onClick={(e) => {
+        // If clicking on the empty background below text, focus the editor
+        if (e.target === e.currentTarget && editor) {
+          editor.focus();
+        }
+      }}
     >
       <BlockNoteView
         editor={editor}
         theme={theme}
         onChange={handleChange}
+        slashMenu={false}
+        tableHandles={true}
+        formattingToolbar={true}
+        linkToolbar={true}
+        sideMenu={true}
         data-theming-css-variables-demo
-      />
+        className="flex-1 min-h-full flex flex-col"
+      >
+        <SuggestionMenuController
+          triggerCharacter="/"
+          getItems={getSlashMenuItems}
+        />
+      </BlockNoteView>
     </div>
   );
 }

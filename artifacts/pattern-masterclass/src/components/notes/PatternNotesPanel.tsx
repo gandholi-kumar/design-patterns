@@ -5,6 +5,7 @@ import { usePatternNotes } from "../../hooks/usePatternNotes";
 import { NotesSaveIndicator } from "./NotesSaveIndicator";
 import { NotesOrientationToggle } from "./NotesOrientationToggle";
 import { NotesEditor } from "./NotesEditor";
+import { NotesErrorBoundary } from "./NotesErrorBoundary";
 import { AppTooltip } from "../ui/app-tooltip";
 
 interface PatternNotesPanelProps {
@@ -102,7 +103,9 @@ export function PatternNotesPanel({
 
   return (
     <aside
-      className="flex flex-col h-full w-full bg-card/95 border-l border-border/80 backdrop-blur-md select-text"
+      className={`flex flex-col h-full w-full bg-card/95 backdrop-blur-md select-text ${
+        direction === "horizontal" ? "border-l border-border/80" : "border-t border-border/80"
+      }`}
       role="complementary"
       aria-label={`Study notes for ${patternName}`}
       data-testid="pattern-notes-panel"
@@ -179,7 +182,7 @@ export function PatternNotesPanel({
       </div>
 
       {/* Editor Body */}
-      <div className="flex-1 min-h-0 relative overflow-hidden bg-background/50">
+      <div className="flex-1 min-h-0 relative overflow-hidden bg-background/50 flex flex-col">
         {isLoading ? (
           <div className="flex items-center justify-center h-full text-xs text-muted-foreground animate-pulse">
             Loading note content...
@@ -197,13 +200,15 @@ export function PatternNotesPanel({
             </button>
           </div>
         ) : (
-          <NotesEditor
-            initialBlocks={blocks}
-            patternName={patternName}
-            theme={theme}
-            onBlocksChange={handleBlocksChange}
-            onUploadMedia={uploadMedia}
-          />
+          <NotesErrorBoundary resetKey={blocks} onReset={retrySave}>
+            <NotesEditor
+              initialBlocks={blocks}
+              patternName={patternName}
+              theme={theme}
+              onBlocksChange={handleBlocksChange}
+              onUploadMedia={uploadMedia}
+            />
+          </NotesErrorBoundary>
         )}
       </div>
 

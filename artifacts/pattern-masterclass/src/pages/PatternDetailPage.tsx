@@ -376,17 +376,9 @@ export function PatternDetailPage({
       </div>
 
       {/* 3. Main Viewport-Pinned Tab Workspace with Dual-Orientation Split */}
-      <PanelGroup
-        direction={notesDirection}
-        autoSaveId={notesDirection === 'horizontal' ? 'notes-panel-h' : 'notes-panel-v'}
-        className="flex-1 min-h-0 relative overflow-hidden"
-      >
-        <Panel
-          defaultSize={isNotesOpen ? (notesDirection === 'horizontal' ? 65 : 60) : 100}
-          minSize={35}
-          className="overflow-hidden flex flex-col"
-        >
-          <main className="studio-workspace-area h-full overflow-y-auto" role="tabpanel">
+      {(() => {
+        const workspaceContent = (
+          <>
         {tab === 'overview' && (
           <div className="studio-editorial-overview studio-stacked-overview" data-testid="studio-overview">
             {/* 1. THE INTENT */}
@@ -635,11 +627,38 @@ export function PatternDetailPage({
             </section>
           </div>
         )}
-          </main>
-        </Panel>
+          </>
+        );
 
-        {isNotesOpen && (
-          <>
+        if (!isNotesOpen) {
+          return (
+            <main
+              className="studio-workspace-area flex-1 min-h-0 overflow-y-auto"
+              role="tabpanel"
+              data-testid="studio-workspace-full"
+            >
+              {workspaceContent}
+            </main>
+          );
+        }
+
+        return (
+          <PanelGroup
+            key={notesDirection}
+            direction={notesDirection}
+            autoSaveId={notesDirection === 'horizontal' ? 'notes-panel-h' : 'notes-panel-v'}
+            className="flex-1 min-h-0 relative overflow-hidden"
+          >
+            <Panel
+              defaultSize={notesDirection === 'horizontal' ? 65 : 60}
+              minSize={35}
+              className="overflow-hidden flex flex-col"
+            >
+              <main className="studio-workspace-area h-full overflow-y-auto" role="tabpanel">
+                {workspaceContent}
+              </main>
+            </Panel>
+
             <PanelResizeHandle
               className={
                 notesDirection === 'horizontal'
@@ -677,9 +696,9 @@ export function PatternDetailPage({
                 />
               </ErrorBoundary>
             </Panel>
-          </>
-        )}
-      </PanelGroup>
+          </PanelGroup>
+        );
+      })()}
 
       {/* 4. Pinned Bottom Navigation Dock (2.625rem) */}
       <footer className="studio-bottom-dock" role="navigation" aria-label="Sequential pattern navigation">
