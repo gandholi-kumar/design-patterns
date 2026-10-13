@@ -16,6 +16,8 @@ import {
   Settings,
   ChevronDown,
   Check,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { PATTERNS } from "../data";
 import { useNoteRepository } from "../lib/notes/NoteRepositoryContext";
@@ -27,6 +29,12 @@ import {
   ImportConflictDialog,
   type ImportCollisionStrategy,
 } from "../components/notes/ImportConflictDialog";
+import {
+  NotesTableView,
+  type SortField,
+  type SortDirection,
+} from "../components/notes/NotesTableView";
+import { NotesPaginationBar } from "../components/notes/NotesPaginationBar";
 
 export function NotesWorkspacePage() {
   const [, setLoc] = useLocation();
@@ -37,6 +45,53 @@ export function NotesWorkspacePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "annotated" | "unannotated">("all");
+
+  // View mode state: 'cards' or 'table' (persisted in localStorage)
+  const [viewMode, setViewMode] = useState<"cards" | "table">(() => {
+    const saved = localStorage.getItem("gof-notes-view-mode");
+    return saved === "cards" || saved === "table" ? saved : "table";
+  });
+
+  // Sorting state for table and cards
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  // Pagination state (10, 20, 50, 100 per page)
+  const [pageSize, setPageSize] = useState<number>(() => {
+    const saved = localStorage.getItem("gof-notes-page-size");
+    const num = Number(saved);
+    return [10, 20, 50, 100].includes(num) ? num : 10;
+  });
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    localStorage.setItem("gof-notes-page-size", String(newSize));
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  // Reset to page 1 on filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, categoryFilter, statusFilter]);
+
+  const handleToggleViewMode = (mode: "cards" | "table") => {
+    setViewMode(mode);
+    localStorage.setItem("gof-notes-view-mode", mode);
+  };
+
+  const handleSortChange = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
 
   // Multi-selection state
   const [selectedPatternIds, setSelectedPatternIds] = useState<Set<string>>(new Set());
@@ -136,7 +191,50 @@ export function NotesWorkspacePage() {
     });
   }, [notesMap, categoryFilter, statusFilter, searchQuery]);
 
+  // Sorted and filtered patterns based on active sortField and sortDirection
+  const sortedAndFilteredPatterns = useMemo(() => {
+    const list = [...filteredPatterns];
+    list.sort((a, b) => {
+      let comparison = 0;
+      if (sortField === "name") {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortField === "category") {
+        comparison = a.category.localeCompare(b.category);
+      } else if (sortField === "status") {
+        const aHas = Boolean(notesMap[a.id]);
+        const bHas = Boolean(notesMap[b.id]);
+        comparison = aHas === bHas ? 0 : aHas ? -1 : 1;
+      } else if (sortField === "modified") {
+        const aTime = notesMap[a.id]?.lastModified
+          ? new Date(notesMap[a.id].lastModified).getTime()
+          : 0;
+        const bTime = notesMap[b.id]?.lastModified
+          ? new Date(notesMap[b.id].lastModified).getTime()
+          : 0;
+        comparison = bTime - aTime;
+        return sortDirection === "asc" ? -comparison : comparison;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+    return list;
+  }, [filteredPatterns, sortField, sortDirection, notesMap]);
+
+  // Pagination calculations
+  const totalItems = sortedAndFilteredPatterns.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedPatterns = useMemo(() => {
+    const start = (safeCurrentPage - 1) * pageSize;
+    return sortedAndFilteredPatterns.slice(start, start + pageSize);
+  }, [sortedAndFilteredPatterns, safeCurrentPage, pageSize]);
+
   const totalAnnotated = Object.keys(notesMap).length;
+
+  // Check if all patterns on current page are selected
+  const allCurrentPageSelected =
+    paginatedPatterns.length > 0 &&
+    paginatedPatterns.every((p) => selectedPatternIds.has(p.id));
 
   // Toggle selection for a single pattern
   const togglePatternSelect = (patternId: string, e: React.MouseEvent) => {
@@ -152,12 +250,24 @@ export function NotesWorkspacePage() {
     });
   };
 
-  // Toggle select all visible patterns
+  // Toggle select all visible patterns on current page
   const toggleSelectAll = () => {
-    if (selectedPatternIds.size === filteredPatterns.length && filteredPatterns.length > 0) {
-      setSelectedPatternIds(new Set());
+    if (allCurrentPageSelected) {
+      setSelectedPatternIds((prev) => {
+        const next = new Set(prev);
+        for (const p of paginatedPatterns) {
+          next.delete(p.id);
+        }
+        return next;
+      });
     } else {
-      setSelectedPatternIds(new Set(filteredPatterns.map((p) => p.id)));
+      setSelectedPatternIds((prev) => {
+        const next = new Set(prev);
+        for (const p of paginatedPatterns) {
+          next.add(p.id);
+        }
+        return next;
+      });
     }
   };
 
@@ -610,13 +720,12 @@ export function NotesWorkspacePage() {
               onClick={toggleSelectAll}
               className="p-1.5 rounded-lg border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               title={
-                selectedPatternIds.size === filteredPatterns.length && filteredPatterns.length > 0
-                  ? "Deselect all visible patterns"
-                  : "Select all visible patterns"
+                allCurrentPageSelected
+                  ? "Deselect all patterns on this page"
+                  : "Select all patterns on this page"
               }
             >
-              {selectedPatternIds.size > 0 &&
-              selectedPatternIds.size === filteredPatterns.length ? (
+              {allCurrentPageSelected ? (
                 <CheckSquare className="w-4 h-4 text-amber-500" />
               ) : (
                 <Square className="w-4 h-4" />
@@ -635,7 +744,7 @@ export function NotesWorkspacePage() {
             </div>
           </div>
 
-          {/* Filter Pills */}
+          {/* Filter Pills & View Mode Switcher */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center rounded-lg border border-border/60 p-0.5 bg-background">
               {["all", "creational", "structural", "behavioral"].map((cat) => (
@@ -670,20 +779,68 @@ export function NotesWorkspacePage() {
                 </button>
               ))}
             </div>
+
+            {/* View Mode Toggle: Cards ▦ vs Table ☰ */}
+            <div className="flex items-center rounded-lg border border-border/60 p-0.5 bg-background">
+              <button
+                type="button"
+                onClick={() => handleToggleViewMode("cards")}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
+                  viewMode === "cards"
+                    ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                }`}
+                title="Cards grid view"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Cards</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleViewMode("table")}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
+                  viewMode === "table"
+                    ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                }`}
+                title="High-density table view"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Table</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Pattern Notes Cards Grid */}
+        {/* Loading State */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-44 rounded-xl border border-border/60 bg-card/40 animate-pulse"
-              />
-            ))}
-          </div>
-        ) : filteredPatterns.length === 0 ? (
+          viewMode === "table" ? (
+            <NotesTableView
+              patterns={[]}
+              notesMap={notesMap}
+              selectedPatternIds={selectedPatternIds}
+              onToggleSelect={() => {}}
+              onSelectAllVisible={() => {}}
+              onOpenNote={() => {}}
+              onExportJson={() => {}}
+              onRequestDelete={() => {}}
+              extractSnippet={extractSnippet}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSortChange={handleSortChange}
+              isLoading={true}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-44 rounded-xl border border-border/60 bg-card/40 animate-pulse"
+                />
+              ))}
+            </div>
+          )
+        ) : sortedAndFilteredPatterns.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <FolderOpen className="w-12 h-12 text-muted-foreground/40 mb-3" />
             <h3 className="text-sm font-semibold text-foreground">No matching pattern notes found</h3>
@@ -691,136 +848,174 @@ export function NotesWorkspacePage() {
               Try adjusting your search terms or category filters to view other patterns.
             </p>
           </div>
+        ) : viewMode === "table" ? (
+          <div className="pb-20">
+            <NotesTableView
+              patterns={paginatedPatterns}
+              notesMap={notesMap}
+              selectedPatternIds={selectedPatternIds}
+              onToggleSelect={togglePatternSelect}
+              onSelectAllVisible={toggleSelectAll}
+              onOpenNote={(id) => setLoc(`/pattern/${id}?notes=open`)}
+              onExportJson={(ids) => handleExportJson(ids)}
+              onRequestDelete={(id, name, e) => handleRequestDelete(id, name, e)}
+              extractSnippet={extractSnippet}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSortChange={handleSortChange}
+              isLoading={false}
+              totalItems={totalItems}
+              currentPage={safeCurrentPage}
+              pageSize={pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20">
-            {filteredPatterns.map((pattern) => {
-              const note = notesMap[pattern.id];
-              const isSelected = selectedPatternIds.has(pattern.id);
-              const snippet = note ? extractSnippet(note.blocks) : "";
-              const formattedDate = note
-                ? new Date(note.lastModified).toLocaleDateString([], {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : null;
+          <div className="flex flex-col gap-4 pb-20">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedPatterns.map((pattern) => {
+                const note = notesMap[pattern.id];
+                const isSelected = selectedPatternIds.has(pattern.id);
+                const snippet = note ? extractSnippet(note.blocks) : "";
+                const formattedDate = note
+                  ? new Date(note.lastModified).toLocaleDateString([], {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : null;
 
-              return (
-                <div
-                  key={pattern.id}
-                  onClick={() => setLoc(`/pattern/${pattern.id}?notes=open`)}
-                  className={`group relative flex flex-col justify-between p-4 rounded-xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? "ring-2 ring-amber-500 bg-amber-500/5 border-amber-500/60 shadow-md"
-                      : note
-                      ? "bg-card/70 border-amber-500/30 hover:border-amber-500/60 shadow-sm"
-                      : "bg-card/30 border-border/50 hover:border-border hover:bg-card/50 opacity-80 hover:opacity-100"
-                  }`}
-                >
-                  <div>
-                    {/* Card Header with Checkbox */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2.5">
-                        <button
-                          type="button"
-                          onClick={(e) => togglePatternSelect(pattern.id, e)}
-                          className="mt-0.5 text-muted-foreground hover:text-amber-500 transition-colors"
-                          title={isSelected ? "Deselect pattern" : "Select pattern for selective export"}
-                        >
-                          {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-amber-500" />
-                          ) : (
-                            <Square className="w-4 h-4" />
-                          )}
-                        </button>
+                return (
+                  <div
+                    key={pattern.id}
+                    onClick={() => setLoc(`/pattern/${pattern.id}?notes=open`)}
+                    className={`group relative flex flex-col justify-between p-4 rounded-xl border transition-all cursor-pointer ${
+                      isSelected
+                        ? "ring-2 ring-amber-500 bg-amber-500/5 border-amber-500/60 shadow-md"
+                        : note
+                        ? "bg-card/70 border-amber-500/30 hover:border-amber-500/60 shadow-sm"
+                        : "bg-card/30 border-border/50 hover:border-border hover:bg-card/50 opacity-80 hover:opacity-100"
+                    }`}
+                  >
+                    <div>
+                      {/* Card Header with Checkbox */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2.5">
+                          <button
+                            type="button"
+                            onClick={(e) => togglePatternSelect(pattern.id, e)}
+                            className="mt-0.5 text-muted-foreground hover:text-amber-500 transition-colors"
+                            title={isSelected ? "Deselect pattern" : "Select pattern for selective export"}
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4 text-amber-500" />
+                            ) : (
+                              <Square className="w-4 h-4" />
+                            )}
+                          </button>
 
-                        <div>
-                          <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground">
-                            {pattern.category}
-                          </span>
-                          <h3 className="text-sm font-bold text-foreground group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors">
-                            {pattern.name}
-                          </h3>
+                          <div>
+                            <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground">
+                              {pattern.category}
+                            </span>
+                            <h3 className="text-sm font-bold text-foreground group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors">
+                              {pattern.name}
+                            </h3>
+                          </div>
                         </div>
+
+                        {note ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                            <PenTool className="w-2.5 h-2.5" />
+                            <span>Notes</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/50">
+                            Empty
+                          </span>
+                        )}
                       </div>
 
-                      {note ? (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                          <PenTool className="w-2.5 h-2.5" />
-                          <span>Notes</span>
+                      {/* Card Snippet / Placeholder */}
+                      <div className="mt-3">
+                        {note ? (
+                          <p className="text-xs text-foreground/80 line-clamp-3 leading-relaxed font-sans">
+                            {snippet}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground/60 italic">
+                            No notes written yet. Click to start jotting down understanding...
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground">
+                      {formattedDate ? (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-muted-foreground/60" />
+                          <span>{formattedDate}</span>
                         </span>
                       ) : (
-                        <span className="text-[10px] text-muted-foreground/50">
-                          Empty
+                        <span>Pattern #{pattern.id}</span>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        {/* Individual pattern quick export */}
+                        {note && (
+                          <AppTooltip content="Export this pattern's notes (JSON)">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleExportJson([pattern.id]);
+                              }}
+                              className="p-1 rounded text-muted-foreground hover:text-amber-500 transition-colors"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          </AppTooltip>
+                        )}
+
+                        {/* Delete note trigger */}
+                        {note && (
+                          <AppTooltip content="Delete note">
+                            <button
+                              type="button"
+                              onClick={(e) => handleRequestDelete(pattern.id, pattern.name, e)}
+                              className="p-1 rounded text-muted-foreground hover:text-rose-400 transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </AppTooltip>
+                        )}
+
+                        <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 group-hover:underline">
+                          <span>Open</span>
+                          <ExternalLink className="w-3 h-3" />
                         </span>
-                      )}
-                    </div>
-
-                    {/* Card Snippet / Placeholder */}
-                    <div className="mt-3">
-                      {note ? (
-                        <p className="text-xs text-foreground/80 line-clamp-3 leading-relaxed font-sans">
-                          {snippet}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground/60 italic">
-                          No notes written yet. Click to start jotting down understanding...
-                        </p>
-                      )}
+                      </div>
                     </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  {/* Card Footer */}
-                  <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground">
-                    {formattedDate ? (
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-muted-foreground/60" />
-                        <span>{formattedDate}</span>
-                      </span>
-                    ) : (
-                      <span>Pattern #{pattern.id}</span>
-                    )}
-
-                    <div className="flex items-center gap-2">
-                      {/* Individual pattern quick export (Upload / Outward icon) */}
-                      {note && (
-                        <AppTooltip content="Export this pattern's notes (JSON)">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleExportJson([pattern.id]);
-                            }}
-                            className="p-1 rounded text-muted-foreground hover:text-amber-500 transition-colors"
-                          >
-                            <Upload className="w-3.5 h-3.5" />
-                          </button>
-                        </AppTooltip>
-                      )}
-
-                      {/* Delete note trigger */}
-                      {note && (
-                        <AppTooltip content="Delete note">
-                          <button
-                            type="button"
-                            onClick={(e) => handleRequestDelete(pattern.id, pattern.name, e)}
-                            className="p-1 rounded text-muted-foreground hover:text-rose-400 transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </AppTooltip>
-                      )}
-
-                      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 group-hover:underline">
-                        <span>Open</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {/* Cards View Pagination Bar */}
+            {totalItems > 0 && (
+              <div className="rounded-xl border border-border/80 overflow-hidden bg-card/60 backdrop-blur-md shadow-sm">
+                <NotesPaginationBar
+                  totalItems={totalItems}
+                  currentPage={safeCurrentPage}
+                  pageSize={pageSize}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                />
+              </div>
+            )}
           </div>
         )}
       </main>
