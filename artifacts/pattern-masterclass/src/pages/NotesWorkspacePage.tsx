@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation } from "wouter";
 import {
   FileText,
+  FileJson,
+  FileUp,
   Search,
   Upload,
   Download,
@@ -525,14 +527,16 @@ export function NotesWorkspacePage() {
       <header className="border-b border-border/80 bg-card/60 backdrop-blur-md px-6 py-4 flex-shrink-0 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setLoc("/")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Masterclass</span>
-            </button>
+            <AppTooltip content="Back to Masterclass">
+              <button
+                type="button"
+                onClick={() => setLoc("/")}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shadow-2xs shrink-0"
+                aria-label="Back to Masterclass"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            </AppTooltip>
 
             <div>
               <div className="flex items-center gap-2">
@@ -548,25 +552,24 @@ export function NotesWorkspacePage() {
             </div>
           </div>
 
-          {/* Header Action Buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Import Policy Selector Dropdown (Solid background overlay) */}
+          {/* Header Action Buttons (Icon-only with Tooltips) */}
+          <div className="flex items-center gap-2">
+            {/* Import Policy Selector Dropdown (Icon-only) */}
             <div className="relative" ref={policyMenuRef}>
-              <button
-                type="button"
-                onClick={() => setPolicyMenuOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-foreground transition-colors"
-                title="Configure collision strategy for bundle imports"
-              >
-                <Settings className="w-3.5 h-3.5 text-slate-400 dark:text-slate-300" />
-                <span>
-                  Policy:{" "}
-                  <strong className="capitalize text-amber-600 dark:text-amber-400">
-                    {importPolicy === "ask" ? "Always Ask" : importPolicy}
-                  </strong>
-                </span>
-                <ChevronDown className="w-3 h-3 text-muted-foreground" />
-              </button>
+              <AppTooltip content={`Collision policy: ${importPolicy === "ask" ? "Always Ask" : importPolicy.toUpperCase()}`}>
+                <button
+                  type="button"
+                  onClick={() => setPolicyMenuOpen((prev) => !prev)}
+                  className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors shadow-2xs ${
+                    policyMenuOpen
+                      ? "bg-muted border-amber-500/60 text-amber-500"
+                      : "border-border/80 hover:bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                  aria-label="Configure collision strategy for bundle imports"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              </AppTooltip>
 
               {policyMenuOpen && (
                 <div className="absolute right-0 mt-2 w-72 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 text-xs flex flex-col gap-1 text-slate-900 dark:text-slate-100">
@@ -670,41 +673,45 @@ export function NotesWorkspacePage() {
               )}
             </div>
 
-            {/* Export JSON Button (Upload / Outward icon) */}
-            <button
-              type="button"
-              onClick={() => handleExportJson()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-foreground transition-colors"
-              title="Export all annotated pattern notes as a portable JSON bundle"
-            >
-              <Upload className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-              <span>Export JSON</span>
-            </button>
+            {/* Export JSON Button (Icon-only) */}
+            <AppTooltip content="Export notes bundle (JSON)">
+              <button
+                type="button"
+                onClick={() => handleExportJson()}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border/80 hover:bg-muted text-muted-foreground hover:text-amber-500 transition-colors shadow-2xs"
+                aria-label="Export all annotated pattern notes as a portable JSON bundle"
+              >
+                <FileJson className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+              </button>
+            </AppTooltip>
 
-            {/* Export Markdown Button (Upload / Outward icon) */}
-            <button
-              type="button"
-              onClick={() => handleExportMarkdown()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-medium text-foreground transition-colors"
-              title="Export all annotated pattern notes as a single Markdown document"
-            >
-              <Upload className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-              <span>Export Markdown</span>
-            </button>
+            {/* Export Markdown Button (Icon-only) */}
+            <AppTooltip content="Export all notes as Markdown (.md)">
+              <button
+                type="button"
+                onClick={() => handleExportMarkdown()}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border/80 hover:bg-muted text-muted-foreground hover:text-emerald-500 transition-colors shadow-2xs"
+                aria-label="Export all annotated pattern notes as a single Markdown document"
+              >
+                <FileText className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+              </button>
+            </AppTooltip>
 
-            {/* Import Bundle Button (Download / Inward icon) */}
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-medium text-amber-700 dark:text-amber-300 cursor-pointer transition-colors">
-              <Download className="w-3.5 h-3.5" />
-              <span>Import Bundle</span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleFileImport}
-                className="hidden"
-                data-testid="import-bundle-file-input"
-              />
-            </label>
+            {/* Import Bundle Button (Icon-only) */}
+            <AppTooltip content="Import notes bundle (.json)">
+              <label className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 cursor-pointer transition-colors shadow-2xs">
+                <FileUp className="w-4 h-4" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  onChange={handleFileImport}
+                  className="hidden"
+                  data-testid="import-bundle-file-input"
+                  aria-label="Import notes bundle"
+                />
+              </label>
+            </AppTooltip>
           </div>
         </div>
       </header>
@@ -1037,7 +1044,7 @@ export function NotesWorkspacePage() {
             onClick={() => handleExportJson()}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold transition-colors shadow-sm"
           >
-            <Upload className="w-3.5 h-3.5" />
+            <FileJson className="w-3.5 h-3.5" />
             <span>Export JSON ({selectedPatternIds.size})</span>
           </button>
 
@@ -1046,7 +1053,7 @@ export function NotesWorkspacePage() {
             onClick={() => handleExportMarkdown()}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors shadow-sm"
           >
-            <Upload className="w-3.5 h-3.5" />
+            <FileText className="w-3.5 h-3.5" />
             <span>Export Markdown ({selectedPatternIds.size})</span>
           </button>
 
