@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: code-runner
     description: Code execution operations
+  - name: notes
+    description: Per-pattern rich notes operations
 paths:
   /healthz:
     get:
@@ -45,6 +47,135 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExecutionResult"
+  /patterns/{patternId}/notes:
+    get:
+      operationId: getPatternNote
+      tags: [notes]
+      summary: Get pattern note
+      description: Retrieves the rich note document for the specified pattern ID
+      parameters:
+        - name: patternId
+          in: path
+          required: true
+          description: The canonical GoF pattern slug (e.g. factory-method)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Note found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatternNote"
+        "404":
+          description: Note not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: upsertPatternNote
+      tags: [notes]
+      summary: Upsert pattern note
+      description: Creates or updates the rich note document for the specified pattern ID
+      parameters:
+        - name: patternId
+          in: path
+          required: true
+          description: The canonical GoF pattern slug (e.g. factory-method)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertPatternNoteRequest"
+      responses:
+        "200":
+          description: Note saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatternNote"
+        "400":
+          description: Invalid note document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deletePatternNote
+      tags: [notes]
+      summary: Delete pattern note
+      description: Deletes the note document for the specified pattern ID
+      parameters:
+        - name: patternId
+          in: path
+          required: true
+          description: The canonical GoF pattern slug (e.g. factory-method)
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Note deleted successfully
+        "404":
+          description: Note not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /notes:
+    get:
+      operationId: listPatternNotes
+      tags: [notes]
+      summary: List all pattern notes
+      description: Retrieves all pattern notes for the current user
+      responses:
+        "200":
+          description: List of pattern notes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatternNotesListResponse"
+  /notes/export:
+    get:
+      operationId: exportAllNotes
+      tags: [notes]
+      summary: Export all notes bundle
+      description: Exports all pattern notes as a portable JSON payload with inlined media assets
+      responses:
+        "200":
+          description: Exported notes payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotesExportPayload"
+  /notes/import:
+    post:
+      operationId: importNotes
+      tags: [notes]
+      summary: Import notes bundle
+      description: Imports a previously exported notes bundle, replacing pattern notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotesImportRequest"
+      responses:
+        "200":
+          description: Import completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotesImportResponse"
+        "400":
+          description: Invalid import payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -113,3 +244,130 @@ components:
           type: integer
         durationMs:
           type: number
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: "NOTE_NOT_FOUND"
+        message:
+          type: string
+          example: "Note for pattern 'factory-method' does not exist"
+    NoteBlock:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+          example: "blk-1a2b3c4d"
+        type:
+          type: string
+          example: "paragraph"
+        props:
+          type: object
+          additionalProperties: true
+        content:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        children:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    PatternNote:
+      type: object
+      required:
+        - patternId
+        - blocks
+        - lastModified
+        - version
+      properties:
+        patternId:
+          type: string
+          example: "abstract-factory"
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/NoteBlock"
+        lastModified:
+          type: string
+          format: date-time
+          example: "2026-10-12T20:30:00.000Z"
+        version:
+          type: integer
+          default: 1
+          example: 1
+    UpsertPatternNoteRequest:
+      type: object
+      required:
+        - blocks
+      properties:
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/NoteBlock"
+    PatternNotesListResponse:
+      type: object
+      required:
+        - notes
+        - total
+      properties:
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PatternNote"
+        total:
+          type: integer
+          example: 8
+    NotesExportPayload:
+      type: object
+      required:
+        - version
+        - exportedAt
+        - notes
+      properties:
+        version:
+          type: integer
+          default: 1
+          example: 1
+        exportedAt:
+          type: string
+          format: date-time
+          example: "2026-10-12T20:30:00.000Z"
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PatternNote"
+    NotesImportRequest:
+      type: object
+      required:
+        - version
+        - notes
+      properties:
+        version:
+          type: integer
+          default: 1
+          example: 1
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PatternNote"
+    NotesImportResponse:
+      type: object
+      required:
+        - importedCount
+        - status
+      properties:
+        importedCount:
+          type: integer
+          example: 8
+        status:
+          type: string
+          example: "success"

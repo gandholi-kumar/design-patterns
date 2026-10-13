@@ -1,0 +1,52 @@
+import { FileText, Pencil } from "lucide-react";
+import { AppTooltip } from "../ui/app-tooltip";
+
+interface NotesBadgeProps {
+  hasNotes: boolean;
+  variant?: "dot" | "icon" | "count";
+  count?: number;
+  className?: string;
+}
+
+export function NotesBadge({
+  hasNotes,
+  variant = "dot",
+  count,
+  className = "",
+}: NotesBadgeProps) {
+  if (!hasNotes && (!count || count === 0)) return null;
+
+  if (variant === "dot") {
+    return (
+      <AppTooltip content="You have study notes for this pattern">
+        <span
+          className={`inline-block w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.7)] ${className}`}
+          aria-label="Notes available"
+        />
+      </AppTooltip>
+    );
+  }
+
+  if (variant === "icon") {
+    return (
+      <AppTooltip content="Notes available">
+        <span
+          className={`inline-flex items-center justify-center p-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 ${className}`}
+          aria-label="Notes available"
+        >
+          <Pencil className="w-2.5 h-2.5" />
+        </span>
+      </AppTooltip>
+    );
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 ${className}`}
+      aria-label={`${count} notes recorded`}
+    >
+      <FileText className="w-2.5 h-2.5" />
+      <span>{count}</span>
+    </span>
+  );
+}

@@ -52,3 +52,54 @@ export interface ExecutionResult {
   durationMs: number;
 }
 
+export interface ErrorResponse {
+  code: string;
+  message: string;
+}
+
+export type NoteBlockProps = { [key: string]: unknown };
+
+export type NoteBlockContentItem = { [key: string]: unknown };
+
+export type NoteBlockChildrenItem = { [key: string]: unknown };
+
+export interface NoteBlock {
+  id: string;
+  type: string;
+  props?: NoteBlockProps;
+  content?: NoteBlockContentItem[];
+  children?: NoteBlockChildrenItem[];
+}
+
+export interface PatternNote {
+  patternId: string;
+  blocks: NoteBlock[];
+  lastModified: string;
+  version: number;
+}
+
+export interface UpsertPatternNoteRequest {
+  blocks: NoteBlock[];
+}
+
+export interface PatternNotesListResponse {
+  notes: PatternNote[];
+  total: number;
+}
+
+export interface NotesExportPayload {
+  version: number;
+  exportedAt: string;
+  notes: PatternNote[];
+}
+
+export interface NotesImportRequest {
+  version: number;
+  notes: PatternNote[];
+}
+
+export interface NotesImportResponse {
+  importedCount: number;
+  status: string;
+}
+

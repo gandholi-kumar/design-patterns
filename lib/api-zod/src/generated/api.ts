@@ -44,3 +44,149 @@ export const ExecuteCodeResponse = zod.object({
 })
 
 
+/**
+ * Retrieves the rich note document for the specified pattern ID
+ * @summary Get pattern note
+ */
+export const GetPatternNoteParams = zod.object({
+  "patternId": zod.coerce.string().describe('The canonical GoF pattern slug (e.g. factory-method)')
+})
+
+export const getPatternNoteResponseVersionDefault = 1;
+
+export const GetPatternNoteResponse = zod.object({
+  "patternId": zod.string(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "props": zod.record(zod.string(), zod.unknown()).optional(),
+  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})),
+  "lastModified": zod.coerce.date(),
+  "version": zod.number().int().default(getPatternNoteResponseVersionDefault)
+})
+
+
+/**
+ * Creates or updates the rich note document for the specified pattern ID
+ * @summary Upsert pattern note
+ */
+export const UpsertPatternNoteParams = zod.object({
+  "patternId": zod.coerce.string().describe('The canonical GoF pattern slug (e.g. factory-method)')
+})
+
+export const UpsertPatternNoteBody = zod.object({
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "props": zod.record(zod.string(), zod.unknown()).optional(),
+  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}))
+})
+
+export const upsertPatternNoteResponseVersionDefault = 1;
+
+export const UpsertPatternNoteResponse = zod.object({
+  "patternId": zod.string(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "props": zod.record(zod.string(), zod.unknown()).optional(),
+  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})),
+  "lastModified": zod.coerce.date(),
+  "version": zod.number().int().default(upsertPatternNoteResponseVersionDefault)
+})
+
+
+/**
+ * Deletes the note document for the specified pattern ID
+ * @summary Delete pattern note
+ */
+export const DeletePatternNoteParams = zod.object({
+  "patternId": zod.coerce.string().describe('The canonical GoF pattern slug (e.g. factory-method)')
+})
+
+export const DeletePatternNoteResponse = zod.void()
+
+
+/**
+ * Retrieves all pattern notes for the current user
+ * @summary List all pattern notes
+ */
+export const listPatternNotesResponseNotesItemVersionDefault = 1;
+
+export const ListPatternNotesResponse = zod.object({
+  "notes": zod.array(zod.object({
+  "patternId": zod.string(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "props": zod.record(zod.string(), zod.unknown()).optional(),
+  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})),
+  "lastModified": zod.coerce.date(),
+  "version": zod.number().int().default(listPatternNotesResponseNotesItemVersionDefault)
+})),
+  "total": zod.number().int()
+})
+
+
+/**
+ * Exports all pattern notes as a portable JSON payload with inlined media assets
+ * @summary Export all notes bundle
+ */
+export const exportAllNotesResponseVersionDefault = 1;
+export const exportAllNotesResponseNotesItemVersionDefault = 1;
+
+export const ExportAllNotesResponse = zod.object({
+  "version": zod.number().int().default(exportAllNotesResponseVersionDefault),
+  "exportedAt": zod.coerce.date(),
+  "notes": zod.array(zod.object({
+  "patternId": zod.string(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "props": zod.record(zod.string(), zod.unknown()).optional(),
+  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})),
+  "lastModified": zod.coerce.date(),
+  "version": zod.number().int().default(exportAllNotesResponseNotesItemVersionDefault)
+}))
+})
+
+
+/**
+ * Imports a previously exported notes bundle, replacing pattern notes
+ * @summary Import notes bundle
+ */
+export const importNotesBodyVersionDefault = 1;
+export const importNotesBodyNotesItemVersionDefault = 1;
+
+export const ImportNotesBody = zod.object({
+  "version": zod.number().int().default(importNotesBodyVersionDefault),
+  "notes": zod.array(zod.object({
+  "patternId": zod.string(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "props": zod.record(zod.string(), zod.unknown()).optional(),
+  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})),
+  "lastModified": zod.coerce.date(),
+  "version": zod.number().int().default(importNotesBodyNotesItemVersionDefault)
+}))
+})
+
+export const ImportNotesResponse = zod.object({
+  "importedCount": zod.number().int(),
+  "status": zod.string()
+})
+
+
