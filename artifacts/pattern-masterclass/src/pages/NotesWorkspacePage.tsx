@@ -8,6 +8,8 @@ import {
   Upload,
   Download,
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
   Calendar,
   ExternalLink,
   Trash2,
@@ -673,34 +675,37 @@ export function NotesWorkspacePage() {
               )}
             </div>
 
-            {/* Export JSON Button (Icon-only) */}
+            {/* Export JSON Button (Micro-pill: Arrow Up) */}
             <AppTooltip content="Export notes bundle (JSON)">
               <button
                 type="button"
                 onClick={() => handleExportJson()}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border/80 hover:bg-muted text-muted-foreground hover:text-amber-500 transition-colors shadow-2xs"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/80 hover:border-amber-500/50 hover:bg-muted text-xs font-medium text-foreground transition-all shadow-2xs group"
                 aria-label="Export all annotated pattern notes as a portable JSON bundle"
               >
-                <FileJson className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                <ArrowUp className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 group-hover:-translate-y-0.5 transition-transform" />
+                <span>JSON</span>
               </button>
             </AppTooltip>
 
-            {/* Export Markdown Button (Icon-only) */}
+            {/* Export Markdown Button (Micro-pill: Arrow Up) */}
             <AppTooltip content="Export all notes as Markdown (.md)">
               <button
                 type="button"
                 onClick={() => handleExportMarkdown()}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border/80 hover:bg-muted text-muted-foreground hover:text-emerald-500 transition-colors shadow-2xs"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/80 hover:border-emerald-500/50 hover:bg-muted text-xs font-medium text-foreground transition-all shadow-2xs group"
                 aria-label="Export all annotated pattern notes as a single Markdown document"
               >
-                <FileText className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                <ArrowUp className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 group-hover:-translate-y-0.5 transition-transform" />
+                <span>MD</span>
               </button>
             </AppTooltip>
 
-            {/* Import Bundle Button (Icon-only) */}
+            {/* Import Bundle Button (Micro-pill: Arrow Down) */}
             <AppTooltip content="Import notes bundle (.json)">
-              <label className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 cursor-pointer transition-colors shadow-2xs">
-                <FileUp className="w-4 h-4" />
+              <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-medium text-amber-700 dark:text-amber-300 cursor-pointer transition-all shadow-2xs group">
+                <ArrowDown className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:translate-y-0.5 transition-transform" />
+                <span>Import</span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -1044,7 +1049,7 @@ export function NotesWorkspacePage() {
             onClick={() => handleExportJson()}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold transition-colors shadow-sm"
           >
-            <FileJson className="w-3.5 h-3.5" />
+            <ArrowUp className="w-3.5 h-3.5" />
             <span>Export JSON ({selectedPatternIds.size})</span>
           </button>
 
@@ -1053,7 +1058,7 @@ export function NotesWorkspacePage() {
             onClick={() => handleExportMarkdown()}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors shadow-sm"
           >
-            <FileText className="w-3.5 h-3.5" />
+            <ArrowUp className="w-3.5 h-3.5" />
             <span>Export Markdown ({selectedPatternIds.size})</span>
           </button>
 
