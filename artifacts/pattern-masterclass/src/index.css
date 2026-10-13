@@ -10977,4 +10977,48 @@ kbd {
   color: #ffffff;
 }
 
+/* ==========================================================================
+   PER-PATTERN NOTES: FULL-HEIGHT VIEWPORT & BLOCKNOTE EXTENSIONS
+   ========================================================================== */
+.notes-editor-wrapper {
+  height: 100%;
+  min-height: 100%;
+  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+}
+
+.notes-editor-wrapper .bn-container {
+  height: 100% !important;
+  min-height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  background-color: transparent !important;
+}
+
+.notes-editor-wrapper .bn-editor {
+  min-height: 100% !important;
+  flex: 1 1 auto !important;
+  padding: 1rem 1.25rem 8rem 1.25rem !important;
+}
+
+.notes-editor-wrapper .bn-block-content {
+  width: 100% !important;
+}
+
+/* 10s Toast countdown progress animation */
+@keyframes toastCountdown {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}
+
+
+
 

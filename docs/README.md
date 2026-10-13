@@ -43,8 +43,15 @@ docs/
 ---
 
 ### E. Product Requirements Documents (PRD)
+* **[PRD: Per-Pattern Rich Notes System](./prds/prd-per-pattern-notes.md)**: Complete product requirements document for the dual-orientation rich notes system with DB-agnostic persistence and IndexedDB media caching.
 * **[PRD: Interactive Multi-File Code Playground Engine](./prd/prd-interactive-code-playground.md)**: Product vision, OneCompiler benchmark analysis, user stories, dual execution engine requirements, and multi-language roadmap.
 * **[PRD: GoF Decision Engine & Zero-Trust Copilot](./prd/prd-decision-engine.md)**: Product specification covering functional requirements (FR-1 through FR-8), zero-disk RAM security requirements, mobile responsiveness, and solid UI standards.
+
+---
+
+### F. Architectural Decision Records (ADR) & Design Specifications
+* **[ADR-2026-003: Per-Pattern Rich Notes Architecture](./adr/2026-10-12-per-pattern-notes-architecture.md)**: Repository pattern abstraction, dual-orientation layout system, hybrid LocalStorage/IndexedDB transitioning to PostgreSQL JSONB + Backblaze B2, BlockNote rich text block tree, and zero-3rd-nested-scroll guarantee.
+* **[Frontend & UX Spec: Per-Pattern Rich Notes](./design/notes-ui-spec.md)**: Design system tokens, save state indicators, responsive panel dynamics, image zoom/resize handles, and accessibility mapping.
 
 ---
 

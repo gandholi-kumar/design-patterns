@@ -20,9 +20,16 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ErrorResponse,
   ExecuteCodeRequest,
   ExecutionResult,
-  HealthStatus
+  HealthStatus,
+  NotesExportPayload,
+  NotesImportRequest,
+  NotesImportResponse,
+  PatternNote,
+  PatternNotesListResponse,
+  UpsertPatternNoteRequest
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -217,5 +224,493 @@ export const useExecuteCode = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getExecuteCodeMutationOptions(options));
+    }
+
+export const getGetPatternNoteUrl = (patternId: string,) => {
+
+
+
+
+  return `/api/patterns/${patternId}/notes`
+}
+
+/**
+ * Retrieves the rich note document for the specified pattern ID
+ * @summary Get pattern note
+ */
+export const getPatternNote = async (patternId: string, options?: Parameters<typeof customFetch>[1]): Promise<PatternNote> => {
+
+  return customFetch<PatternNote>(getGetPatternNoteUrl(patternId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPatternNoteQueryKey = (patternId: string,) => {
+    return [
+    `/api/patterns/${patternId}/notes`
+    ] as const;
+    }
+
+
+export const getGetPatternNoteQueryOptions = <TData = Awaited<ReturnType<typeof getPatternNote>>, TError = ErrorType<ErrorResponse>>(patternId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPatternNote>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPatternNoteQueryKey(patternId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPatternNote>>> = ({ signal }) => getPatternNote(patternId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: patternId !== null && patternId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPatternNote>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPatternNoteQueryResult = NonNullable<Awaited<ReturnType<typeof getPatternNote>>>
+export type GetPatternNoteQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get pattern note
+ */
+
+export function useGetPatternNote<TData = Awaited<ReturnType<typeof getPatternNote>>, TError = ErrorType<ErrorResponse>>(
+ patternId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPatternNote>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPatternNoteQueryOptions(patternId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpsertPatternNoteUrl = (patternId: string,) => {
+
+
+
+
+  return `/api/patterns/${patternId}/notes`
+}
+
+/**
+ * Creates or updates the rich note document for the specified pattern ID
+ * @summary Upsert pattern note
+ */
+export const upsertPatternNote = async (patternId: string,
+    upsertPatternNoteRequest: UpsertPatternNoteRequest, options?: Parameters<typeof customFetch>[1]): Promise<PatternNote> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PatternNote>(getUpsertPatternNoteUrl(patternId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(upsertPatternNoteRequest)
+  }
+);}
+
+
+
+
+
+export const getUpsertPatternNoteMutationKey = () => ['upsertPatternNote'] as const;
+
+export const getUpsertPatternNoteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPatternNote>>, TError,UpsertPatternNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertPatternNote>>, TError,UpsertPatternNoteMutationVariables, TContext> => {
+
+const mutationKey = getUpsertPatternNoteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertPatternNote>>, UpsertPatternNoteMutationVariables> = (props) => {
+          const {patternId,data} = props ?? {};
+
+          return  upsertPatternNote(patternId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertPatternNoteMutationResult = NonNullable<Awaited<ReturnType<typeof upsertPatternNote>>>
+    export type UpsertPatternNoteMutationBody = BodyType<UpsertPatternNoteRequest>
+    export type UpsertPatternNoteMutationError = ErrorType<ErrorResponse>
+    export type UpsertPatternNoteMutationVariables = {patternId: string;data: BodyType<UpsertPatternNoteRequest>}
+
+    /**
+ * @summary Upsert pattern note
+ */
+export const useUpsertPatternNote = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPatternNote>>, TError,UpsertPatternNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertPatternNote>>,
+        TError,
+        UpsertPatternNoteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpsertPatternNoteMutationOptions(options));
+    }
+
+export const getDeletePatternNoteUrl = (patternId: string,) => {
+
+
+
+
+  return `/api/patterns/${patternId}/notes`
+}
+
+/**
+ * Deletes the note document for the specified pattern ID
+ * @summary Delete pattern note
+ */
+export const deletePatternNote = async (patternId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeletePatternNoteUrl(patternId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeletePatternNoteMutationKey = () => ['deletePatternNote'] as const;
+
+export const getDeletePatternNoteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePatternNote>>, TError,DeletePatternNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePatternNote>>, TError,DeletePatternNoteMutationVariables, TContext> => {
+
+const mutationKey = getDeletePatternNoteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePatternNote>>, DeletePatternNoteMutationVariables> = (props) => {
+          const {patternId} = props ?? {};
+
+          return  deletePatternNote(patternId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePatternNoteMutationResult = NonNullable<Awaited<ReturnType<typeof deletePatternNote>>>
+
+    export type DeletePatternNoteMutationError = ErrorType<ErrorResponse>
+    export type DeletePatternNoteMutationVariables = {patternId: string}
+
+    /**
+ * @summary Delete pattern note
+ */
+export const useDeletePatternNote = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePatternNote>>, TError,DeletePatternNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePatternNote>>,
+        TError,
+        DeletePatternNoteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeletePatternNoteMutationOptions(options));
+    }
+
+export const getListPatternNotesUrl = () => {
+
+
+
+
+  return `/api/notes`
+}
+
+/**
+ * Retrieves all pattern notes for the current user
+ * @summary List all pattern notes
+ */
+export const listPatternNotes = async ( options?: Parameters<typeof customFetch>[1]): Promise<PatternNotesListResponse> => {
+
+  return customFetch<PatternNotesListResponse>(getListPatternNotesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPatternNotesQueryKey = () => {
+    return [
+    `/api/notes`
+    ] as const;
+    }
+
+
+export const getListPatternNotesQueryOptions = <TData = Awaited<ReturnType<typeof listPatternNotes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPatternNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPatternNotesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPatternNotes>>> = ({ signal }) => listPatternNotes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPatternNotes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPatternNotesQueryResult = NonNullable<Awaited<ReturnType<typeof listPatternNotes>>>
+export type ListPatternNotesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all pattern notes
+ */
+
+export function useListPatternNotes<TData = Awaited<ReturnType<typeof listPatternNotes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPatternNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPatternNotesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportAllNotesUrl = () => {
+
+
+
+
+  return `/api/notes/export`
+}
+
+/**
+ * Exports all pattern notes as a portable JSON payload with inlined media assets
+ * @summary Export all notes bundle
+ */
+export const exportAllNotes = async ( options?: Parameters<typeof customFetch>[1]): Promise<NotesExportPayload> => {
+
+  return customFetch<NotesExportPayload>(getExportAllNotesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportAllNotesQueryKey = () => {
+    return [
+    `/api/notes/export`
+    ] as const;
+    }
+
+
+export const getExportAllNotesQueryOptions = <TData = Awaited<ReturnType<typeof exportAllNotes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAllNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportAllNotesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAllNotes>>> = ({ signal }) => exportAllNotes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportAllNotes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportAllNotesQueryResult = NonNullable<Awaited<ReturnType<typeof exportAllNotes>>>
+export type ExportAllNotesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Export all notes bundle
+ */
+
+export function useExportAllNotes<TData = Awaited<ReturnType<typeof exportAllNotes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAllNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportAllNotesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getImportNotesUrl = () => {
+
+
+
+
+  return `/api/notes/import`
+}
+
+/**
+ * Imports a previously exported notes bundle, replacing pattern notes
+ * @summary Import notes bundle
+ */
+export const importNotes = async (notesImportRequest: NotesImportRequest, options?: Parameters<typeof customFetch>[1]): Promise<NotesImportResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<NotesImportResponse>(getImportNotesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(notesImportRequest)
+  }
+);}
+
+
+
+
+
+export const getImportNotesMutationKey = () => ['importNotes'] as const;
+
+export const getImportNotesMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importNotes>>, TError,ImportNotesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importNotes>>, TError,ImportNotesMutationVariables, TContext> => {
+
+const mutationKey = getImportNotesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importNotes>>, ImportNotesMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  importNotes(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportNotesMutationResult = NonNullable<Awaited<ReturnType<typeof importNotes>>>
+    export type ImportNotesMutationBody = BodyType<NotesImportRequest>
+    export type ImportNotesMutationError = ErrorType<ErrorResponse>
+    export type ImportNotesMutationVariables = {data: BodyType<NotesImportRequest>}
+
+    /**
+ * @summary Import notes bundle
+ */
+export const useImportNotes = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importNotes>>, TError,ImportNotesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importNotes>>,
+        TError,
+        ImportNotesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getImportNotesMutationOptions(options));
     }
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Route, Switch, useLocation } from 'wouter';
 import {
   ArrowDownUp, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Building2, Check, ChevronDown,
-  ChevronLeft, ChevronRight, CircleHelp, Code2, Compass, Copy, Download, FileJson2,
+  ChevronLeft, ChevronRight, CircleHelp, Code2, Compass, Copy, Download, FileJson2, FileText,
   Filter, GitBranch, GraduationCap, Layers3, Lightbulb, Maximize2, Menu, Minimize2, Moon, PanelLeftClose, PanelLeftOpen, Play, RotateCcw, Search, Settings2,
   ShieldCheck, Sun, Terminal, X, Zap,
 } from 'lucide-react';
@@ -13,7 +13,10 @@ import { useIsMobile } from './hooks/use-mobile';
 import { PatternDetailPage } from './pages/PatternDetailPage';
 import { PlaygroundPage } from './pages/PlaygroundPage';
 import { DecisionEnginePage } from './pages/DecisionEnginePage';
+import { NotesWorkspacePage } from './pages/NotesWorkspacePage';
+import { NoteRepositoryProvider } from './lib/notes/NoteRepositoryContext';
 import { AppTooltip } from './components/ui/app-tooltip';
+import { AppToaster } from './components/ui/app-toaster';
 import { WipModulePlaceholder } from './components/WipModulePlaceholder';
 import {
   PatternOverview,
@@ -21,7 +24,7 @@ import {
   PatternTradeoffs,
 } from './components/PatternDetailSections';
 
-type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz';
+type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz' | 'notes';
 type Progress = { attempts: number; correct: number; bookmarked: boolean; note: string; box: number };
 type Saved = { theme: 'light' | 'dark'; bookmarks: string[]; progress: Record<string, Progress>; mode: string; studioMode?: boolean };
 const STORE = 'gof-masterclass-storage';
@@ -43,6 +46,7 @@ const nav: { path: string; name: string; icon: typeof Layers3; id: Page; badge?:
   { path: '/', name: 'Pattern library', icon: Layers3, id: 'catalog' },
   { path: '/playground', name: 'Code playground', icon: Terminal, id: 'playground' },
   { path: '/decision-engine', name: 'Decision engine', icon: Compass, id: 'decision' },
+  { path: '/notes', name: 'My notes', icon: FileText, id: 'notes' },
   { path: '/simulators', name: 'Pattern studio', icon: GitBranch, id: 'simulators', badge: 'WIP' },
   { path: '/quiz-lab', name: 'Scenario lab', icon: CircleHelp, id: 'quiz', badge: 'WIP' },
 ];
@@ -180,7 +184,9 @@ function App() {
     link.download = 'pattern-masterclass-workspace-source.zip';
     link.click();
   };
-  return <div className={`app-frame grain ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${saved.studioMode ? 'studio-mode' : ''}`}>
+  return (
+    <NoteRepositoryProvider>
+      <div className={`app-frame grain ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${saved.studioMode ? 'studio-mode' : ''}`}>
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
       <div className="brand-row">
         <Link
@@ -342,6 +348,7 @@ function App() {
           <Route path="/pattern/:id">{(params) => <PatternDetailPage id={params.id} saved={saved} globalPerspective={perspective} onBookmark={togglePatternBookmark} goPlayground={(pid) => setLoc(`/playground?pattern=${pid || params.id}`)} />}</Route>
           <Route path="/playground"><PlaygroundPage saved={saved} setSaved={setSaved}/></Route>
           <Route path="/decision-engine"><DecisionEnginePage onSelect={handleSelectPattern}/></Route>
+          <Route path="/notes"><NotesWorkspacePage /></Route>
           <Route path="/simulators">
             <WipModulePlaceholder
               moduleIndex="04 / PATTERN STUDIO"
@@ -395,7 +402,10 @@ function App() {
     </main>
     {selected && <PatternDialog pattern={selected} saved={saved} perspective={perspective} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc(`/playground?pattern=${selected.id}`); }}/>}
     {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} />}
-  </div>;
+    <AppToaster />
+      </div>
+    </NoteRepositoryProvider>
+  );
 }
 
 function Catalog({ saved, savedOnly, clearSaved, onBookmark, onSelect }: { saved: Saved; savedOnly: boolean; clearSaved: () => void; onBookmark: (id: string) => void; onSelect: (p: Pattern) => void }) {
