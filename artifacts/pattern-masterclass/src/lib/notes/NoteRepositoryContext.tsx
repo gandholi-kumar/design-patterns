@@ -1,6 +1,8 @@
 import { createContext, useContext, ReactNode, useMemo } from "react";
 import type { NoteRepository } from "./NoteRepository";
 import { LocalStorageNoteRepository } from "./LocalStorageNoteRepository";
+import { ApiNoteRepository } from "./ApiNoteRepository";
+import { useSession } from "../auth-client";
 
 const NoteRepositoryContext = createContext<NoteRepository | null>(null);
 
@@ -11,17 +13,22 @@ interface NoteRepositoryProviderProps {
 
 /**
  * Provides the active NoteRepository to the component tree.
- * Defaults to LocalStorageNoteRepository for offline local persistence.
- * Can be swapped to ApiNoteRepository or a MockNoteRepository for testing.
+ * Automatically chooses ApiNoteRepository for authenticated members,
+ * or LocalStorageNoteRepository for offline guest users.
  */
 export function NoteRepositoryProvider({
   children,
   repository,
 }: NoteRepositoryProviderProps) {
-  const instance = useMemo(
-    () => repository ?? new LocalStorageNoteRepository(),
-    [repository]
-  );
+  const { data: session } = useSession();
+
+  const instance = useMemo(() => {
+    if (repository) return repository;
+    if (session?.user) {
+      return new ApiNoteRepository();
+    }
+    return new LocalStorageNoteRepository();
+  }, [repository, session?.user]);
 
   return (
     <NoteRepositoryContext.Provider value={instance}>

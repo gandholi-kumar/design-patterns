@@ -26,7 +26,7 @@ export interface GoFDecisionVerdict {
   codeSmellWarning: string;
 }
 
-export type AIProvider = 'gemini' | 'openai' | 'groq' | 'ollama';
+export type AIProvider = 'managed' | 'gemini' | 'openai' | 'groq' | 'ollama';
 
 export interface AIProviderConfig {
   provider: AIProvider;
@@ -140,7 +140,7 @@ export async function analyzeProblemWithAI(
   throw new Error('Max retries exceeded.');
 }
 
-// 2. Dispatch to specific provider (Supports Google Gemini, OpenAI, Groq, Ollama)
+// 2. Dispatch to specific provider (Supports Built-in Managed Pro, Google Gemini, OpenAI, Groq, Ollama)
 async function dispatchProviderRequest(
   problemText: string,
   config: AIProviderConfig,
@@ -149,7 +149,9 @@ async function dispatchProviderRequest(
 ): Promise<GoFDecisionVerdict> {
   const promptPayload = `<user_problem>\n${problemText.trim()}\n</user_problem>`;
 
-  if (config.provider === 'gemini') {
+  if (config.provider === 'managed') {
+    return callManagedProAI(problemText, history, signal);
+  } else if (config.provider === 'gemini') {
     return callGeminiAPI(promptPayload, config, history, signal);
   } else if (config.provider === 'openai') {
     return callOpenAICompatible(
@@ -174,6 +176,42 @@ async function dispatchProviderRequest(
   }
 
   throw new Error(`Unsupported provider: ${config.provider}`);
+}
+
+/**
+ * Built-in Pro AI Architect (Server Managed)
+ * Calls /api/ai/architect-consult with session credentials. Zero key required.
+ */
+async function callManagedProAI(
+  problemText: string,
+  history: ChatTurn[],
+  signal?: AbortSignal,
+): Promise<GoFDecisionVerdict> {
+  const res = await fetch('/api/ai/architect-consult', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      problemStatement: problemText.trim(),
+      turns: history,
+    }),
+    signal,
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('Please sign in to your account to use the Built-in Pro AI Architect without an API key.');
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || errData.error || `Server returned HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  if (!data?.verdict) {
+    throw new Error('Invalid architectural payload received from server.');
+  }
+
+  return data.verdict as GoFDecisionVerdict;
 }
 
 export interface ConnectionTestResult {
@@ -240,6 +278,14 @@ export async function discoverGeminiModels(apiKey: string): Promise<{ activeMode
 
 // Active Dry-Run Connection Verification for any provider
 export async function testAndDiscoverAIProvider(config: AIProviderConfig): Promise<ConnectionTestResult> {
+  if (config.provider === 'managed') {
+    return {
+      success: true,
+      message: 'Built-in Pro AI Architect is connected (Zero-Key Cloud Engine Ready)',
+      selectedModel: 'Google Gemini 2.5 Flash Cloud (Managed)',
+    };
+  }
+
   if (!config.apiKey && config.provider !== 'ollama') {
     return { success: false, message: 'Please enter an API key.' };
   }

@@ -28,6 +28,11 @@ docs/
 ### B. Architecture & System Topology
 * **[System Architecture & Design Specification](./architecture/system-architecture.md)**: High-level monorepo layout, client engines, sequence diagrams for Web Worker execution and zero-trust AI debate flows, and architectural quality attributes.
 * **[Current Implementation Details & Feature Catalog](./architecture/current-implementation.md)**: Deep dive into all 5 feature screens, the dual canonical/cloud perspective model, normalized SOLID principles matrix with literature citations, and shared scaffolding.
+* **[ARCH-2026-004: Database & Object Storage Migration Plan](./architecture/01-database-and-object-storage-migration.md)**: Comprehensive migration guide from browser `localStorage` / `IndexedDB` to PostgreSQL JSONB (Drizzle ORM) and switchable S3-compatible object storage (Cloudflare R2 & Backblaze B2).
+* **[ARCH-2026-005: Authentication, Session Management & RBAC Architecture](./architecture/02-auth-sessions-rbac-identity-architecture.md)**: Complete identity architecture using Better Auth + Drizzle Adapter + RBAC plugin, credentials login, Google & GitHub OAuth 2.0 PKCE, and hardened HttpOnly cookie sessions.
+* **[ARCH-2026-006: Monorepo Deployment, Decoupled CI/CD & Custom Domain Strategy](./architecture/03-monorepo-deployment-and-decoupling-strategy.md)**: Deep analysis of monorepo vs polyrepo, why backend upgrades do not cause frontend downtime, zero-downtime rolling deploys, and Cloudflare Pages unified custom domain reverse proxy.
+* **[ARCH-2026-007: Full-Stack Implementation Action Plan](./architecture/04-execution-action-plan.md)**: Phased execution tracker with status checkboxes covering database schemas, Better Auth, switchable S3 storage, contracts, and frontend integration.
+
 
 ---
 
@@ -37,6 +42,7 @@ docs/
 ---
 
 ### D. GoF Decision Engine & Zero-Trust Copilot
+* **[ARCH-2026-008: BYOK vs. Built-in Pro AI Architect Architecture & Action Plan](./decision-engine/01-byok-and-managed-pro-ai-architecture.md)**: Architectural comparison, security guarantees, data flow, and phased execution tracker for the dual-mode AI engine (Zero-Trust BYOK in volatile RAM vs. server-managed Built-in Pro AI with zero key required and PostgreSQL Decision Ledger synchronization).
 * **[Production Architectural Specification: GoF Decision Engine & Copilot](./decision-engine/decision-engine-architecture.md)**: Detailed specification for the 3 core pillars (Diagnostic Wizard, 16+ Production Scenarios, 7 Sibling Dilemmas), natural language AI debate copilot, Zero-Trust in-memory RAM key manager, dynamic Gemini model discovery with self-healing JSON mode fallbacks, session decision ledger, slide-over NotesDrawer, and mobile bottom sheet.
 * **[Stage-2 Wireframes & Investigation Document](./decision-engine/decision-engine-stage-2-wireframes.md)**: Historical architectural wireframes, design rationale, and step-by-step UX flows leading from Stage-2 through Stage-7.
 

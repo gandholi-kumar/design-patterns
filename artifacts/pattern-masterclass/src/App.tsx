@@ -3,7 +3,7 @@ import { Link, Route, Switch, useLocation } from 'wouter';
 import {
   ArrowDownUp, ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, BookmarkCheck, Building2, Check, ChevronDown,
   ChevronLeft, ChevronRight, CircleHelp, Code2, Compass, Copy, Download, FileJson2, FileText,
-  Filter, GitBranch, GraduationCap, Layers3, Lightbulb, Maximize2, Menu, Minimize2, Moon, PanelLeftClose, PanelLeftOpen, Play, RotateCcw, Search, Settings2,
+  Filter, GitBranch, GraduationCap, Layers3, Lightbulb, LogIn, Maximize2, Menu, Minimize2, Moon, PanelLeftClose, PanelLeftOpen, Play, RotateCcw, Search, Settings2,
   ShieldCheck, Sun, Terminal, X, Zap,
 } from 'lucide-react';
 import { PATTERNS, QUIZ, type Pattern } from './data';
@@ -18,6 +18,9 @@ import { NoteRepositoryProvider } from './lib/notes/NoteRepositoryContext';
 import { AppTooltip } from './components/ui/app-tooltip';
 import { AppToaster } from './components/ui/app-toaster';
 import { WipModulePlaceholder } from './components/WipModulePlaceholder';
+import { useSession } from './lib/auth-client';
+import { AuthDialog } from './components/auth/AuthDialog';
+import { UserProfileDropdown } from './components/auth/UserProfileDropdown';
 import {
   PatternOverview,
   PatternCode,
@@ -53,6 +56,8 @@ const nav: { path: string; name: string; icon: typeof Layers3; id: Page; badge?:
 const categoryStyle: Record<string, string> = { Creational: 'tag-create', Structural: 'tag-structure', Behavioral: 'tag-behave' };
 function App() {
   const [loc, setLoc] = useLocation();
+  const { data: session } = useSession();
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [saved, setSaved] = useState<Saved>(getSaved);
   const [selected, setSelected] = useState<Pattern | null>(null);
   const [mobileNav, setMobileNav] = useState(false);
@@ -337,9 +342,31 @@ function App() {
             <button className="theme-toggle" onClick={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} aria-label={`Switch to ${saved.theme === 'light' ? 'dark' : 'light'} theme`} data-testid="toggle-theme">{saved.theme === 'light' ? <Moon size={16}/> : <Sun size={16}/>}<span>{saved.theme === 'light' ? 'Light' : 'Dark'}</span></button>
           </AppTooltip>
 
-          <AppTooltip content="Your learning space">
-            <button className="avatar" aria-label="Your learning space">M</button>
-          </AppTooltip>
+          {session?.user ? (
+            <UserProfileDropdown
+              user={session.user}
+              bookmarksCount={saved.bookmarks.length}
+              onExportBackup={onExport}
+            />
+          ) : (
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => setAuthDialogOpen(true)}
+              style={{
+                fontSize: '0.8125rem',
+                padding: '0.375rem 0.75rem',
+                height: '2rem',
+                borderRadius: '0.375rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+              }}
+            >
+              <LogIn size={14} />
+              <span>Sign In</span>
+            </button>
+          )}
         </div>
       </header>
       <div className={`workspace ${isPatternPage ? 'workspace-studio' : ''}`}>
@@ -402,6 +429,7 @@ function App() {
     </main>
     {selected && <PatternDialog pattern={selected} saved={saved} perspective={perspective} onClose={() => setSelected(null)} onBookmark={togglePatternBookmark} goCode={() => { setSelected(null); setLoc(`/playground?pattern=${selected.id}`); }}/>}
     {backupOpen && <BackupDialog onClose={() => setBackupOpen(false)} onExport={onExport} onRestore={restore} onZip={exportProject} onDownloadSource={downloadWorkspaceSource} zipBusy={zipBusy} theme={saved.theme} toggleTheme={() => patchSaved(s => ({ ...s, theme: s.theme === 'light' ? 'dark' : 'light' }))} />}
+    <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
     <AppToaster />
       </div>
     </NoteRepositoryProvider>
