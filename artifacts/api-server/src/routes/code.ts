@@ -54,7 +54,7 @@ async function executeJavaProject(options: RunExecutionOptions): Promise<Executi
       cmd: "javac",
       args: ["-encoding", "UTF-8", ...javaFileNames],
       cwd: sandboxDir,
-      timeoutMs: Math.min(options.timeoutMs, 10000),
+      timeoutMs: Math.min(options.timeoutMs, 25000),
     });
 
     if (compileResult.exitCode !== 0) {

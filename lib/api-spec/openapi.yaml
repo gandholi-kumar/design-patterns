@@ -219,7 +219,7 @@ components:
           default: ""
         timeoutMs:
           type: integer
-          default: 5000
+          default: 25000
     ExecutionResult:
       type: object
       required:

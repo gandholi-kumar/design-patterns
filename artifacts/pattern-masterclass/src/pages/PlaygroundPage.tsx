@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Code2,
   Play,
@@ -25,6 +25,7 @@ import { PlaygroundDocContent } from '../components/PlaygroundDocContent';
 import { useCodeRunner } from '../hooks/useCodeRunner';
 import { buildProjectFiles } from '../data/playground-starters';
 import { AppTooltip } from '../components/ui/app-tooltip';
+import { PlaygroundCodeEditor } from '../components/PlaygroundCodeEditor';
 
 interface PlaygroundPageProps {
   initialPatternId?: string;
@@ -46,14 +47,29 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
     return sp.get('pattern') || initialPatternId || 'factory-method';
   });
 
-  // Sync patternId whenever URL query param (?pattern=...) changes
-  useEffect(() => {
-    const sp = new URLSearchParams(window.location.search);
-    const qp = sp.get('pattern');
-    if (qp && qp !== patternId && PATTERNS.some((p) => p.id === qp)) {
-      setPatternId(qp);
+  const handleSelectPattern = useCallback((newId: string) => {
+    setPatternId(newId);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('pattern', newId);
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      // ignore in environments without history api
     }
-  }, [patternId]);
+  }, []);
+
+  // Sync patternId whenever browser back/forward (popstate) occurs
+  useEffect(() => {
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const qp = sp.get('pattern');
+      if (qp && PATTERNS.some((p) => p.id === qp)) {
+        setPatternId(qp);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const language = (saved.mode === 'java' ? 'java' : 'typescript') as 'typescript' | 'java';
 
@@ -133,10 +149,15 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
     return projectFiles[0]?.id || 'main';
   });
 
-  // Reference for synchronizing line numbers scroll with textarea in Split View
-  const splitLineNumbersRef = useRef<HTMLDivElement>(null);
-  // Reference for synchronizing line numbers scroll with textarea in Stacked View
-  const stackedLineNumbersRef = useRef<HTMLDivElement>(null);
+  const [targetLine, setTargetLine] = useState<number | null>(null);
+
+  const handleSelectFileAndLine = useCallback((fileId: string, lineNumber?: number) => {
+    setActiveFileId(fileId);
+    if (lineNumber) {
+      setTargetLine(lineNumber);
+    }
+  }, []);
+
 
   // Reload project files when pattern or language changes
   useEffect(() => {
@@ -164,7 +185,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
       language,
       files: projectFiles.map((f) => ({ name: f.name, content: f.content })),
       entryPoint: entryFile?.name,
-      timeoutMs: 5000,
+      timeoutMs: 25000,
     });
   }, [isRunning, cancelRun, runCode, language, projectFiles]);
 
@@ -242,9 +263,8 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
     setSaved((s: any) => ({ ...s, mode: newMode }));
   };
 
-  // Active code lines for line numbers
+  // Active code for editor
   const currentCode = activeFile?.content || '';
-  const lineCount = currentCode.split('\n').length;
 
   return (
     <div
@@ -276,7 +296,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
         {/* Pattern Search Combobox */}
         <PlaygroundPatternCombobox
           selectedPatternId={patternId}
-          onSelectPattern={(newId) => setPatternId(newId)}
+          onSelectPattern={handleSelectPattern}
         />
 
         {/* Language Switcher */}
@@ -376,7 +396,10 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                   files={projectFiles}
                   activeFileId={activeFileId}
                   language={language}
-                  onSelectFile={setActiveFileId}
+                  onSelectFile={(id) => {
+                    setActiveFileId(id);
+                    setTargetLine(null);
+                  }}
                   onAddFile={handleAddFile}
                   onDeleteFile={handleDeleteFile}
                   onRenameFile={handleRenameFile}
@@ -452,24 +475,17 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                 </div>
 
                 <div className="editor-body split-editor-body">
-                  <div className="line-numbers" ref={splitLineNumbersRef} aria-hidden="true">
-                    {Array.from({ length: lineCount }, (_, i) => (
-                      <span key={i}>{String(i + 1).padStart(2, '0')}</span>
-                    ))}
-                  </div>
-                  <textarea
-                    spellCheck={false}
-                    aria-label={`Editable code for ${activeFile?.name}`}
-                    value={currentCode}
-                    onChange={(e) => handleUpdateCode(e.target.value)}
-                    onKeyDown={(e) => handleTabKey(e, handleUpdateCode)}
-                    onScroll={(e) => {
-                      if (splitLineNumbersRef.current) {
-                        splitLineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
-                      }
-                    }}
-                    data-testid="code-editor"
-                    className={wordWrap ? 'word-wrap-enabled' : ''}
+                  <PlaygroundCodeEditor
+                    code={currentCode}
+                    onChange={handleUpdateCode}
+                    language={language}
+                    fileName={activeFile?.name}
+                    wordWrap={wordWrap}
+                    projectFiles={projectFiles}
+                    theme={saved.theme === 'dark' ? 'dark' : 'light'}
+                    onSelectFile={handleSelectFileAndLine}
+                    targetLine={targetLine}
+                    onTargetLineHandled={() => setTargetLine(null)}
                   />
                 </div>
               </div>
@@ -498,7 +514,10 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
               files={projectFiles}
               activeFileId={activeFileId}
               language={language}
-              onSelectFile={setActiveFileId}
+              onSelectFile={(id) => {
+                setActiveFileId(id);
+                setTargetLine(null);
+              }}
               onAddFile={handleAddFile}
               onDeleteFile={handleDeleteFile}
               onRenameFile={handleRenameFile}
@@ -574,24 +593,17 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
             </div>
 
             <div className="editor-body stacked-editor-body">
-              <div className="line-numbers" ref={stackedLineNumbersRef} aria-hidden="true">
-                {Array.from({ length: lineCount }, (_, i) => (
-                  <span key={i}>{String(i + 1).padStart(2, '0')}</span>
-                ))}
-              </div>
-              <textarea
-                spellCheck={false}
-                aria-label={`Editable code for ${activeFile?.name}`}
-                value={currentCode}
-                onChange={(e) => handleUpdateCode(e.target.value)}
-                onKeyDown={(e) => handleTabKey(e, handleUpdateCode)}
-                onScroll={(e) => {
-                  if (stackedLineNumbersRef.current) {
-                    stackedLineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
-                  }
-                }}
-                data-testid="code-editor"
-                className={wordWrap ? 'word-wrap-enabled' : ''}
+              <PlaygroundCodeEditor
+                code={currentCode}
+                onChange={handleUpdateCode}
+                language={language}
+                fileName={activeFile?.name}
+                wordWrap={wordWrap}
+                projectFiles={projectFiles}
+                theme={saved.theme === 'dark' ? 'dark' : 'light'}
+                onSelectFile={handleSelectFileAndLine}
+                targetLine={targetLine}
+                onTargetLineHandled={() => setTargetLine(null)}
               />
             </div>
           </div>
@@ -679,24 +691,6 @@ async function copyTextToClipboard(text: string): Promise<boolean> {
   }
 }
 
-// Helper: Tab key indent handling (inserts 2 spaces)
-function handleTabKey(
-  e: React.KeyboardEvent<HTMLTextAreaElement>,
-  updateFn: (val: string) => void
-) {
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    const target = e.currentTarget;
-    const start = target.selectionStart;
-    const end = target.selectionEnd;
-    const val = target.value;
-    const next = val.substring(0, start) + '  ' + val.substring(end);
-    updateFn(next);
-    setTimeout(() => {
-      target.selectionStart = target.selectionEnd = start + 2;
-    }, 0);
-  }
-}
 
 // Helper: Seed initial project files from pattern data
 function createInitialFiles(pattern: Pattern, language: 'typescript' | 'java'): ProjectFile[] {

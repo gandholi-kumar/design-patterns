@@ -442,7 +442,7 @@ service.processPayment(150);`}</code>
 
           <div className="doc-error-card">
             <span className="doc-error-tag universal">ALL RUNTIMES</span>
-            <h4>"Execution timed out after 5000ms"</h4>
+            <h4>"Execution timed out after 25000ms"</h4>
             <p><strong>Cause:</strong> An unbounded <code>while(true)</code> loop or unhandled recursion.</p>
             <p className="doc-fix">
               <CheckCircle2 size={13} />

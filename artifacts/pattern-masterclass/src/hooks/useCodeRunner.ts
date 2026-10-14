@@ -84,7 +84,7 @@ export function useCodeRunner() {
       language,
       files,
       entryPoint,
-      timeoutMs = 5000,
+      timeoutMs = 25000,
     }: {
       language: 'typescript' | 'java';
       files: CodeFile[];

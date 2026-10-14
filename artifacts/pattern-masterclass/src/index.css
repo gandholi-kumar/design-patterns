@@ -342,7 +342,7 @@ select {
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -2306,29 +2306,79 @@ kbd {
 .stacked-editor-body {
   height: 32rem;
   display: flex;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
-  padding: 0.875rem 0;
+  padding: 0;
   background: var(--pg-surface);
 }
 
-.line-numbers {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  padding: 0 0.9375rem 0 1.0625rem;
-  border-right: 0.0625rem solid var(--pg-gutter-border);
-  background: var(--pg-gutter-bg);
-  color: var(--pg-gutter-text);
-  font: 0.84375rem/1.7 var(--app-font-mono);
-  user-select: none;
-  overflow: hidden;
-  /* Never display scrollbar on gutter */
+/* Monaco Editor Container & Loading Shimmer */
+.monaco-editor-container {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  position: relative;
+  overflow: visible;
+  background: #ffffff;
 }
 
-.stacked-editor-body .line-numbers {
+.dark .monaco-editor-container {
+  background: #15181f;
+}
+
+.dark .split-editor-body,
+.dark .stacked-editor-body {
+  background: #15181f;
+}
+
+/* Seamless Monaco gutter and canvas theming */
+.monaco-editor,
+.monaco-editor .margin,
+.monaco-editor-background {
+  background-color: #ffffff;
+}
+
+.dark .monaco-editor,
+.dark .monaco-editor .margin,
+.dark .monaco-editor-background {
+  background-color: #15181f;
+}
+
+/* Ensure Monaco hover widgets and overflow tooltips are fully visible and properly positioned at pointer */
+.playground-page {
+  transform: none !important;
+}
+
+.monaco-editor .overflowingContentWidgets,
+.overflowingContentWidgets {
+  z-index: 99999 !important;
+}
+
+.monaco-editor .monaco-hover,
+.monaco-hover {
+  z-index: 99999 !important;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45) !important;
+  border-radius: 0.375rem !important;
+}
+
+.editor-loading-shimmer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
   height: 100%;
-  overflow: hidden;
+  width: 100%;
+  background: var(--pg-surface);
+  color: var(--pg-text-muted);
+  font: 0.8125rem var(--app-font-mono);
+}
+
+.editor-loading-shimmer .shimmer-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: #d4a356;
+  animation: pulse 1.5s infinite ease-in-out;
 }
 
 .stacked-editor-body textarea {
@@ -2402,15 +2452,10 @@ kbd {
   overflow: hidden;
   /* Zero outer scrollbar */
   position: relative;
-  padding: 0.875rem 0;
+  padding: 0;
   background: var(--pg-surface);
 }
 
-.split-editor-body .line-numbers {
-  height: 100%;
-  overflow: hidden;
-  /* Line numbers scroll programmatically in sync */
-}
 
 .split-editor-body textarea {
   resize: none;

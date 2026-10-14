@@ -22,7 +22,7 @@ export const HealthCheckResponse = zod.object({
  * @summary Execute multi-file code project
  */
 export const executeCodeBodyStdinDefault = ``;
-export const executeCodeBodyTimeoutMsDefault = 5000;
+export const executeCodeBodyTimeoutMsDefault = 25000;
 
 export const ExecuteCodeBody = zod.object({
   "language": zod.enum(['java', 'typescript', 'python', 'go', 'rust', 'csharp']),
