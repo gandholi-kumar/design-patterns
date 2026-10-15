@@ -133,7 +133,7 @@ export function AIArchitectBar({
       setErrorMessage('Please provide at least 15 characters describing your architectural problem before running AI analysis.');
       return;
     }
-    if (!config.apiKey && config.provider !== 'ollama') {
+    if (!config.apiKey && config.provider !== 'ollama' && config.provider !== 'managed') {
       onOpenKeyModal();
       return;
     }
@@ -196,7 +196,7 @@ export function AIArchitectBar({
     const updatedHistory: ChatTurn[] = [...turns, { role: 'user', content: userMsg }];
     setTurns(updatedHistory);
 
-    if (config.apiKey || config.provider === 'ollama') {
+    if (config.apiKey || config.provider === 'ollama' || config.provider === 'managed') {
       try {
         const v = await analyzeProblemWithAI(
           `Developer challenge: "${userMsg}". Previous context was: ${problemText}`,
@@ -295,7 +295,8 @@ ${lastVerdict.codeSmellWarning}
     setTimeout(() => setCopiedADR(false), 2500);
   };
 
-  const hasKey = Boolean(config.apiKey || config.provider === 'ollama');
+  const isManaged = config.provider === 'managed';
+  const hasKey = Boolean(config.apiKey || config.provider === 'ollama' || isManaged);
 
   return (
     <div className="ai-architect-container">
@@ -306,15 +307,20 @@ ${lastVerdict.codeSmellWarning}
           <span>NATURAL LANGUAGE ARCHITECT</span>
         </div>
         <div className="ai-key-status">
-          {hasKey ? (
-            <button type="button" className="active-key-pill" onClick={onOpenKeyModal}>
+          {isManaged ? (
+            <button type="button" className="active-key-pill" onClick={onOpenKeyModal} title="Using Built-in Pro Cloud AI (Zero Key Required)">
+              <Sparkles size={13} />
+              <span>Built-in Pro AI (Active · No Key Required)</span>
+            </button>
+          ) : hasKey ? (
+            <button type="button" className="active-key-pill" onClick={onOpenKeyModal} title="Using BYOK Key in RAM">
               <CheckCircle2 size={13} />
-              <span>Connected: {config.provider.toUpperCase()}</span>
+              <span>BYOK: {config.provider.toUpperCase()}</span>
             </button>
           ) : (
             <button type="button" className="unconnected-key-pill" onClick={onOpenKeyModal}>
               <KeyRound size={13} />
-              <span>Connect AI Key (Optional)</span>
+              <span>Configure AI Engine / Key</span>
             </button>
           )}
         </div>
@@ -415,7 +421,13 @@ ${lastVerdict.codeSmellWarning}
             disabled={isLoading}
           >
             <Zap size={16} />
-            <span>{hasKey ? 'Analyze with AI ⚡' : 'Connect Key to Run AI'}</span>
+            <span>
+              {isManaged
+                ? 'Consult Pro AI Architect ⚡'
+                : hasKey
+                ? 'Analyze with BYOK AI ⚡'
+                : 'Configure AI Engine / Key'}
+            </span>
           </button>
         </div>
       )}

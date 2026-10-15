@@ -28,6 +28,10 @@ async function buildAll() {
     // - uses native modules and loads them dynamically (e.g. sharp)
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
+      "@better-auth/memory-adapter",
+      "@better-auth/mongo-adapter",
+      "@better-auth/prisma-adapter",
+      "@opentelemetry/*",
       "*.node",
       "sharp",
       "better-sqlite3",
@@ -62,7 +66,6 @@ async function buildAll() {
       "@swc/*",
       "@aws-sdk/*",
       "@azure/*",
-      "@opentelemetry/*",
       "@google-cloud/*",
       "@google/*",
       "googleapis",

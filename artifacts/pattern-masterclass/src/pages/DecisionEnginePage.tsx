@@ -28,6 +28,7 @@ import { MobileVerdictBar } from './decision/MobileVerdictBar';
 import { BYOKModal } from './decision/BYOKModal';
 import type { GoFDecisionVerdict, AIProviderConfig } from './decision/ai-service';
 import { AppTooltip } from '../components/ui/app-tooltip';
+import { useSession } from '../lib/auth-client';
 
 interface DecisionEnginePageProps {
   onSelect: (pattern: Pattern) => void;
@@ -39,6 +40,7 @@ type DrawerTabKey = 'verdict' | 'guide' | 'ledger';
 
 export function DecisionEnginePage({ onSelect }: DecisionEnginePageProps) {
   const [, setLoc] = useLocation();
+  const { data: session } = useSession();
   const [activeMode, setActiveMode] = useState<MainModeKey>('diagnostic');
   const [diagnosticSubTab, setDiagnosticSubTab] = useState<DiagnosticSubTab>('ai');
   const [verdict, setVerdict] = useState<GoFDecisionVerdict | null>(null);
@@ -48,9 +50,9 @@ export function DecisionEnginePage({ onSelect }: DecisionEnginePageProps) {
   const [isKeyModalOpen, setIsKeyModalOpen] = useState<boolean>(false);
   const [copiedAllLedger, setCopiedAllLedger] = useState(false);
 
-  // Zero-trust in-memory API key configuration (volatile state)
+  // Default to Built-in Pro AI (managed) with fallback to BYOK
   const [aiConfig, setAiConfig] = useState<AIProviderConfig>({
-    provider: 'gemini',
+    provider: 'managed',
     apiKey: '',
   });
 
