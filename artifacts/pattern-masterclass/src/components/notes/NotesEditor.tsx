@@ -27,7 +27,7 @@ export function NotesEditor({
 }: NotesEditorProps) {
   const [isReady, setIsReady] = useState(false);
 
-  // Convert NoteBlock[] to BlockNote PartialBlock[] if available
+  // Convert NoteBlock[] to BlockNote PartialBlock[] if available, filtering broken/empty image blocks
   const parsedInitialContent = useMemo<PartialBlock[] | undefined>(() => {
     if (!initialBlocks || initialBlocks.length === 0) {
       return [
@@ -42,7 +42,13 @@ export function NotesEditor({
         },
       ];
     }
-    return initialBlocks as unknown as PartialBlock[];
+    const sanitized = (initialBlocks as any[]).filter((block) => {
+      if (block.type === "image" && (!block.props?.url || block.props.url.trim() === "")) {
+        return false;
+      }
+      return true;
+    });
+    return sanitized as unknown as PartialBlock[];
   }, [initialBlocks, patternName]);
 
   const editor = useCreateBlockNote({
@@ -50,10 +56,13 @@ export function NotesEditor({
     uploadFile: async (file: File) => {
       try {
         const { url } = await onUploadMedia(file);
-        return url || "";
+        if (!url) {
+          throw new Error("No URL returned from upload");
+        }
+        return url;
       } catch (err) {
         console.error("Failed to upload image in editor:", err);
-        return "";
+        throw err;
       }
     },
   });

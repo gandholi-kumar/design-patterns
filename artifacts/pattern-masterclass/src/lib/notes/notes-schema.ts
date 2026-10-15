@@ -8,9 +8,9 @@ import { z } from "zod";
 export const NoteBlockSchema = z.object({
   id: z.string(),
   type: z.string(),
-  props: z.record(z.unknown()).default({}),
-  content: z.array(z.unknown()).default([]),
-  children: z.array(z.unknown()).default([]),
+  props: z.record(z.unknown()).optional().default({}),
+  content: z.union([z.array(z.unknown()), z.record(z.unknown()), z.string()]).optional().default([]),
+  children: z.array(z.unknown()).optional().default([]),
 });
 
 export type NoteBlock = z.infer<typeof NoteBlockSchema>;

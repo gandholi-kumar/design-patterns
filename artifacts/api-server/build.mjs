@@ -14,6 +14,44 @@ async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
   await rm(distDir, { recursive: true, force: true });
 
+  const stubPlugin = {
+    name: "stub-unused",
+    setup(build) {
+      build.onResolve({ filter: /^@pinojs\/redact$/ }, (args) => {
+        return { path: args.path, namespace: "stub-pino-redact" };
+      });
+      build.onLoad({ filter: /.*/, namespace: "stub-pino-redact" }, () => {
+        return {
+          contents: `
+            function Redact() { return function(o) { return o; }; }
+            module.exports = Redact;
+          `,
+          loader: "js",
+        };
+      });
+
+      build.onResolve({ filter: /^@noble\// }, (args) => {
+        return { path: args.path, namespace: "stub-noble" };
+      });
+      build.onLoad({ filter: /.*/, namespace: "stub-noble" }, () => {
+        return {
+          contents: `
+            export const hkdf = () => {};
+            export const sha256 = () => {};
+            export const sha3 = () => {};
+            export const keccak_256 = () => {};
+            export const bytesToHex = () => "";
+            export const hexToBytes = () => new Uint8Array();
+            export const utf8ToBytes = () => new Uint8Array();
+            export const xchacha20poly1305 = () => {};
+            export const managedNonce = () => () => new Uint8Array();
+          `,
+          loader: "js",
+        };
+      });
+    },
+  };
+
   await esbuild({
     entryPoints: [path.resolve(artifactDir, "src/index.ts")],
     platform: "node",
@@ -22,11 +60,6 @@ async function buildAll() {
     outdir: distDir,
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
-    // Some packages may not be bundleable, so we externalize them, we can add more here as needed.
-    // Some of the packages below may not be imported or installed, but we're adding them in case they are in the future.
-    // Examples of unbundleable packages:
-    // - uses native modules and loads them dynamically (e.g. sharp)
-    // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
       "@better-auth/memory-adapter",
       "@better-auth/mongo-adapter",
@@ -64,7 +97,6 @@ async function buildAll() {
       "@mikro-orm/*",
       "@grpc/*",
       "@swc/*",
-      "@aws-sdk/*",
       "@azure/*",
       "@google-cloud/*",
       "@google/*",
@@ -73,7 +105,6 @@ async function buildAll() {
       "@parcel/watcher",
       "@sentry/profiling-node",
       "@tree-sitter/*",
-      "aws-sdk",
       "classic-level",
       "dd-trace",
       "ffi-napi",
@@ -106,6 +137,7 @@ async function buildAll() {
     ],
     sourcemap: "linked",
     plugins: [
+      stubPlugin,
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
       esbuildPluginPino({ transports: ["pino-pretty"] })
     ],

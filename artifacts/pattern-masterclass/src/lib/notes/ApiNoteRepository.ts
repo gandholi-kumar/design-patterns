@@ -96,51 +96,28 @@ export class ApiNoteRepository implements NoteRepository {
   }
 
   async saveMedia(patternId: string, file: File | Blob): Promise<{ id: string; url?: string }> {
-    const filename = file instanceof File ? file.name : `diagram-${Date.now()}.png`;
+    const filename = file instanceof File ? file.name : `screenshot-${Date.now()}.png`;
     const mimeType = file.type || "image/png";
 
-    // 1. Request presigned upload URL from server
-    const presignRes = await fetch("/api/media/presign-upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ patternId, filename, mimeType }),
-    });
+    const res = await fetch(
+      `/api/media/upload?patternId=${encodeURIComponent(patternId)}&filename=${encodeURIComponent(filename)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": mimeType },
+        credentials: "include",
+        body: file,
+      }
+    );
 
-    if (!presignRes.ok) {
-      throw new Error(`Presign request failed (${presignRes.status})`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || err.message || `Media upload failed (${res.status})`);
     }
 
-    const { assetId, uploadUrl, publicUrl, s3Key } = await presignRes.json();
-
-    // 2. Upload raw binary directly to S3/R2/B2 (bypasses server memory)
-    const uploadRes = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": mimeType },
-      body: file,
-    });
-
-    if (!uploadRes.ok) {
-      throw new Error(`Direct S3 upload failed (${uploadRes.status})`);
-    }
-
-    // 3. Confirm upload in PostgreSQL database
-    await fetch("/api/media/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        assetId,
-        patternId,
-        s3Key,
-        mimeType,
-        fileSizeBytes: file.size,
-        publicUrl,
-      }),
-    });
-
-    this.mediaUrlCache.set(assetId, publicUrl);
-    return { id: assetId, url: publicUrl };
+    const data = await res.json();
+    const publicUrl = data.url || `/api/media/${data.id}`;
+    this.mediaUrlCache.set(data.id, publicUrl);
+    return { id: data.id, url: publicUrl };
   }
 
   async getMediaUrl(assetId: string): Promise<string | null> {

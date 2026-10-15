@@ -219,7 +219,7 @@ components:
           default: ""
         timeoutMs:
           type: integer
-          default: 5000
+          default: 25000
     ExecutionResult:
       type: object
       required:
@@ -272,10 +272,14 @@ components:
           type: object
           additionalProperties: true
         content:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
+          oneOf:
+            - type: array
+              items:
+                type: object
+                additionalProperties: true
+            - type: object
+              additionalProperties: true
+            - type: string
         children:
           type: array
           items:

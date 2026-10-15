@@ -22,7 +22,7 @@ export const HealthCheckResponse = zod.object({
  * @summary Execute multi-file code project
  */
 export const executeCodeBodyStdinDefault = ``;
-export const executeCodeBodyTimeoutMsDefault = 5000;
+export const executeCodeBodyTimeoutMsDefault = 25000;
 
 export const ExecuteCodeBody = zod.object({
   "language": zod.enum(['java', 'typescript', 'python', 'go', 'rust', 'csharp']),
@@ -60,7 +60,7 @@ export const GetPatternNoteResponse = zod.object({
   "id": zod.string(),
   "type": zod.string(),
   "props": zod.record(zod.string(), zod.unknown()).optional(),
-  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "content": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.record(zod.string(), zod.unknown()),zod.string()]).optional(),
   "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
 })),
   "lastModified": zod.coerce.date(),
@@ -81,7 +81,7 @@ export const UpsertPatternNoteBody = zod.object({
   "id": zod.string(),
   "type": zod.string(),
   "props": zod.record(zod.string(), zod.unknown()).optional(),
-  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "content": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.record(zod.string(), zod.unknown()),zod.string()]).optional(),
   "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
 }))
 })
@@ -94,7 +94,7 @@ export const UpsertPatternNoteResponse = zod.object({
   "id": zod.string(),
   "type": zod.string(),
   "props": zod.record(zod.string(), zod.unknown()).optional(),
-  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "content": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.record(zod.string(), zod.unknown()),zod.string()]).optional(),
   "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
 })),
   "lastModified": zod.coerce.date(),
@@ -126,7 +126,7 @@ export const ListPatternNotesResponse = zod.object({
   "id": zod.string(),
   "type": zod.string(),
   "props": zod.record(zod.string(), zod.unknown()).optional(),
-  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "content": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.record(zod.string(), zod.unknown()),zod.string()]).optional(),
   "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
 })),
   "lastModified": zod.coerce.date(),
@@ -152,7 +152,7 @@ export const ExportAllNotesResponse = zod.object({
   "id": zod.string(),
   "type": zod.string(),
   "props": zod.record(zod.string(), zod.unknown()).optional(),
-  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "content": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.record(zod.string(), zod.unknown()),zod.string()]).optional(),
   "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
 })),
   "lastModified": zod.coerce.date(),
@@ -176,7 +176,7 @@ export const ImportNotesBody = zod.object({
   "id": zod.string(),
   "type": zod.string(),
   "props": zod.record(zod.string(), zod.unknown()).optional(),
-  "content": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "content": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.record(zod.string(), zod.unknown()),zod.string()]).optional(),
   "children": zod.array(zod.record(zod.string(), zod.unknown())).optional()
 })),
   "lastModified": zod.coerce.date(),

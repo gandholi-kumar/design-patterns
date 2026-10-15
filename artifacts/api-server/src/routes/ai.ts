@@ -124,7 +124,7 @@ async function resolveActiveGeminiModel(apiKey: string): Promise<string> {
  * Server-Side Built-in Pro AI Architect Endpoint
  * No user API key required — authenticated via Better Auth session cookie.
  */
-router.post("/api/ai/architect-consult", requireAuth, async (req, res, next) => {
+router.post("/ai/architect-consult", requireAuth, async (req, res, next) => {
   try {
     const parseResult = ConsultSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -238,7 +238,7 @@ router.post("/api/ai/architect-consult", requireAuth, async (req, res, next) => 
 /**
  * Get user's cloud-synchronized decision history
  */
-router.get("/api/ai/decision-ledger", requireAuth, async (req, res, next) => {
+router.get("/ai/decision-ledger", requireAuth, async (req, res, next) => {
   try {
     const { user } = req as AuthenticatedRequest;
     const entries = await db

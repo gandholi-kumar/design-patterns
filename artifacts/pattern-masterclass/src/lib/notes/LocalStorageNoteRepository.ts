@@ -75,10 +75,15 @@ export class LocalStorageNoteRepository implements NoteRepository {
     const assetId = `img_${crypto.randomUUID()}`;
     await mediaStorage.storeImage(assetId, file);
 
-    const objectUrl = URL.createObjectURL(file);
-    this.activeObjectUrls.set(assetId, objectUrl);
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
 
-    return { id: assetId, url: objectUrl };
+    this.activeObjectUrls.set(assetId, dataUrl);
+    return { id: assetId, url: dataUrl };
   }
 
   async getMediaUrl(assetId: string): Promise<string | null> {
