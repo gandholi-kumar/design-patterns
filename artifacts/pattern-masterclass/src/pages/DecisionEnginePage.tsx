@@ -149,6 +149,56 @@ ${v.codeSmellWarning}
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Cloud synchronization: Fetch persisted decision ledger from PostgreSQL for authenticated users
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/ai/decision-ledger')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((entries: any[]) => {
+        if (Array.isArray(entries) && entries.length > 0) {
+          const verdicts: GoFDecisionVerdict[] = entries.map((e) => {
+            const primary = PATTERNS.find(
+              (p: Pattern) => p.name.toLowerCase() === (e.primaryPattern || '').toLowerCase()
+            );
+            const runnerUp = PATTERNS.find(
+              (p: Pattern) => p.name.toLowerCase() === (e.runnerUpPattern || '').toLowerCase()
+            );
+            return {
+              primaryPattern: {
+                id: primary?.id || (e.primaryPattern || 'pattern').toLowerCase().replace(/\s+/g, '-'),
+                name: e.primaryPattern || 'Design Pattern',
+                category: (primary?.category || 'Behavioral') as any,
+                confidence: e.confidence || 85,
+                architecturalRationale: e.problemStatement || 'Consulted from architectural session.',
+                structuralApplicability: `Saved decision recorded on ${new Date(e.createdAt).toLocaleDateString()}.`,
+              },
+              runnerUpPattern: {
+                id: runnerUp?.id || 'runner-up',
+                name: e.runnerUpPattern || 'Alternative Pattern',
+                category: (runnerUp?.category || 'Behavioral') as any,
+                confidence: Math.max(50, (e.confidence || 85) - 15),
+                whyConsidered: 'Considered during architectural tradeoff consultation.',
+                whenToChooseRunnerUpOverPrimary: 'Choose runner-up when system constraints shift.',
+              },
+              tradeOffDilemma: {
+                primaryGains: Array.isArray(e.tradeOffs) ? e.tradeOffs.slice(0, 3) : ['Modular decoupling', 'Open/closed extensibility'],
+                primaryTaxes: Array.isArray(e.tradeOffs) ? e.tradeOffs.slice(3) : ['Indirection complexity'],
+                decisiveDifferentiator: 'Primary pattern solves key architectural axis of change.',
+              },
+              codeSmellWarning: 'Ensure interface contracts remain lean and cohesive.',
+            };
+          });
+          setLedger((prev) => {
+            const existingIds = new Set(prev.map((v) => v.primaryPattern.id));
+            const newFromCloud = verdicts.filter((v) => !existingIds.has(v.primaryPattern.id));
+            return [...prev, ...newFromCloud];
+          });
+        }
+      })
+      .catch(() => {});
+  }, [session?.user]);
+
+
   return (
     <div className="page-content reveal decision-engine-page">
       <div className="decision-header-row">

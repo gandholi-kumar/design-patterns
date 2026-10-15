@@ -85,6 +85,7 @@ This document tracks the sequential implementation of the GoF Design Patterns Ma
 - [x] **Task 6.2**: Implement `POST /api/ai/architect-consult` server proxy endpoint in `artifacts/api-server/src/routes/ai.ts` with session authentication and PostgreSQL ledger saving.
 - [x] **Task 6.3**: Update `ai-service.ts` in `artifacts/pattern-masterclass` to support `'managed'` mode calling `/api/ai/architect-consult`.
 - [x] **Task 6.4**: Upgrade `AIArchitectBar.tsx` and `BYOKModal.tsx` with seamless dual-mode toggle (Built-in Pro AI with no key required vs. BYOK).
+- [x] **Task 6.5**: Add cloud decision ledger synchronization on authentication in `DecisionEnginePage.tsx` and fix nested router mount paths (`/api/ai/*`).
 
 ---
 
