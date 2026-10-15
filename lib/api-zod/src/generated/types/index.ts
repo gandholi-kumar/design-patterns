@@ -15,7 +15,7 @@ export * from './executionResultStatus';
 export * from './healthStatus';
 export * from './noteBlock';
 export * from './noteBlockChildrenItem';
-export * from './noteBlockContentItem';
+export * from './noteBlockContent';
 export * from './noteBlockProps';
 export * from './notesExportPayload';
 export * from './notesImportRequest';

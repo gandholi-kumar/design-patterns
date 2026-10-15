@@ -6,13 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { NoteBlockChildrenItem } from './noteBlockChildrenItem';
-import type { NoteBlockContentItem } from './noteBlockContentItem';
+import type { NoteBlockContent } from './noteBlockContent';
 import type { NoteBlockProps } from './noteBlockProps';
 
 export interface NoteBlock {
   id: string;
   type: string;
   props?: NoteBlockProps;
-  content?: NoteBlockContentItem[];
+  content?: NoteBlockContent;
   children?: NoteBlockChildrenItem[];
 }

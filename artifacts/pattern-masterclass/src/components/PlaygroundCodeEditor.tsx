@@ -115,7 +115,16 @@ function defineCustomThemes(monaco: typeof MonacoType) {
       'editorSuggestWidget.border': '#353b47',
       'editorSuggestWidget.foreground': '#ece8de',
       'editorSuggestWidget.selectedBackground': '#2d333e',
+      'editorSuggestWidget.selectedForeground': '#ffffff',
       'editorSuggestWidget.highlightForeground': '#d4a356',
+      'editorSuggestWidget.focusHighlightForeground': '#f3c77c',
+      'editorSuggestWidgetStatus.foreground': '#a0a6b2',
+      'list.hoverBackground': '#242a35',
+      'list.activeSelectionBackground': '#2d333e',
+      'list.activeSelectionForeground': '#ffffff',
+      'list.focusBackground': '#2d333e',
+      'list.focusForeground': '#ffffff',
+      'list.highlightForeground': '#d4a356',
       'editorHoverWidget.background': '#1c2028',
       'editorHoverWidget.border': '#353b47',
       'editorHoverWidget.foreground': '#ece8de',
@@ -157,7 +166,16 @@ function defineCustomThemes(monaco: typeof MonacoType) {
       'editorSuggestWidget.border': '#dcd6c8',
       'editorSuggestWidget.foreground': '#1d222b',
       'editorSuggestWidget.selectedBackground': '#f4f0e6',
-      'editorSuggestWidget.highlightForeground': '#d4a356',
+      'editorSuggestWidget.selectedForeground': '#1f2328',
+      'editorSuggestWidget.highlightForeground': '#b87b28',
+      'editorSuggestWidget.focusHighlightForeground': '#8f5a13',
+      'editorSuggestWidgetStatus.foreground': '#6e7781',
+      'list.hoverBackground': '#faf8f4',
+      'list.activeSelectionBackground': '#f4f0e6',
+      'list.activeSelectionForeground': '#1f2328',
+      'list.focusBackground': '#f4f0e6',
+      'list.focusForeground': '#1f2328',
+      'list.highlightForeground': '#b87b28',
       'editorHoverWidget.background': '#ffffff',
       'editorHoverWidget.border': '#dcd6c8',
       'editorHoverWidget.foreground': '#1f2328',
@@ -753,6 +771,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
       monacoRef.current.editor.setTheme(isDarkMode ? 'pm-dark' : 'pm-light');
     }
   }, [isDarkMode]);
+
 
   // Dynamic editor options tailored to IDE experience
   const editorOptions: MonacoType.editor.IStandaloneEditorConstructionOptions = useMemo(

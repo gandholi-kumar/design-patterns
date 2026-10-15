@@ -59,7 +59,7 @@ export interface ErrorResponse {
 
 export type NoteBlockProps = { [key: string]: unknown };
 
-export type NoteBlockContentItem = { [key: string]: unknown };
+export type NoteBlockContent = { [key: string]: unknown }[] | { [key: string]: unknown } | string;
 
 export type NoteBlockChildrenItem = { [key: string]: unknown };
 
@@ -67,7 +67,7 @@ export interface NoteBlock {
   id: string;
   type: string;
   props?: NoteBlockProps;
-  content?: NoteBlockContentItem[];
+  content?: NoteBlockContent;
   children?: NoteBlockChildrenItem[];
 }
 

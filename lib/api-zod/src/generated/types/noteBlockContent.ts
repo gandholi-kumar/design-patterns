@@ -6,4 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type NoteBlockContentItem = { [key: string]: unknown };
+export type NoteBlockContent = { [key: string]: unknown }[] | { [key: string]: unknown } | string;

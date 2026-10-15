@@ -67,7 +67,7 @@ router.post(
 // 2. Serve media asset directly from MinIO
 router.get("/:assetId", async (req, res, next) => {
   try {
-    const { assetId } = req.params;
+    const assetId = Array.isArray(req.params.assetId) ? req.params.assetId[0] : (req.params.assetId || "");
 
     const [record] = await db
       .select()
@@ -100,7 +100,7 @@ router.get("/:assetId", async (req, res, next) => {
 // 3. Delete media asset
 router.delete("/:assetId", requireAuth, async (req, res, next) => {
   try {
-    const { assetId } = req.params;
+    const assetId = Array.isArray(req.params.assetId) ? req.params.assetId[0] : (req.params.assetId || "");
     const { user } = req as AuthenticatedRequest;
 
     const [record] = await db

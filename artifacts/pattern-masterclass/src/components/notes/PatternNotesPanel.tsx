@@ -89,6 +89,23 @@ export function PatternNotesPanel({
           ? b.content.map((c: any) => c?.text || "").join("")
           : "";
         md += `\`\`\`\n${text}\n\`\`\`\n\n`;
+      } else if (b.type === "table") {
+        const tableContent = b.content as any;
+        if (tableContent && typeof tableContent === "object" && Array.isArray(tableContent.rows)) {
+          for (let r = 0; r < tableContent.rows.length; r++) {
+            const row = tableContent.rows[r];
+            const cells = Array.isArray(row.cells)
+              ? row.cells.map((cell: any) =>
+                  Array.isArray(cell) ? cell.map((c: any) => c?.text || "").join("") : ""
+                )
+              : [];
+            md += `| ${cells.join(" | ")} |\n`;
+            if (r === 0) {
+              md += `| ${cells.map(() => "---").join(" | ")} |\n`;
+            }
+          }
+          md += "\n";
+        }
       }
     }
 
