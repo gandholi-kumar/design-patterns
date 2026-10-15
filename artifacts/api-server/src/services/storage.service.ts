@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+
 export interface PresignedUploadResult {
   uploadUrl: string;
   assetId: string;
@@ -6,87 +8,175 @@ export interface PresignedUploadResult {
 }
 
 export class S3StorageService {
-  private client: unknown | null = null;
   private bucket: string;
+  private endpoint: string;
+  private accessKey: string;
+  private secretKey: string;
+  private region: string;
   private publicCdnUrl: string;
 
   constructor() {
     this.bucket = process.env.S3_BUCKET || "gof-notes-media";
+    this.endpoint = (process.env.S3_ENDPOINT || "http://localhost:9100").replace(/\/+$/, "");
+    this.accessKey = process.env.S3_ACCESS_KEY_ID || "minioadmin";
+    this.secretKey = process.env.S3_SECRET_ACCESS_KEY || "minioadminpassword";
+    this.region = process.env.S3_REGION || "us-east-1";
     this.publicCdnUrl = (process.env.S3_PUBLIC_CDN_URL || "").replace(/\/+$/, "");
   }
 
-  private async getClient(): Promise<any> {
-    if (this.client) return this.client;
-
-    const endpoint = process.env.S3_ENDPOINT;
-    const region = process.env.S3_REGION || "auto";
-    const accessKeyId = process.env.S3_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-
-    if (!endpoint || !accessKeyId || !secretAccessKey) {
-      throw new Error(
-        "Missing S3 configuration: S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY must be configured in environment variables"
-      );
-    }
-
-    try {
-      const { S3Client } = await import("@aws-sdk/client-s3");
-      this.client = new S3Client({
-        endpoint,
-        region,
-        credentials: { accessKeyId, secretAccessKey },
-      });
-      return this.client;
-    } catch {
-      throw new Error("@aws-sdk/client-s3 package not available for S3 storage");
-    }
+  private getSignatureKey(dateStamp: string, serviceName: string = "s3") {
+    const kDate = crypto.createHmac("sha256", "AWS4" + this.secretKey).update(dateStamp).digest();
+    const kRegion = crypto.createHmac("sha256", kDate).update(this.region).digest();
+    const kService = crypto.createHmac("sha256", kRegion).update(serviceName).digest();
+    return crypto.createHmac("sha256", kService).update("aws4_request").digest();
   }
 
   /**
-   * Generates a presigned S3 PUT URL for direct client-to-bucket upload.
-   * Works identically across Cloudflare R2 and Backblaze B2 S3 APIs.
+   * Upload binary buffer directly to MinIO/S3 using AWS SigV4
    */
-  async generatePresignedUploadUrl(
-    userId: string,
-    patternId: string,
-    filename: string,
-    mimeType: string
-  ): Promise<PresignedUploadResult> {
-    const s3 = await this.getClient();
-    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
-    const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+  async putObject(s3Key: string, body: Buffer | Uint8Array, mimeType: string): Promise<void> {
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+    const dateStamp = amzDate.substring(0, 8);
 
-    const ext = filename.includes(".") ? filename.split(".").pop() : "png";
-    const assetId = `asset-${crypto.randomUUID()}`;
-    const s3Key = `media/${userId}/${patternId}/${assetId}.${ext}`;
+    const payloadHash = crypto.createHash("sha256").update(body).digest("hex");
+    const canonicalUri = "/" + this.bucket + "/" + encodeURI(s3Key);
 
-    const command = new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: s3Key,
-      ContentType: mimeType,
+    const urlObj = new URL(this.endpoint);
+    const host = urlObj.host;
+
+    const canonicalHeaders =
+      "host:" + host + "\n" +
+      "x-amz-content-sha256:" + payloadHash + "\n" +
+      "x-amz-date:" + amzDate + "\n";
+    const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+
+    const canonicalRequest =
+      "PUT\n" + canonicalUri + "\n\n" + canonicalHeaders + "\n" + signedHeaders + "\n" + payloadHash;
+    const stringToSign =
+      "AWS4-HMAC-SHA256\n" + amzDate + "\n" + dateStamp + "/" + this.region + "/s3/aws4_request\n" +
+      crypto.createHash("sha256").update(canonicalRequest).digest("hex");
+
+    const signingKey = this.getSignatureKey(dateStamp, "s3");
+    const signature = crypto.createHmac("sha256", signingKey).update(stringToSign).digest("hex");
+
+    const authHeader =
+      "AWS4-HMAC-SHA256 Credential=" + this.accessKey + "/" + dateStamp + "/" + this.region + "/s3/aws4_request, SignedHeaders=" + signedHeaders + ", Signature=" + signature;
+
+    const fullUrl = this.endpoint + canonicalUri;
+    const res = await fetch(fullUrl, {
+      method: "PUT",
+      headers: {
+        Host: host,
+        "Content-Type": mimeType,
+        "x-amz-content-sha256": payloadHash,
+        "x-amz-date": amzDate,
+        Authorization: authHeader,
+      },
+      body: body as any,
     });
 
-    // 15-minute expiration window for direct binary stream upload
-    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 900 });
-    const publicUrl = this.publicCdnUrl
-      ? `${this.publicCdnUrl}/${s3Key}`
-      : `${process.env.S3_ENDPOINT}/${this.bucket}/${s3Key}`;
-
-    return { uploadUrl, assetId, s3Key, publicUrl };
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      throw new Error(`S3 storage upload failed (${res.status} ${res.statusText}): ${errText}`);
+    }
   }
 
   /**
-   * Deletes a binary object from object storage.
+   * Fetch binary buffer from MinIO/S3 using AWS SigV4
+   */
+  async getObject(s3Key: string): Promise<{ data: Buffer; contentType: string } | null> {
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+    const dateStamp = amzDate.substring(0, 8);
+
+    const payloadHash = crypto.createHash("sha256").update("").digest("hex");
+    const canonicalUri = "/" + this.bucket + "/" + encodeURI(s3Key);
+
+    const urlObj = new URL(this.endpoint);
+    const host = urlObj.host;
+
+    const canonicalHeaders =
+      "host:" + host + "\n" +
+      "x-amz-content-sha256:" + payloadHash + "\n" +
+      "x-amz-date:" + amzDate + "\n";
+    const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+
+    const canonicalRequest =
+      "GET\n" + canonicalUri + "\n\n" + canonicalHeaders + "\n" + signedHeaders + "\n" + payloadHash;
+    const stringToSign =
+      "AWS4-HMAC-SHA256\n" + amzDate + "\n" + dateStamp + "/" + this.region + "/s3/aws4_request\n" +
+      crypto.createHash("sha256").update(canonicalRequest).digest("hex");
+
+    const signingKey = this.getSignatureKey(dateStamp, "s3");
+    const signature = crypto.createHmac("sha256", signingKey).update(stringToSign).digest("hex");
+
+    const authHeader =
+      "AWS4-HMAC-SHA256 Credential=" + this.accessKey + "/" + dateStamp + "/" + this.region + "/s3/aws4_request, SignedHeaders=" + signedHeaders + ", Signature=" + signature;
+
+    const fullUrl = this.endpoint + canonicalUri;
+    const res = await fetch(fullUrl, {
+      method: "GET",
+      headers: {
+        Host: host,
+        "x-amz-content-sha256": payloadHash,
+        "x-amz-date": amzDate,
+        Authorization: authHeader,
+      },
+    });
+
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      throw new Error(`S3 storage getObject failed (${res.status} ${res.statusText})`);
+    }
+
+    const contentType = res.headers.get("content-type") || "image/png";
+    const arrayBuffer = await res.arrayBuffer();
+    return { data: Buffer.from(arrayBuffer), contentType };
+  }
+
+  /**
+   * Delete object from MinIO/S3 using AWS SigV4
    */
   async deleteFile(s3Key: string): Promise<void> {
-    const s3 = await this.getClient();
-    const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-    await s3.send(
-      new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: s3Key,
-      })
-    );
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+    const dateStamp = amzDate.substring(0, 8);
+
+    const payloadHash = crypto.createHash("sha256").update("").digest("hex");
+    const canonicalUri = "/" + this.bucket + "/" + encodeURI(s3Key);
+
+    const urlObj = new URL(this.endpoint);
+    const host = urlObj.host;
+
+    const canonicalHeaders =
+      "host:" + host + "\n" +
+      "x-amz-content-sha256:" + payloadHash + "\n" +
+      "x-amz-date:" + amzDate + "\n";
+    const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+
+    const canonicalRequest =
+      "DELETE\n" + canonicalUri + "\n\n" + canonicalHeaders + "\n" + signedHeaders + "\n" + payloadHash;
+    const stringToSign =
+      "AWS4-HMAC-SHA256\n" + amzDate + "\n" + dateStamp + "/" + this.region + "/s3/aws4_request\n" +
+      crypto.createHash("sha256").update(canonicalRequest).digest("hex");
+
+    const signingKey = this.getSignatureKey(dateStamp, "s3");
+    const signature = crypto.createHmac("sha256", signingKey).update(stringToSign).digest("hex");
+
+    const authHeader =
+      "AWS4-HMAC-SHA256 Credential=" + this.accessKey + "/" + dateStamp + "/" + this.region + "/s3/aws4_request, SignedHeaders=" + signedHeaders + ", Signature=" + signature;
+
+    const fullUrl = this.endpoint + canonicalUri;
+    await fetch(fullUrl, {
+      method: "DELETE",
+      headers: {
+        Host: host,
+        "x-amz-content-sha256": payloadHash,
+        "x-amz-date": amzDate,
+        Authorization: authHeader,
+      },
+    }).catch(() => {});
   }
 }
 

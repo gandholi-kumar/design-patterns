@@ -118,6 +118,8 @@ function defineCustomThemes(monaco: typeof MonacoType) {
       'editorSuggestWidget.highlightForeground': '#d4a356',
       'editorHoverWidget.background': '#1c2028',
       'editorHoverWidget.border': '#353b47',
+      'editorHoverWidget.foreground': '#ece8de',
+      'editorHoverWidget.statusBarBackground': '#15181f',
     },
   });
 
@@ -158,6 +160,8 @@ function defineCustomThemes(monaco: typeof MonacoType) {
       'editorSuggestWidget.highlightForeground': '#d4a356',
       'editorHoverWidget.background': '#ffffff',
       'editorHoverWidget.border': '#dcd6c8',
+      'editorHoverWidget.foreground': '#1f2328',
+      'editorHoverWidget.statusBarBackground': '#f6f8fa',
     },
   });
 }
@@ -286,6 +290,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
   const monacoRef = useRef<typeof MonacoType | null>(null);
   const extraLibsRef = useRef<MonacoType.IDisposable[]>([]);
   const javaCompletionRef = useRef<MonacoType.IDisposable | null>(null);
+  const javaHoverRef = useRef<MonacoType.IDisposable | null>(null);
   const definitionProvidersRef = useRef<MonacoType.IDisposable[]>([]);
   const openerRef = useRef<MonacoType.IDisposable | null>(null);
 
@@ -454,6 +459,46 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
         }
 
         return { suggestions };
+      },
+    });
+
+    // Also register Java Hover Provider for rich symbol documentation tooltips
+    if (javaHoverRef.current) {
+      javaHoverRef.current.dispose();
+      javaHoverRef.current = null;
+    }
+
+    javaHoverRef.current = monaco.languages.registerHoverProvider('java', {
+      provideHover: (model, position) => {
+        const word = model.getWordAtPosition(position);
+        if (!word) return null;
+        const term = word.word;
+
+        // 1. Check Standard Library completions
+        const stdLib = JAVA_STDLIB_COMPLETIONS.find((c) => c.label === term || c.label.endsWith(`.${term}`));
+        if (stdLib) {
+          return {
+            range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+            contents: [
+              { value: `\`\`\`java\n${stdLib.detail}\n\`\`\`` },
+              { value: stdLib.doc },
+            ],
+          };
+        }
+
+        // 2. Check cross-file symbols
+        const sym = symbols.find((s) => s.name === term);
+        if (sym) {
+          return {
+            range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+            contents: [
+              { value: `\`\`\`java\n(${sym.kind}) ${sym.signature}\n\`\`\`` },
+              { value: `Defined in playground file **${sym.sourceFile}**` },
+            ],
+          };
+        }
+
+        return null;
       },
     });
   }, [projectFiles, monacoLanguage]);
@@ -669,6 +714,10 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
       if (javaCompletionRef.current) {
         javaCompletionRef.current.dispose();
         javaCompletionRef.current = null;
+      }
+      if (javaHoverRef.current) {
+        javaHoverRef.current.dispose();
+        javaHoverRef.current = null;
       }
       definitionProvidersRef.current.forEach((d) => {
         try {

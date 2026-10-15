@@ -171,6 +171,15 @@
   /* Fallback for older browsers */
   --destructive-border: hsl(var(--destructive));
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Monaco Editor Tooltip & Hover Widget Variables (Solid Opacity 1) */
+  --vscode-editorHoverWidget-background: #ffffff;
+  --vscode-editorHoverWidget-foreground: #1f2328;
+  --vscode-editorHoverWidget-border: #dcd6c8;
+  --vscode-editorHoverWidget-statusBarBackground: #f6f8fa;
+  --vscode-textCodeBlock-background: #f4f0e6;
+  --vscode-textLink-foreground: #b87b28;
+  --vscode-textLink-activeForeground: #8f5a13;
 }
 
 .dark {
@@ -239,6 +248,15 @@
     0 0.125rem 0 0 hsl(202.8169 89.1213% 53.1373% / 0),
     0 0.5rem 0.625rem -0.0625rem hsl(202.8169 89.1213% 53.1373% / 0);
   --shadow-2xl: 0 0.125rem 0 0 hsl(202.8169 89.1213% 53.1373% / 0);
+
+  /* Monaco Editor Tooltip & Hover Widget Variables (Solid Opacity 1) */
+  --vscode-editorHoverWidget-background: #1c2028;
+  --vscode-editorHoverWidget-foreground: #ece8de;
+  --vscode-editorHoverWidget-border: #353b47;
+  --vscode-editorHoverWidget-statusBarBackground: #15181f;
+  --vscode-textCodeBlock-background: #15181f;
+  --vscode-textLink-foreground: #d4a356;
+  --vscode-textLink-activeForeground: #f3c77c;
 }
 
 @layer base {
@@ -2344,7 +2362,7 @@ kbd {
   background-color: #15181f;
 }
 
-/* Ensure Monaco hover widgets and overflow tooltips are fully visible and properly positioned at pointer */
+/* Ensure Monaco hover widgets and overflow tooltips are fully visible, opaque, and properly positioned at pointer */
 .playground-page {
   transform: none !important;
 }
@@ -2354,11 +2372,144 @@ kbd {
   z-index: 99999 !important;
 }
 
+/* Monaco Hover Tooltip Base - Solid Opacity 1 with no transparency */
+.monaco-hover,
 .monaco-editor .monaco-hover,
-.monaco-hover {
+.monaco-resizable-hover,
+.monaco-editor .monaco-resizable-hover {
   z-index: 99999 !important;
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45) !important;
+  opacity: 1 !important;
+  background-color: #ffffff !important;
+  color: #1f2328 !important;
+  border: 1px solid #dcd6c8 !important;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25) !important;
   border-radius: 0.375rem !important;
+  backdrop-filter: none !important;
+}
+
+.dark .monaco-hover,
+.dark .monaco-editor .monaco-hover,
+.dark .monaco-resizable-hover,
+.dark .monaco-editor .monaco-resizable-hover {
+  opacity: 1 !important;
+  background-color: #1c2028 !important;
+  color: #ece8de !important;
+  border: 1px solid #353b47 !important;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Monaco Hover Inner Content & Rows - Guaranteed Opacity 1 and Solid Background */
+.monaco-hover .monaco-hover-content,
+.monaco-hover .hover-row,
+.monaco-hover .hover-contents,
+.monaco-hover .hover-row-contents,
+.monaco-hover .markdown-hover,
+.monaco-hover .marker-hover,
+.monaco-hover .marker-hover-message,
+.monaco-editor .monaco-hover .monaco-hover-content,
+.monaco-editor .monaco-hover .hover-row,
+.monaco-editor .monaco-hover .hover-contents,
+.monaco-editor .monaco-hover .hover-row-contents,
+.monaco-editor .monaco-hover .markdown-hover,
+.monaco-editor .monaco-hover .marker-hover,
+.monaco-editor .monaco-hover .marker-hover-message {
+  opacity: 1 !important;
+  background-color: #ffffff !important;
+  color: #1f2328 !important;
+}
+
+.dark .monaco-hover .monaco-hover-content,
+.dark .monaco-hover .hover-row,
+.dark .monaco-hover .hover-contents,
+.dark .monaco-hover .hover-row-contents,
+.dark .monaco-hover .markdown-hover,
+.dark .monaco-hover .marker-hover,
+.dark .monaco-hover .marker-hover-message,
+.dark .monaco-editor .monaco-hover .monaco-hover-content,
+.dark .monaco-editor .monaco-hover .hover-row,
+.dark .monaco-editor .monaco-hover .hover-contents,
+.dark .monaco-editor .monaco-hover .hover-row-contents,
+.dark .monaco-editor .monaco-hover .markdown-hover,
+.dark .monaco-editor .monaco-hover .marker-hover,
+.dark .monaco-editor .monaco-hover .marker-hover-message {
+  opacity: 1 !important;
+  background-color: #1c2028 !important;
+  color: #ece8de !important;
+}
+
+/* Monaco Hover Status Bar & Actions Footer (Solid Opacity 1) */
+.monaco-hover .hover-row.status-bar,
+.monaco-hover .hover-row.status-bar .actions,
+.monaco-editor .monaco-hover .hover-row.status-bar,
+.monaco-editor .monaco-hover .hover-row.status-bar .actions {
+  opacity: 1 !important;
+  background-color: #f6f8fa !important;
+  border-top: 1px solid #dcd6c8 !important;
+}
+
+.dark .monaco-hover .hover-row.status-bar,
+.dark .monaco-hover .hover-row.status-bar .actions,
+.dark .monaco-editor .monaco-hover .hover-row.status-bar,
+.dark .monaco-editor .monaco-hover .hover-row.status-bar .actions {
+  opacity: 1 !important;
+  background-color: #15181f !important;
+  border-top: 1px solid #353b47 !important;
+}
+
+/* Monaco Hover Code Blocks & Syntax */
+.monaco-hover code,
+.monaco-hover pre,
+.monaco-hover .monaco-tokenized-source,
+.monaco-editor .monaco-hover code,
+.monaco-editor .monaco-hover pre,
+.monaco-editor .monaco-hover .monaco-tokenized-source {
+  opacity: 1 !important;
+  background-color: #f4f0e6 !important;
+  color: #1f2328 !important;
+  border-radius: 0.25rem;
+}
+
+.dark .monaco-hover code,
+.dark .monaco-hover pre,
+.dark .monaco-hover .monaco-tokenized-source,
+.dark .monaco-editor .monaco-hover code,
+.dark .monaco-editor .monaco-hover pre,
+.dark .monaco-editor .monaco-hover .monaco-tokenized-source {
+  opacity: 1 !important;
+  background-color: #15181f !important;
+  color: #f8f8f2 !important;
+}
+
+/* Monaco Hover Links */
+.monaco-hover a,
+.monaco-hover .action-container a,
+.monaco-editor .monaco-hover a,
+.monaco-editor .monaco-hover .action-container a {
+  color: #b87b28 !important;
+}
+
+.dark .monaco-hover a,
+.dark .monaco-hover .action-container a,
+.dark .monaco-editor .monaco-hover a,
+.dark .monaco-editor .monaco-hover .action-container a {
+  color: #d4a356 !important;
+}
+
+/* Suggest Widget (IntelliSense Dropdown) Solid Opacity 1 */
+.suggest-widget,
+.monaco-editor .suggest-widget {
+  opacity: 1 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #dcd6c8 !important;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25) !important;
+}
+
+.dark .suggest-widget,
+.dark .monaco-editor .suggest-widget {
+  opacity: 1 !important;
+  background-color: #1c2028 !important;
+  border: 1px solid #353b47 !important;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.6) !important;
 }
 
 .editor-loading-shimmer {
