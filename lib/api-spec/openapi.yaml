@@ -14,6 +14,12 @@ tags:
     description: Code execution operations
   - name: notes
     description: Per-pattern rich notes operations
+  - name: progress
+    description: Learning progress and bookmark operations
+  - name: media
+    description: Direct object storage media operations
+  - name: ai
+    description: GoF AI architect consultation and decision ledger
 paths:
   /healthz:
     get:
@@ -170,12 +176,189 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NotesImportResponse"
+  /progress:
+    get:
+      operationId: getProgress
+      tags: [progress]
+      summary: Get user learning progress
+      description: Retrieves all learning progress recorded for the authenticated user
+      responses:
+        "200":
+          description: Learning progress map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProgressResponse"
+    put:
+      operationId: upsertProgress
+      tags: [progress]
+      summary: Upsert pattern progress
+      description: Updates or creates progress for a specific pattern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertProgressRequest"
+      responses:
+        "200":
+          description: Progress saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressRecord"
         "400":
-          description: Invalid import payload
+          description: Invalid input
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /bookmarks:
+    get:
+      operationId: getBookmarks
+      tags: [progress]
+      summary: Get user bookmarks
+      description: Returns array of pattern IDs bookmarked by authenticated user
+      responses:
+        "200":
+          description: List of bookmarked pattern IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    post:
+      operationId: toggleBookmark
+      tags: [progress]
+      summary: Toggle pattern bookmark
+      description: Toggles bookmark status for a specific pattern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToggleBookmarkRequest"
+      responses:
+        "200":
+          description: Bookmark toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookmarkToggleResult"
+  /media/upload:
+    post:
+      operationId: uploadMedia
+      tags: [media]
+      summary: Upload binary media asset
+      description: Direct binary upload to MinIO S3 object storage
+      parameters:
+        - name: patternId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: filename
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "201":
+          description: Asset created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaUploadResponse"
+        "400":
+          description: Empty or invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /media/{assetId}:
+    get:
+      operationId: getMediaAsset
+      tags: [media]
+      summary: Serve media asset
+      description: Streams media asset directly from MinIO object storage
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Media asset stream
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Media asset not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteMediaAsset
+      tags: [media]
+      summary: Delete media asset
+      description: Permanently removes media asset from MinIO and PostgreSQL
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Asset deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteMediaResponse"
+  /ai/architect-consult:
+    post:
+      operationId: consultArchitect
+      tags: [ai]
+      summary: Consult AI architect on design pattern decision
+      description: AI copilot consult using server-side Gemini Pro or deterministic fallback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsultArchitectRequest"
+      responses:
+        "200":
+          description: Architectural consultation verdict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArchitectConsultResult"
+  /ai/decision-ledger:
+    get:
+      operationId: getDecisionLedger
+      tags: [ai]
+      summary: Get cloud-persisted decision history
+      description: Retrieves user's cloud-persisted GoF decision history
+      responses:
+        "200":
+          description: Decision ledger entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionLedgerListResponse"
 components:
   schemas:
     HealthStatus:
@@ -375,3 +558,265 @@ components:
         status:
           type: string
           example: "success"
+    ProgressRecord:
+      type: object
+      required:
+        - patternId
+        - attempts
+        - correct
+        - box
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        patternId:
+          type: string
+        attempts:
+          type: integer
+          default: 0
+        correct:
+          type: integer
+          default: 0
+        box:
+          type: integer
+          default: 1
+        note:
+          type: string
+          default: ""
+        updatedAt:
+          type: string
+          format: date-time
+    UserProgressItem:
+      type: object
+      required:
+        - attempts
+        - correct
+        - box
+      properties:
+        attempts:
+          type: integer
+        correct:
+          type: integer
+        box:
+          type: integer
+        note:
+          type: string
+          default: ""
+    UserProgressResponse:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/UserProgressItem"
+    UpsertProgressRequest:
+      type: object
+      required:
+        - patternId
+      properties:
+        patternId:
+          type: string
+        attempts:
+          type: integer
+          default: 0
+        correct:
+          type: integer
+          default: 0
+        box:
+          type: integer
+          default: 1
+        note:
+          type: string
+          default: ""
+    ToggleBookmarkRequest:
+      type: object
+      required:
+        - patternId
+      properties:
+        patternId:
+          type: string
+    BookmarkToggleResult:
+      type: object
+      required:
+        - patternId
+        - bookmarked
+      properties:
+        patternId:
+          type: string
+        bookmarked:
+          type: boolean
+    MediaUploadResponse:
+      type: object
+      required:
+        - id
+        - url
+        - s3Key
+        - publicUrl
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        s3Key:
+          type: string
+        publicUrl:
+          type: string
+    DeleteMediaResponse:
+      type: object
+      required:
+        - success
+        - assetId
+      properties:
+        success:
+          type: boolean
+        assetId:
+          type: string
+    AiTurn:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+    ConsultArchitectRequest:
+      type: object
+      required:
+        - problemStatement
+      properties:
+        problemStatement:
+          type: string
+        turns:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiTurn"
+    GoFPatternVerdict:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - confidence
+        - architecturalRationale
+        - structuralApplicability
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          enum: [Creational, Structural, Behavioral]
+        confidence:
+          type: number
+        architecturalRationale:
+          type: string
+        structuralApplicability:
+          type: string
+    GoFRunnerUpVerdict:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - confidence
+        - whyConsidered
+        - whenToChooseRunnerUpOverPrimary
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          enum: [Creational, Structural, Behavioral]
+        confidence:
+          type: number
+        whyConsidered:
+          type: string
+        whenToChooseRunnerUpOverPrimary:
+          type: string
+    GoFTradeOffDilemma:
+      type: object
+      required:
+        - primaryGains
+        - primaryTaxes
+        - decisiveDifferentiator
+      properties:
+        primaryGains:
+          type: array
+          items:
+            type: string
+        primaryTaxes:
+          type: array
+          items:
+            type: string
+        decisiveDifferentiator:
+          type: string
+    GoFDecisionVerdict:
+      type: object
+      required:
+        - primaryPattern
+        - runnerUpPattern
+        - tradeOffDilemma
+        - codeSmellWarning
+      properties:
+        primaryPattern:
+          $ref: "#/components/schemas/GoFPatternVerdict"
+        runnerUpPattern:
+          $ref: "#/components/schemas/GoFRunnerUpVerdict"
+        tradeOffDilemma:
+          $ref: "#/components/schemas/GoFTradeOffDilemma"
+        codeSmellWarning:
+          type: string
+    ArchitectConsultResult:
+      type: object
+      required:
+        - verdict
+        - mode
+        - engine
+      properties:
+        verdict:
+          $ref: "#/components/schemas/GoFDecisionVerdict"
+        mode:
+          type: string
+        engine:
+          type: string
+    DecisionLedgerItem:
+      type: object
+      required:
+        - id
+        - userId
+        - problemStatement
+        - primaryPattern
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        problemStatement:
+          type: string
+        primaryPattern:
+          type: string
+        runnerUpPattern:
+          type: string
+        confidence:
+          type: number
+        tradeOffs:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    DecisionLedgerListResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/DecisionLedgerItem"
+

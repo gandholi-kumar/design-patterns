@@ -1,5 +1,6 @@
 import { PATTERNS } from '../../data';
 import type { Pattern } from '../../pattern-types';
+import { consultArchitect } from '@workspace/api-client-react';
 
 export interface GoFDecisionVerdict {
   primaryPattern: {
@@ -187,26 +188,17 @@ async function callManagedProAI(
   history: ChatTurn[],
   signal?: AbortSignal,
 ): Promise<GoFDecisionVerdict> {
-  const res = await fetch('/api/ai/architect-consult', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({
+  const data = await consultArchitect(
+    {
       problemStatement: problemText.trim(),
-      turns: history,
-    }),
-    signal,
-  });
+      turns: history.map((t) => ({
+        role: t.role === 'assistant' ? 'assistant' : 'user',
+        content: t.content,
+      })),
+    },
+    { signal }
+  );
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error('Please sign in to your account to use the Built-in Pro AI Architect without an API key.');
-    }
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.message || errData.error || `Server returned HTTP ${res.status}`);
-  }
-
-  const data = await res.json();
   if (!data?.verdict) {
     throw new Error('Invalid architectural payload received from server.');
   }

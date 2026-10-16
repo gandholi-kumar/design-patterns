@@ -26,20 +26,17 @@ import { useCodeRunner } from '../hooks/useCodeRunner';
 import { buildProjectFiles } from '../data/playground-starters';
 import { AppTooltip } from '../components/ui/app-tooltip';
 import { PlaygroundCodeEditor } from '../components/PlaygroundCodeEditor';
+import { useWorkspacePreferencesStore, useLearningStore } from '../stores';
 
-interface PlaygroundPageProps {
+export interface PlaygroundPageProps {
   initialPatternId?: string;
-  saved: { mode?: string; theme?: string; studioMode?: boolean };
-  setSaved: React.Dispatch<React.SetStateAction<any>>;
 }
 
 type LayoutMode = 'stacked' | 'split';
 
-export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
+export function PlaygroundPage({
   initialPatternId,
-  saved,
-  setSaved,
-}) => {
+}: PlaygroundPageProps = {}) {
   // 1. Language & Pattern selection
   const [patternId, setPatternId] = useState(() => {
     // Check URL search params for deep links (?pattern=abstract-factory)
@@ -71,24 +68,22 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const language = (saved.mode === 'java' ? 'java' : 'typescript') as 'typescript' | 'java';
+  const mode = useLearningStore((s) => s.mode);
+  const setMode = useLearningStore((s) => s.setMode);
+  const studioMode = useLearningStore((s) => s.studioMode);
+  const theme = useLearningStore((s) => s.theme);
 
-  // 2. Layout preferences (persisted in localStorage)
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
-    const savedLayout = localStorage.getItem('gof_playground_layout');
-    return savedLayout === 'split' ? 'split' : 'stacked';
-  });
+  const language = (mode === 'java' ? 'java' : 'typescript') as 'typescript' | 'java';
 
-  const isStudioMode = Boolean(saved.studioMode);
+  // 2. Layout preferences (persisted in Zustand store)
+  const layoutMode = useWorkspacePreferencesStore((s) => s.playgroundLayout);
+  const toggleLayoutMode = useWorkspacePreferencesStore((s) => s.setPlaygroundLayout);
+  const isWide = useWorkspacePreferencesStore((s) => s.playgroundWide);
+  const toggleWide = useWorkspacePreferencesStore((s) => s.togglePlaygroundWide);
+  const wordWrap = useWorkspacePreferencesStore((s) => s.playgroundWordWrap);
+  const toggleWordWrap = useWorkspacePreferencesStore((s) => s.togglePlaygroundWordWrap);
 
-  const [isWide, setIsWide] = useState<boolean>(() => {
-    return localStorage.getItem('gof_playground_wide') === 'true';
-  });
-
-  const [wordWrap, setWordWrap] = useState<boolean>(() => {
-    return localStorage.getItem('gof_playground_word_wrap') === 'true';
-  });
-
+  const isStudioMode = Boolean(studioMode);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [copiedMode, setCopiedMode] = useState<'none' | 'file' | 'all'>('none');
 
@@ -113,27 +108,6 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
       setCopiedMode('all');
       setTimeout(() => setCopiedMode('none'), 2000);
     }
-  };
-
-  const toggleWordWrap = useCallback(() => {
-    setWordWrap((prev) => {
-      const next = !prev;
-      localStorage.setItem('gof_playground_word_wrap', String(next));
-      return next;
-    });
-  }, []);
-
-  const toggleLayoutMode = (mode: LayoutMode) => {
-    setLayoutMode(mode);
-    localStorage.setItem('gof_playground_layout', mode);
-  };
-
-  const toggleWide = () => {
-    setIsWide((prev) => {
-      const next = !prev;
-      localStorage.setItem('gof_playground_wide', String(next));
-      return next;
-    });
   };
 
   // 3. Multi-file Project State
@@ -260,7 +234,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
   };
 
   const toggleLanguageMode = (newMode: 'java' | 'typescript') => {
-    setSaved((s: any) => ({ ...s, mode: newMode }));
+    setMode(newMode);
   };
 
   // Active code for editor
@@ -268,8 +242,8 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
 
   return (
     <div
-      className={`page-content reveal playground-page ${isStudioMode ? 'playground-wide' : isWide ? 'playground-wide' : ''} ${saved.theme === 'dark' ? 'dark-theme' : 'light-theme'}`}
-      data-theme={saved.theme || 'light'}
+      className={`page-content reveal playground-page ${isStudioMode ? 'playground-wide' : isWide ? 'playground-wide' : ''} ${theme === 'dark' ? 'dark-theme' : 'light-theme'}`}
+      data-theme={theme}
     >
       {/* 1. Header intro */}
       <div className="page-intro">
@@ -482,7 +456,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                     fileName={activeFile?.name}
                     wordWrap={wordWrap}
                     projectFiles={projectFiles}
-                    theme={saved.theme === 'dark' ? 'dark' : 'light'}
+                    theme={theme === 'dark' ? 'dark' : 'light'}
                     onSelectFile={handleSelectFileAndLine}
                     targetLine={targetLine}
                     onTargetLineHandled={() => setTargetLine(null)}
@@ -600,7 +574,7 @@ export const PlaygroundPage: React.FC<PlaygroundPageProps> = ({
                 fileName={activeFile?.name}
                 wordWrap={wordWrap}
                 projectFiles={projectFiles}
-                theme={saved.theme === 'dark' ? 'dark' : 'light'}
+                theme={theme === 'dark' ? 'dark' : 'light'}
                 onSelectFile={handleSelectFileAndLine}
                 targetLine={targetLine}
                 onTargetLineHandled={() => setTargetLine(null)}

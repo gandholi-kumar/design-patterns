@@ -339,8 +339,9 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
     // 3. Configure TypeScript Language Defaults & Eager Model Sync for cross-file imports
     const ts = getTypeScriptService(monaco);
     if (ts) {
-      if (typeof (ts.typescriptDefaults as any).setEagerModelSync === 'function') {
-        (ts.typescriptDefaults as any).setEagerModelSync(true);
+      const defaultsWithSync = ts.typescriptDefaults as { setEagerModelSync?: (eager: boolean) => void };
+      if (typeof defaultsWithSync.setEagerModelSync === 'function') {
+        defaultsWithSync.setEagerModelSync(true);
       }
       ts.typescriptDefaults.setCompilerOptions({
         target: 9, // ES2022
@@ -689,9 +690,12 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
               f.name.toLowerCase().endsWith(rawPath.toLowerCase())
           );
           if (targetFile) {
+            const posOrSelection = selectionOrPosition as
+              | { startLineNumber?: number; lineNumber?: number }
+              | undefined;
             const line =
-              (selectionOrPosition as any)?.startLineNumber ??
-              (selectionOrPosition as any)?.lineNumber ??
+              posOrSelection?.startLineNumber ??
+              posOrSelection?.lineNumber ??
               1;
 
             if (targetFile.name === fileNameRef.current) {

@@ -28,6 +28,7 @@ import { useNoteRepository } from "../lib/notes/NoteRepositoryContext";
 import type { PatternNote, NotesExportPayload } from "../lib/notes/notes-schema";
 import { AppTooltip } from "../components/ui/app-tooltip";
 import { appToast } from "../components/ui/app-toaster";
+import { useWorkspacePreferencesStore } from "../stores";
 import { DeleteConfirmDialog } from "../components/notes/DeleteConfirmDialog";
 import {
   ImportConflictDialog,
@@ -50,27 +51,21 @@ export function NotesWorkspacePage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "annotated" | "unannotated">("all");
 
-  // View mode state: 'cards' or 'table' (persisted in localStorage)
-  const [viewMode, setViewMode] = useState<"cards" | "table">(() => {
-    const saved = localStorage.getItem("gof-notes-view-mode");
-    return saved === "cards" || saved === "table" ? saved : "table";
-  });
+  // View mode state: 'cards' or 'table' (persisted in Zustand store)
+  const viewMode = useWorkspacePreferencesStore((s) => s.notesViewMode);
+  const handleToggleViewMode = useWorkspacePreferencesStore((s) => s.setNotesViewMode);
 
   // Sorting state for table and cards
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   // Pagination state (10, 20, 50, 100 per page)
-  const [pageSize, setPageSize] = useState<number>(() => {
-    const saved = localStorage.getItem("gof-notes-page-size");
-    const num = Number(saved);
-    return [10, 20, 50, 100].includes(num) ? num : 10;
-  });
+  const pageSize = useWorkspacePreferencesStore((s) => s.notesPageSize);
+  const setPageSize = useWorkspacePreferencesStore((s) => s.setNotesPageSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
-    localStorage.setItem("gof-notes-page-size", String(newSize));
     setCurrentPage(1);
   };
 
@@ -82,11 +77,6 @@ export function NotesWorkspacePage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, categoryFilter, statusFilter]);
-
-  const handleToggleViewMode = (mode: "cards" | "table") => {
-    setViewMode(mode);
-    localStorage.setItem("gof-notes-view-mode", mode);
-  };
 
   const handleSortChange = (field: SortField) => {
     if (sortField === field) {
@@ -108,13 +98,8 @@ export function NotesWorkspacePage() {
   } | null>(null);
 
   // Import Collision Policy
-  const [importPolicy, setImportPolicy] = useState<ImportCollisionStrategy | "ask">(() => {
-    const saved = localStorage.getItem("gof-notes-import-policy");
-    if (saved === "append" || saved === "overwrite" || saved === "skip") {
-      return saved as ImportCollisionStrategy;
-    }
-    return "append"; // Default strategy is append
-  });
+  const importPolicy = useWorkspacePreferencesStore((s) => s.notesImportPolicy);
+  const setImportPolicy = useWorkspacePreferencesStore((s) => s.setNotesImportPolicy);
   const [policyMenuOpen, setPolicyMenuOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -341,28 +326,34 @@ export function NotesWorkspacePage() {
         md += `## ${p.name} (${p.category})\n\n`;
         md += `**Last Modified:** ${new Date(n.lastModified).toLocaleString()}\n\n`;
 
+        const extractText = (content: unknown): string => {
+          if (!Array.isArray(content)) return "";
+          return content
+            .map((c) =>
+              typeof c === "object" && c !== null && "text" in c && typeof (c as { text: unknown }).text === "string"
+                ? (c as { text: string }).text
+                : ""
+            )
+            .join("");
+        };
+
         for (const b of n.blocks) {
           if (b.type === "heading") {
-            const level = ((b.props as any)?.level as number) || 3;
+            const level =
+              typeof b.props === "object" && b.props !== null && "level" in b.props && typeof (b.props as { level: unknown }).level === "number"
+                ? (b.props as { level: number }).level
+                : 3;
             const prefix = "#".repeat(level);
-            const text = Array.isArray(b.content)
-              ? b.content.map((c: any) => (c as any)?.text || "").join("")
-              : "";
+            const text = extractText(b.content);
             md += `${prefix} ${text}\n\n`;
           } else if (b.type === "paragraph") {
-            const text = Array.isArray(b.content)
-              ? b.content.map((c: any) => (c as any)?.text || "").join("")
-              : "";
+            const text = extractText(b.content);
             md += `${text}\n\n`;
           } else if (b.type === "bulletListItem") {
-            const text = Array.isArray(b.content)
-              ? b.content.map((c: any) => (c as any)?.text || "").join("")
-              : "";
+            const text = extractText(b.content);
             md += `- ${text}\n`;
           } else if (b.type === "codeBlock") {
-            const text = Array.isArray(b.content)
-              ? b.content.map((c: any) => (c as any)?.text || "").join("")
-              : "";
+            const text = extractText(b.content);
             md += `\`\`\`\n${text}\n\`\`\`\n\n`;
           }
         }
@@ -462,7 +453,6 @@ export function NotesWorkspacePage() {
     if (!pendingImport) return;
 
     if (rememberAsDefault) {
-      localStorage.setItem("gof-notes-import-policy", strategy);
       setImportPolicy(strategy);
       appToast.info(
         "Default policy saved",
@@ -504,11 +494,6 @@ export function NotesWorkspacePage() {
   // Change default collision policy from header
   const handleSelectPolicy = (newPolicy: ImportCollisionStrategy | "ask") => {
     setImportPolicy(newPolicy);
-    if (newPolicy === "ask") {
-      localStorage.removeItem("gof-notes-import-policy");
-    } else {
-      localStorage.setItem("gof-notes-import-policy", newPolicy);
-    }
     setPolicyMenuOpen(false);
 
     const desc =

@@ -118,8 +118,15 @@ export class LocalStorageNoteRepository implements NoteRepository {
     const neededMediaIds = new Set<string>();
     for (const note of notes) {
       for (const block of note.blocks) {
-        if (block.type === "image" && typeof (block.props as any)?.url === "string") {
-          const url = (block.props as any).url as string;
+        const url =
+          block.type === "image" &&
+          typeof block.props === "object" &&
+          block.props !== null &&
+          "url" in block.props &&
+          typeof (block.props as { url: unknown }).url === "string"
+            ? (block.props as { url: string }).url
+            : null;
+        if (url) {
           const match = url.match(/asset-[a-zA-Z0-9_-]+/);
           if (match) neededMediaIds.add(match[0]);
         }

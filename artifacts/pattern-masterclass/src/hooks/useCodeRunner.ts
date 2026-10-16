@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { executeCode } from '@workspace/api-client-react';
 
 export type RunStatus = 'idle' | 'running' | 'success' | 'compile_error' | 'runtime_error' | 'timeout';
 
@@ -187,33 +188,16 @@ export function useCodeRunner() {
       abortControllerRef.current = controller;
 
       try {
-        const response = await fetch('/api/code/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const data = await executeCode(
+          {
             language: 'java',
             files,
             entryPoint,
             timeoutMs,
-          }),
-          signal: controller.signal,
-        });
+          },
+          { signal: controller.signal }
+        );
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          const failureResult: RunResult = {
-            status: 'runtime_error',
-            stdout: [],
-            stderr: errData.error ? [JSON.stringify(errData.error)] : [`Server returned HTTP ${response.status}`],
-            exitCode: response.status,
-            durationMs: Math.round(performance.now() - startTime),
-          };
-          setResult(failureResult);
-          setIsRunning(false);
-          return failureResult;
-        }
-
-        const data = await response.json();
         const successResult: RunResult = {
           status: data.status,
           stdout: data.stdout || [],

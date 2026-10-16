@@ -42,7 +42,10 @@ export function NotesEditor({
         },
       ];
     }
-    const sanitized = (initialBlocks as any[]).filter((block) => {
+    const blockList = Array.isArray(initialBlocks)
+      ? (initialBlocks as Array<{ type?: string; props?: { url?: string } }>)
+      : [];
+    const sanitized = blockList.filter((block) => {
       if (block.type === "image" && (!block.props?.url || block.props.url.trim() === "")) {
         return false;
       }

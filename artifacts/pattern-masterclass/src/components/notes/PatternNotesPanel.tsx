@@ -61,43 +61,47 @@ export function PatternNotesPanel({
     md += `*Pattern:* ${patternName} (${category})\n`;
     md += `*Exported:* ${new Date().toLocaleString()}\n\n---\n\n`;
 
+    const extractInlineText = (content: unknown): string => {
+      if (!Array.isArray(content)) return "";
+      return content
+        .map((c) =>
+          typeof c === "object" && c !== null && "text" in c && typeof (c as { text?: unknown }).text === "string"
+            ? (c as { text: string }).text
+            : ""
+        )
+        .join("");
+    };
+
     for (const b of blocks) {
       if (b.type === "heading") {
-        const level = (b.props?.level as number) || 2;
+        const level = typeof b.props === "object" && b.props !== null && "level" in b.props && typeof (b.props as { level?: unknown }).level === "number"
+          ? (b.props as { level: number }).level
+          : 2;
         const prefix = "#".repeat(level);
-        const text = Array.isArray(b.content)
-          ? b.content.map((c: any) => c?.text || "").join("")
-          : "";
+        const text = extractInlineText(b.content);
         md += `${prefix} ${text}\n\n`;
       } else if (b.type === "paragraph") {
-        const text = Array.isArray(b.content)
-          ? b.content.map((c: any) => c?.text || "").join("")
-          : "";
+        const text = extractInlineText(b.content);
         md += `${text}\n\n`;
       } else if (b.type === "bulletListItem") {
-        const text = Array.isArray(b.content)
-          ? b.content.map((c: any) => c?.text || "").join("")
-          : "";
+        const text = extractInlineText(b.content);
         md += `- ${text}\n`;
       } else if (b.type === "numberedListItem") {
-        const text = Array.isArray(b.content)
-          ? b.content.map((c: any) => c?.text || "").join("")
-          : "";
+        const text = extractInlineText(b.content);
         md += `1. ${text}\n`;
       } else if (b.type === "codeBlock") {
-        const text = Array.isArray(b.content)
-          ? b.content.map((c: any) => c?.text || "").join("")
-          : "";
+        const text = extractInlineText(b.content);
         md += `\`\`\`\n${text}\n\`\`\`\n\n`;
       } else if (b.type === "table") {
-        const tableContent = b.content as any;
+        interface TableCellContainer {
+          rows?: Array<{ cells?: unknown[][] }>;
+        }
+        const tableContent = b.content as unknown as TableCellContainer;
         if (tableContent && typeof tableContent === "object" && Array.isArray(tableContent.rows)) {
           for (let r = 0; r < tableContent.rows.length; r++) {
             const row = tableContent.rows[r];
             const cells = Array.isArray(row.cells)
-              ? row.cells.map((cell: any) =>
-                  Array.isArray(cell) ? cell.map((c: any) => c?.text || "").join("") : ""
-                )
+              ? row.cells.map((cell) => extractInlineText(cell))
               : [];
             md += `| ${cells.join(" | ")} |\n`;
             if (r === 0) {
