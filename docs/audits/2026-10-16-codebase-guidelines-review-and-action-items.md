@@ -250,3 +250,25 @@ npx -y pnpm@10 --filter @workspace/pattern-masterclass run typecheck
 # 3. Monorepo production build
 npx -y pnpm@10 run build
 ```
+
+---
+
+## 7. Remediation Resolution & Verification Results (Completed)
+
+All 5 non-compliance areas have been **100% remediated** on branch `review/codebase-guidelines-audit`:
+
+| Dimension | Initial Audit State | Remediation Delivered | Gate Status |
+| :--- | :--- | :--- | :--- |
+| **Contract-First APIs** | 6 endpoints unlisted in OpenAPI, ad-hoc `fetch()` calls in frontend | Added all endpoints to `openapi.yaml`, regenerated Zod and React Query packages, swapped `fetch` to contract clients | ✅ Pass (Exit 0) |
+| **4-Layer State Architecture** | Raw `localStorage` read/writes across 4 files, no Zustand store | Installed `zustand`, created `useLearningStore` and `useWorkspacePreferencesStore`, purged direct `localStorage` calls | ✅ Pass (Exit 0) |
+| **Modular Architecture** | `App.tsx` (635 lines) housing multiple inlined pages & dialogs | Decomposed into `CatalogPage`, `SimulatorsPage`, `QuizLabPage`, `PatternDialog`, `BackupDialog`, `PageIntro`, `zip-utils` | ✅ Pass (Exit 0) |
+| **Backend Clean Architecture** | Route files containing direct Drizzle ORM database operations | Introduced `repositories/`, `services/`, and `controllers/` layers; routes delegate strictly to controllers | ✅ Pass (Exit 0) |
+| **Strict Type Safety & a11y** | `as any` across notes, storage, env, and decision engine; implicit buttons | Eliminated all `any` usages; added explicit `type="button"` and semantic ARIA attributes throughout | ✅ Pass (Exit 0) |
+
+### Verification Gate Results
+- **`pnpm run typecheck:libs`**: Exit 0
+- **`pnpm --filter @workspace/api-server run typecheck`**: Exit 0
+- **`pnpm --filter @workspace/pattern-masterclass run typecheck`**: Exit 0
+- **`pnpm run typecheck` (workspace)**: Exit 0
+- **`pnpm run build` (production bundling)**: Exit 0 (4,880 modules transformed, assets bundled)
+
