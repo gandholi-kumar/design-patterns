@@ -16,13 +16,24 @@ for (const envFile of [".env", "../../.env", "../.env"]) {
 
 // Polyfill Zod 4 loose/looseObject methods if using Zod 3 catalog
 import * as z from "zod";
-const zAny = z as any;
-if (!zAny.looseObject) {
-  zAny.looseObject = (shape: any) => z.object(shape).passthrough();
+
+type ZodPolyfillTarget = typeof z & {
+  looseObject?: <T extends z.ZodRawShape>(shape: T) => z.ZodObject<T, "passthrough">;
+  ZodObject?: {
+    prototype: {
+      loose?: () => unknown;
+      passthrough: () => unknown;
+    };
+  };
+};
+
+const zPoly = z as unknown as ZodPolyfillTarget;
+if (!zPoly.looseObject) {
+  zPoly.looseObject = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough();
 }
-if (zAny.ZodObject && !zAny.ZodObject.prototype.loose) {
-  zAny.ZodObject.prototype.loose = function () {
-    return this.passthrough();
+if (zPoly.ZodObject && !zPoly.ZodObject.prototype.loose) {
+  zPoly.ZodObject.prototype.loose = function () {
+    return (this as unknown as { passthrough: () => unknown }).passthrough();
   };
 }
 

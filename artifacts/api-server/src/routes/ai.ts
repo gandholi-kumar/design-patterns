@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
-import { db, decisionLedgerTable, desc, eq } from "@workspace/db";
+import { decisionService, type GoFDecisionVerdict } from "../services/decision.service";
+import { decisionController } from "../controllers/decision.controller";
 
 const router: IRouter = Router();
 
@@ -14,31 +15,6 @@ const ConsultSchema = z.object({
     })
   ).optional().default([]),
 });
-
-export interface GoFDecisionVerdict {
-  primaryPattern: {
-    id: string;
-    name: string;
-    category: "Creational" | "Structural" | "Behavioral";
-    confidence: number;
-    architecturalRationale: string;
-    structuralApplicability: string;
-  };
-  runnerUpPattern: {
-    id: string;
-    name: string;
-    category: "Creational" | "Structural" | "Behavioral";
-    confidence: number;
-    whyConsidered: string;
-    whenToChooseRunnerUpOverPrimary: string;
-  };
-  tradeOffDilemma: {
-    primaryGains: string[];
-    primaryTaxes: string[];
-    decisiveDifferentiator: string;
-  };
-  codeSmellWarning: string;
-}
 
 const SYSTEM_PROMPT = `You are a Principal Software Architect and authoritative expert on the Gang of Four (GoF) Design Patterns.
 Your sole responsibility is analyzing software architectural problems and recommending the optimal GoF design pattern.
@@ -201,15 +177,15 @@ router.post("/ai/architect-consult", requireAuth, async (req, res, next) => {
       engineLabel = `Google Cloud (${activeModel})`;
     } else {
       // High-Fidelity Architectural Mock when server environment key is not configured
-      verdict = generateDeterministicVerdict(problemStatement);
+      verdict = decisionService.generateDeterministicVerdict(problemStatement);
     }
 
     const { user } = req as AuthenticatedRequest;
 
-    // Persist consultation to user's decision ledger in PostgreSQL
+    // Persist consultation to user's decision ledger in PostgreSQL via decisionService
     if (user?.id) {
       try {
-        await db.insert(decisionLedgerTable).values({
+        await decisionService.recordDecision({
           userId: user.id,
           problemStatement,
           primaryPattern: verdict.primaryPattern.name,
@@ -238,104 +214,8 @@ router.post("/ai/architect-consult", requireAuth, async (req, res, next) => {
 /**
  * Get user's cloud-synchronized decision history
  */
-router.get("/ai/decision-ledger", requireAuth, async (req, res, next) => {
-  try {
-    const { user } = req as AuthenticatedRequest;
-    const entries = await db
-      .select()
-      .from(decisionLedgerTable)
-      .where(eq(decisionLedgerTable.userId, user.id))
-      .orderBy(desc(decisionLedgerTable.createdAt))
-      .limit(50);
-
-    res.json({ entries });
-  } catch (err) {
-    next(err);
-  }
-});
-
-function generateDeterministicVerdict(problem: string): GoFDecisionVerdict {
-  const lower = problem.toLowerCase();
-
-  if (lower.includes("pricing") || lower.includes("discount") || lower.includes("algorithm") || lower.includes("policy")) {
-    return {
-      primaryPattern: {
-        id: "strategy",
-        name: "Strategy",
-        category: "Behavioral",
-        confidence: 94,
-        architecturalRationale: "Encapsulates distinct interchangeable calculation algorithms behind a uniform interface, eliminating complex conditional branching.",
-        structuralApplicability: "Define a Strategy interface with concrete algorithmic variations injected at runtime into the Context.",
-      },
-      runnerUpPattern: {
-        id: "state",
-        name: "State",
-        category: "Behavioral",
-        confidence: 72,
-        whyConsidered: "Both patterns utilize composition to delegate behavior to polymorphic classes.",
-        whenToChooseRunnerUpOverPrimary: "Choose State if behavior transitions automatically based on internal lifecycle state mutations rather than caller selection.",
-      },
-      tradeOffDilemma: {
-        primaryGains: ["Eliminates multi-branch conditionals", "Open/Closed for new calculation rules", "Isolated unit testing"],
-        primaryTaxes: ["Increases object count", "Callers must understand algorithmic differences"],
-        decisiveDifferentiator: "Strategy switches algorithms externally; State transitions behavior intrinsically.",
-      },
-      codeSmellWarning: "Avoid passing giant data blobs down to strategies; pass only the explicit parameters required.",
-    };
-  }
-
-  if (lower.includes("undo") || lower.includes("redo") || lower.includes("command") || lower.includes("queue") || lower.includes("transaction")) {
-    return {
-      primaryPattern: {
-        id: "command",
-        name: "Command",
-        category: "Behavioral",
-        confidence: 92,
-        architecturalRationale: "Encapsulates an operation as an object, enabling parameterization of clients, queuing, logging, and reversible operations.",
-        structuralApplicability: "Declare Command interface with execute() and undo(). Invoker stores execution history stacks.",
-      },
-      runnerUpPattern: {
-        id: "memento",
-        name: "Memento",
-        category: "Behavioral",
-        confidence: 70,
-        whyConsidered: "Both support undo/rollback capabilities.",
-        whenToChooseRunnerUpOverPrimary: "Choose Memento when undoing requires restoring complete internal snapshots rather than reversing discrete operational verbs.",
-      },
-      tradeOffDilemma: {
-        primaryGains: ["Decouples invoker from executor", "Trivial undo/redo command stack", "Macro command composition"],
-        primaryTaxes: ["Proliferation of small discrete command classes"],
-        decisiveDifferentiator: "Command encapsulates the action verb; Memento captures the state snapshot.",
-      },
-      codeSmellWarning: "Do not let Commands leak business logic outside domain boundaries.",
-    };
-  }
-
-  // Fallback to Factory Method / Abstract Factory
-  return {
-    primaryPattern: {
-      id: "factory-method",
-      name: "Factory Method",
-      category: "Creational",
-      confidence: 88,
-      architecturalRationale: "Decouples object creation from consumption, allowing subclasses and configuration to dictate concrete product instantiation.",
-      structuralApplicability: "Creator defines an abstract factoryMethod() that returns an abstract Product interface.",
-    },
-    runnerUpPattern: {
-      id: "abstract-factory",
-      name: "Abstract Factory",
-      category: "Creational",
-      confidence: 78,
-      whyConsidered: "Both abstract object creation behind interfaces.",
-      whenToChooseRunnerUpOverPrimary: "Choose Abstract Factory when you must instantiate coordinated families of related products rather than a single product hierarchy.",
-    },
-    tradeOffDilemma: {
-      primaryGains: ["Eliminates tight coupling to concrete classes", "Single Responsibility for creation", "Open/Closed Principle"],
-      primaryTaxes: ["Requires additional creator subclass hierarchies"],
-      decisiveDifferentiator: "Factory Method creates one product; Abstract Factory creates families of related products.",
-    },
-    codeSmellWarning: "Avoid using Factory Method when a simple parameterized constructor satisfies the requirements.",
-  };
-}
+router.get("/ai/decision-ledger", requireAuth, (req, res, next) =>
+  decisionController.getLedger(req, res, next)
+);
 
 export default router;

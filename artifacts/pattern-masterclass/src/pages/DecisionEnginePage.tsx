@@ -29,6 +29,7 @@ import { BYOKModal } from './decision/BYOKModal';
 import type { GoFDecisionVerdict, AIProviderConfig } from './decision/ai-service';
 import { AppTooltip } from '../components/ui/app-tooltip';
 import { useSession } from '../lib/auth-client';
+import { getDecisionLedger, type DecisionLedgerItem } from '@workspace/api-client-react';
 
 interface DecisionEnginePageProps {
   onSelect: (pattern: Pattern) => void;
@@ -152,9 +153,8 @@ ${v.codeSmellWarning}
   // Cloud synchronization: Fetch persisted decision ledger from PostgreSQL for authenticated users
   useEffect(() => {
     if (!session?.user) return;
-    fetch('/api/ai/decision-ledger')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((entries: any[]) => {
+    getDecisionLedger()
+      .then((entries: DecisionLedgerItem[]) => {
         if (Array.isArray(entries) && entries.length > 0) {
           const verdicts: GoFDecisionVerdict[] = entries.map((e) => {
             const primary = PATTERNS.find(
@@ -167,15 +167,15 @@ ${v.codeSmellWarning}
               primaryPattern: {
                 id: primary?.id || (e.primaryPattern || 'pattern').toLowerCase().replace(/\s+/g, '-'),
                 name: e.primaryPattern || 'Design Pattern',
-                category: (primary?.category || 'Behavioral') as any,
+                category: (primary?.category || 'Behavioral') as 'Creational' | 'Structural' | 'Behavioral',
                 confidence: e.confidence || 85,
                 architecturalRationale: e.problemStatement || 'Consulted from architectural session.',
-                structuralApplicability: `Saved decision recorded on ${new Date(e.createdAt).toLocaleDateString()}.`,
+                structuralApplicability: `Saved decision recorded on ${e.createdAt ? new Date(e.createdAt).toLocaleDateString() : 'recent session'}.`,
               },
               runnerUpPattern: {
                 id: runnerUp?.id || 'runner-up',
                 name: e.runnerUpPattern || 'Alternative Pattern',
-                category: (runnerUp?.category || 'Behavioral') as any,
+                category: (runnerUp?.category || 'Behavioral') as 'Creational' | 'Structural' | 'Behavioral',
                 confidence: Math.max(50, (e.confidence || 85) - 15),
                 whyConsidered: 'Considered during architectural tradeoff consultation.',
                 whenToChooseRunnerUpOverPrimary: 'Choose runner-up when system constraints shift.',

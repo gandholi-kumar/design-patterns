@@ -6,13 +6,28 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './aiTurn';
+export * from './aiTurnRole';
+export * from './architectConsultResult';
+export * from './bookmarkToggleResult';
 export * from './codeFile';
+export * from './consultArchitectRequest';
+export * from './decisionLedgerItem';
+export * from './decisionLedgerListResponse';
+export * from './deleteMediaResponse';
 export * from './errorResponse';
 export * from './executeCodeRequest';
 export * from './executeCodeRequestLanguage';
 export * from './executionResult';
 export * from './executionResultStatus';
+export * from './goFDecisionVerdict';
+export * from './goFPatternVerdict';
+export * from './goFPatternVerdictCategory';
+export * from './goFRunnerUpVerdict';
+export * from './goFRunnerUpVerdictCategory';
+export * from './goFTradeOffDilemma';
 export * from './healthStatus';
+export * from './mediaUploadResponse';
 export * from './noteBlock';
 export * from './noteBlockChildrenItem';
 export * from './noteBlockContent';
@@ -22,4 +37,11 @@ export * from './notesImportRequest';
 export * from './notesImportResponse';
 export * from './patternNote';
 export * from './patternNotesListResponse';
+export * from './progressRecord';
+export * from './toggleBookmarkRequest';
+export * from './uploadMediaParams';
 export * from './upsertPatternNoteRequest';
+export * from './upsertProgressRequest';
+export * from './userProgressItem';
+export * from './userProgressResponse';
+export * from './userProgressResponseProgress';

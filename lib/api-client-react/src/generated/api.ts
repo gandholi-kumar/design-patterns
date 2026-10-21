@@ -20,16 +20,27 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ArchitectConsultResult,
+  BookmarkToggleResult,
+  ConsultArchitectRequest,
+  DecisionLedgerListResponse,
+  DeleteMediaResponse,
   ErrorResponse,
   ExecuteCodeRequest,
   ExecutionResult,
   HealthStatus,
+  MediaUploadResponse,
   NotesExportPayload,
   NotesImportRequest,
   NotesImportResponse,
   PatternNote,
   PatternNotesListResponse,
-  UpsertPatternNoteRequest
+  ProgressRecord,
+  ToggleBookmarkRequest,
+  UploadMediaParams,
+  UpsertPatternNoteRequest,
+  UpsertProgressRequest,
+  UserProgressResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -668,7 +679,7 @@ return customFetch<NotesImportResponse>(getImportNotesUrl(),
 
 export const getImportNotesMutationKey = () => ['importNotes'] as const;
 
-export const getImportNotesMutationOptions = <TError = ErrorType<ErrorResponse>,
+export const getImportNotesMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importNotes>>, TError,ImportNotesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof importNotes>>, TError,ImportNotesMutationVariables, TContext> => {
 
@@ -697,13 +708,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ImportNotesMutationResult = NonNullable<Awaited<ReturnType<typeof importNotes>>>
     export type ImportNotesMutationBody = BodyType<NotesImportRequest>
-    export type ImportNotesMutationError = ErrorType<ErrorResponse>
+    export type ImportNotesMutationError = ErrorType<unknown>
     export type ImportNotesMutationVariables = {data: BodyType<NotesImportRequest>}
 
     /**
  * @summary Import notes bundle
  */
-export const useImportNotes = <TError = ErrorType<ErrorResponse>,
+export const useImportNotes = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importNotes>>, TError,ImportNotesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof importNotes>>,
@@ -713,4 +724,755 @@ export const useImportNotes = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getImportNotesMutationOptions(options));
     }
+
+export const getGetProgressUrl = () => {
+
+
+
+
+  return `/api/progress`
+}
+
+/**
+ * Retrieves all learning progress recorded for the authenticated user
+ * @summary Get user learning progress
+ */
+export const getProgress = async ( options?: Parameters<typeof customFetch>[1]): Promise<UserProgressResponse> => {
+
+  return customFetch<UserProgressResponse>(getGetProgressUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProgressQueryKey = () => {
+    return [
+    `/api/progress`
+    ] as const;
+    }
+
+
+export const getGetProgressQueryOptions = <TData = Awaited<ReturnType<typeof getProgress>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProgressQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProgress>>> = ({ signal }) => getProgress({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getProgress>>>
+export type GetProgressQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get user learning progress
+ */
+
+export function useGetProgress<TData = Awaited<ReturnType<typeof getProgress>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProgressQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpsertProgressUrl = () => {
+
+
+
+
+  return `/api/progress`
+}
+
+/**
+ * Updates or creates progress for a specific pattern
+ * @summary Upsert pattern progress
+ */
+export const upsertProgress = async (upsertProgressRequest: UpsertProgressRequest, options?: Parameters<typeof customFetch>[1]): Promise<ProgressRecord> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProgressRecord>(getUpsertProgressUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(upsertProgressRequest)
+  }
+);}
+
+
+
+
+
+export const getUpsertProgressMutationKey = () => ['upsertProgress'] as const;
+
+export const getUpsertProgressMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertProgress>>, TError,UpsertProgressMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertProgress>>, TError,UpsertProgressMutationVariables, TContext> => {
+
+const mutationKey = getUpsertProgressMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertProgress>>, UpsertProgressMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  upsertProgress(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertProgressMutationResult = NonNullable<Awaited<ReturnType<typeof upsertProgress>>>
+    export type UpsertProgressMutationBody = BodyType<UpsertProgressRequest>
+    export type UpsertProgressMutationError = ErrorType<ErrorResponse>
+    export type UpsertProgressMutationVariables = {data: BodyType<UpsertProgressRequest>}
+
+    /**
+ * @summary Upsert pattern progress
+ */
+export const useUpsertProgress = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertProgress>>, TError,UpsertProgressMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertProgress>>,
+        TError,
+        UpsertProgressMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpsertProgressMutationOptions(options));
+    }
+
+export const getGetBookmarksUrl = () => {
+
+
+
+
+  return `/api/bookmarks`
+}
+
+/**
+ * Returns array of pattern IDs bookmarked by authenticated user
+ * @summary Get user bookmarks
+ */
+export const getBookmarks = async ( options?: Parameters<typeof customFetch>[1]): Promise<string[]> => {
+
+  return customFetch<string[]>(getGetBookmarksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBookmarksQueryKey = () => {
+    return [
+    `/api/bookmarks`
+    ] as const;
+    }
+
+
+export const getGetBookmarksQueryOptions = <TData = Awaited<ReturnType<typeof getBookmarks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBookmarks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBookmarksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBookmarks>>> = ({ signal }) => getBookmarks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBookmarks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBookmarksQueryResult = NonNullable<Awaited<ReturnType<typeof getBookmarks>>>
+export type GetBookmarksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get user bookmarks
+ */
+
+export function useGetBookmarks<TData = Awaited<ReturnType<typeof getBookmarks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBookmarks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBookmarksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getToggleBookmarkUrl = () => {
+
+
+
+
+  return `/api/bookmarks`
+}
+
+/**
+ * Toggles bookmark status for a specific pattern
+ * @summary Toggle pattern bookmark
+ */
+export const toggleBookmark = async (toggleBookmarkRequest: ToggleBookmarkRequest, options?: Parameters<typeof customFetch>[1]): Promise<BookmarkToggleResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<BookmarkToggleResult>(getToggleBookmarkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(toggleBookmarkRequest)
+  }
+);}
+
+
+
+
+
+export const getToggleBookmarkMutationKey = () => ['toggleBookmark'] as const;
+
+export const getToggleBookmarkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleBookmark>>, TError,ToggleBookmarkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleBookmark>>, TError,ToggleBookmarkMutationVariables, TContext> => {
+
+const mutationKey = getToggleBookmarkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleBookmark>>, ToggleBookmarkMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  toggleBookmark(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleBookmarkMutationResult = NonNullable<Awaited<ReturnType<typeof toggleBookmark>>>
+    export type ToggleBookmarkMutationBody = BodyType<ToggleBookmarkRequest>
+    export type ToggleBookmarkMutationError = ErrorType<unknown>
+    export type ToggleBookmarkMutationVariables = {data: BodyType<ToggleBookmarkRequest>}
+
+    /**
+ * @summary Toggle pattern bookmark
+ */
+export const useToggleBookmark = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleBookmark>>, TError,ToggleBookmarkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleBookmark>>,
+        TError,
+        ToggleBookmarkMutationVariables,
+        TContext
+      > => {
+      return useMutation(getToggleBookmarkMutationOptions(options));
+    }
+
+export const getUploadMediaUrl = (params?: UploadMediaParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/media/upload?${stringifiedParams}` : `/api/media/upload`
+}
+
+/**
+ * Direct binary upload to MinIO S3 object storage
+ * @summary Upload binary media asset
+ */
+export const uploadMedia = async (uploadMediaBody: Blob,
+    params?: UploadMediaParams, options?: Parameters<typeof customFetch>[1]): Promise<MediaUploadResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MediaUploadResponse>(getUploadMediaUrl(params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream', ...getHeaders(options?.headers) },
+    body: uploadMediaBody
+  }
+);}
+
+
+
+
+
+export const getUploadMediaMutationKey = () => ['uploadMedia'] as const;
+
+export const getUploadMediaMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMedia>>, TError,UploadMediaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadMedia>>, TError,UploadMediaMutationVariables, TContext> => {
+
+const mutationKey = getUploadMediaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadMedia>>, UploadMediaMutationVariables> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  uploadMedia(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadMediaMutationResult = NonNullable<Awaited<ReturnType<typeof uploadMedia>>>
+    export type UploadMediaMutationBody = BodyType<Blob>
+    export type UploadMediaMutationError = ErrorType<ErrorResponse>
+    export type UploadMediaMutationVariables = {data: BodyType<Blob>;params?: UploadMediaParams}
+
+    /**
+ * @summary Upload binary media asset
+ */
+export const useUploadMedia = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMedia>>, TError,UploadMediaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadMedia>>,
+        TError,
+        UploadMediaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUploadMediaMutationOptions(options));
+    }
+
+export const getGetMediaAssetUrl = (assetId: string,) => {
+
+
+
+
+  return `/api/media/${assetId}`
+}
+
+/**
+ * Streams media asset directly from MinIO object storage
+ * @summary Serve media asset
+ */
+export const getMediaAsset = async (assetId: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetMediaAssetUrl(assetId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMediaAssetQueryKey = (assetId: string,) => {
+    return [
+    `/api/media/${assetId}`
+    ] as const;
+    }
+
+
+export const getGetMediaAssetQueryOptions = <TData = Awaited<ReturnType<typeof getMediaAsset>>, TError = ErrorType<ErrorResponse>>(assetId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMediaAsset>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMediaAssetQueryKey(assetId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMediaAsset>>> = ({ signal }) => getMediaAsset(assetId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: assetId !== null && assetId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMediaAsset>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMediaAssetQueryResult = NonNullable<Awaited<ReturnType<typeof getMediaAsset>>>
+export type GetMediaAssetQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Serve media asset
+ */
+
+export function useGetMediaAsset<TData = Awaited<ReturnType<typeof getMediaAsset>>, TError = ErrorType<ErrorResponse>>(
+ assetId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMediaAsset>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMediaAssetQueryOptions(assetId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteMediaAssetUrl = (assetId: string,) => {
+
+
+
+
+  return `/api/media/${assetId}`
+}
+
+/**
+ * Permanently removes media asset from MinIO and PostgreSQL
+ * @summary Delete media asset
+ */
+export const deleteMediaAsset = async (assetId: string, options?: Parameters<typeof customFetch>[1]): Promise<DeleteMediaResponse> => {
+
+  return customFetch<DeleteMediaResponse>(getDeleteMediaAssetUrl(assetId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteMediaAssetMutationKey = () => ['deleteMediaAsset'] as const;
+
+export const getDeleteMediaAssetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMediaAsset>>, TError,DeleteMediaAssetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMediaAsset>>, TError,DeleteMediaAssetMutationVariables, TContext> => {
+
+const mutationKey = getDeleteMediaAssetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMediaAsset>>, DeleteMediaAssetMutationVariables> = (props) => {
+          const {assetId} = props ?? {};
+
+          return  deleteMediaAsset(assetId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMediaAssetMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMediaAsset>>>
+
+    export type DeleteMediaAssetMutationError = ErrorType<unknown>
+    export type DeleteMediaAssetMutationVariables = {assetId: string}
+
+    /**
+ * @summary Delete media asset
+ */
+export const useDeleteMediaAsset = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMediaAsset>>, TError,DeleteMediaAssetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMediaAsset>>,
+        TError,
+        DeleteMediaAssetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteMediaAssetMutationOptions(options));
+    }
+
+export const getConsultArchitectUrl = () => {
+
+
+
+
+  return `/api/ai/architect-consult`
+}
+
+/**
+ * AI copilot consult using server-side Gemini Pro or deterministic fallback
+ * @summary Consult AI architect on design pattern decision
+ */
+export const consultArchitect = async (consultArchitectRequest: ConsultArchitectRequest, options?: Parameters<typeof customFetch>[1]): Promise<ArchitectConsultResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ArchitectConsultResult>(getConsultArchitectUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(consultArchitectRequest)
+  }
+);}
+
+
+
+
+
+export const getConsultArchitectMutationKey = () => ['consultArchitect'] as const;
+
+export const getConsultArchitectMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof consultArchitect>>, TError,ConsultArchitectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof consultArchitect>>, TError,ConsultArchitectMutationVariables, TContext> => {
+
+const mutationKey = getConsultArchitectMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof consultArchitect>>, ConsultArchitectMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  consultArchitect(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConsultArchitectMutationResult = NonNullable<Awaited<ReturnType<typeof consultArchitect>>>
+    export type ConsultArchitectMutationBody = BodyType<ConsultArchitectRequest>
+    export type ConsultArchitectMutationError = ErrorType<unknown>
+    export type ConsultArchitectMutationVariables = {data: BodyType<ConsultArchitectRequest>}
+
+    /**
+ * @summary Consult AI architect on design pattern decision
+ */
+export const useConsultArchitect = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof consultArchitect>>, TError,ConsultArchitectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof consultArchitect>>,
+        TError,
+        ConsultArchitectMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConsultArchitectMutationOptions(options));
+    }
+
+export const getGetDecisionLedgerUrl = () => {
+
+
+
+
+  return `/api/ai/decision-ledger`
+}
+
+/**
+ * Retrieves user's cloud-persisted GoF decision history
+ * @summary Get cloud-persisted decision history
+ */
+export const getDecisionLedger = async ( options?: Parameters<typeof customFetch>[1]): Promise<DecisionLedgerListResponse> => {
+
+  return customFetch<DecisionLedgerListResponse>(getGetDecisionLedgerUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDecisionLedgerQueryKey = () => {
+    return [
+    `/api/ai/decision-ledger`
+    ] as const;
+    }
+
+
+export const getGetDecisionLedgerQueryOptions = <TData = Awaited<ReturnType<typeof getDecisionLedger>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDecisionLedger>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDecisionLedgerQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDecisionLedger>>> = ({ signal }) => getDecisionLedger({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDecisionLedger>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDecisionLedgerQueryResult = NonNullable<Awaited<ReturnType<typeof getDecisionLedger>>>
+export type GetDecisionLedgerQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get cloud-persisted decision history
+ */
+
+export function useGetDecisionLedger<TData = Awaited<ReturnType<typeof getDecisionLedger>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDecisionLedger>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDecisionLedgerQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

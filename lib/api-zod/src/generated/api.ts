@@ -190,3 +190,176 @@ export const ImportNotesResponse = zod.object({
 })
 
 
+/**
+ * Retrieves all learning progress recorded for the authenticated user
+ * @summary Get user learning progress
+ */
+export const getProgressResponseProgressNoteDefault = ``;
+
+export const GetProgressResponse = zod.object({
+  "progress": zod.record(zod.string(), zod.object({
+  "attempts": zod.number().int(),
+  "correct": zod.number().int(),
+  "box": zod.number().int(),
+  "note": zod.string().default(getProgressResponseProgressNoteDefault)
+}))
+})
+
+
+/**
+ * Updates or creates progress for a specific pattern
+ * @summary Upsert pattern progress
+ */
+export const upsertProgressBodyAttemptsDefault = 0;
+export const upsertProgressBodyCorrectDefault = 0;
+export const upsertProgressBodyBoxDefault = 1;
+export const upsertProgressBodyNoteDefault = ``;
+
+export const UpsertProgressBody = zod.object({
+  "patternId": zod.string(),
+  "attempts": zod.number().int().default(upsertProgressBodyAttemptsDefault),
+  "correct": zod.number().int().default(upsertProgressBodyCorrectDefault),
+  "box": zod.number().int().default(upsertProgressBodyBoxDefault),
+  "note": zod.string().default(upsertProgressBodyNoteDefault)
+})
+
+export const upsertProgressResponseAttemptsDefault = 0;
+export const upsertProgressResponseCorrectDefault = 0;
+export const upsertProgressResponseBoxDefault = 1;
+export const upsertProgressResponseNoteDefault = ``;
+
+export const UpsertProgressResponse = zod.object({
+  "id": zod.string().optional(),
+  "userId": zod.string().optional(),
+  "patternId": zod.string(),
+  "attempts": zod.number().int().default(upsertProgressResponseAttemptsDefault),
+  "correct": zod.number().int().default(upsertProgressResponseCorrectDefault),
+  "box": zod.number().int().default(upsertProgressResponseBoxDefault),
+  "note": zod.string().default(upsertProgressResponseNoteDefault),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * Returns array of pattern IDs bookmarked by authenticated user
+ * @summary Get user bookmarks
+ */
+export const GetBookmarksResponseItem = zod.string()
+export const GetBookmarksResponse = zod.array(GetBookmarksResponseItem)
+
+
+/**
+ * Toggles bookmark status for a specific pattern
+ * @summary Toggle pattern bookmark
+ */
+export const ToggleBookmarkBody = zod.object({
+  "patternId": zod.string()
+})
+
+export const ToggleBookmarkResponse = zod.object({
+  "patternId": zod.string(),
+  "bookmarked": zod.boolean()
+})
+
+
+/**
+ * Direct binary upload to MinIO S3 object storage
+ * @summary Upload binary media asset
+ */
+export const UploadMediaQueryParams = zod.object({
+  "patternId": zod.coerce.string().optional(),
+  "filename": zod.coerce.string().optional()
+})
+
+export const UploadMediaResponse = zod.object({
+  "id": zod.string(),
+  "url": zod.string(),
+  "s3Key": zod.string(),
+  "publicUrl": zod.string()
+})
+
+
+/**
+ * Streams media asset directly from MinIO object storage
+ * @summary Serve media asset
+ */
+export const GetMediaAssetParams = zod.object({
+  "assetId": zod.coerce.string()
+})
+
+export const GetMediaAssetResponse = zod.unknown()
+
+
+/**
+ * Permanently removes media asset from MinIO and PostgreSQL
+ * @summary Delete media asset
+ */
+export const DeleteMediaAssetParams = zod.object({
+  "assetId": zod.coerce.string()
+})
+
+export const DeleteMediaAssetResponse = zod.object({
+  "success": zod.boolean(),
+  "assetId": zod.string()
+})
+
+
+/**
+ * AI copilot consult using server-side Gemini Pro or deterministic fallback
+ * @summary Consult AI architect on design pattern decision
+ */
+export const ConsultArchitectBody = zod.object({
+  "problemStatement": zod.string(),
+  "turns": zod.array(zod.object({
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string()
+})).optional()
+})
+
+export const ConsultArchitectResponse = zod.object({
+  "verdict": zod.object({
+  "primaryPattern": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.enum(['Creational', 'Structural', 'Behavioral']),
+  "confidence": zod.number(),
+  "architecturalRationale": zod.string(),
+  "structuralApplicability": zod.string()
+}),
+  "runnerUpPattern": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.enum(['Creational', 'Structural', 'Behavioral']),
+  "confidence": zod.number(),
+  "whyConsidered": zod.string(),
+  "whenToChooseRunnerUpOverPrimary": zod.string()
+}),
+  "tradeOffDilemma": zod.object({
+  "primaryGains": zod.array(zod.string()),
+  "primaryTaxes": zod.array(zod.string()),
+  "decisiveDifferentiator": zod.string()
+}),
+  "codeSmellWarning": zod.string()
+}),
+  "mode": zod.string(),
+  "engine": zod.string()
+})
+
+
+/**
+ * Retrieves user's cloud-persisted GoF decision history
+ * @summary Get cloud-persisted decision history
+ */
+export const GetDecisionLedgerResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "problemStatement": zod.string(),
+  "primaryPattern": zod.string(),
+  "runnerUpPattern": zod.string().optional(),
+  "confidence": zod.number().optional(),
+  "tradeOffs": zod.array(zod.string()).optional(),
+  "createdAt": zod.coerce.date().optional()
+})
+export const GetDecisionLedgerResponse = zod.array(GetDecisionLedgerResponseItem)
+
+

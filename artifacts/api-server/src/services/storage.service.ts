@@ -73,7 +73,7 @@ export class S3StorageService {
         "x-amz-date": amzDate,
         Authorization: authHeader,
       },
-      body: body as any,
+      body: new Uint8Array(body),
     });
 
     if (!res.ok) {

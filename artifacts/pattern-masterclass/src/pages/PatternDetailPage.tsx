@@ -27,6 +27,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { PatternNotesPanel } from '../components/notes/PatternNotesPanel';
 import { useNoteRepository } from '../lib/notes/NoteRepositoryContext';
 import { ErrorBoundary } from '../components/error-boundary';
+import { useWorkspacePreferencesStore } from '../stores';
 
 export type DetailTab = 'overview' | 'code' | 'diagrams' | 'trade-offs';
 
@@ -61,20 +62,11 @@ export function PatternDetailPage({
   // Per-Pattern Notes panel integration
   const noteRepo = useNoteRepository();
   const [hasNote, setHasNote] = useState(false);
-  const [isNotesOpen, setIsNotesOpen] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('notes') === 'open') return true;
-    return localStorage.getItem('gof-notes-panel-open') === 'true';
-  });
-  const [notesDirection, setNotesDirection] = useState<'horizontal' | 'vertical'>(() => {
-    if (typeof window === 'undefined') return 'horizontal';
-    return (localStorage.getItem('gof-notes-panel-orientation') as 'horizontal' | 'vertical') || 'horizontal';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('gof-notes-panel-open', String(isNotesOpen));
-  }, [isNotesOpen]);
+  const isNotesOpen = useWorkspacePreferencesStore((s) => s.notesPanelOpen);
+  const toggleNotesPanel = useWorkspacePreferencesStore((s) => s.toggleNotesPanel);
+  const setNotesPanelOpen = useWorkspacePreferencesStore((s) => s.setNotesPanelOpen);
+  const notesDirection = useWorkspacePreferencesStore((s) => s.notesPanelOrientation);
+  const setNotesDirection = useWorkspacePreferencesStore((s) => s.setNotesPanelOrientation);
 
   useEffect(() => {
     noteRepo.get(id).then(n => setHasNote(Boolean(n && n.blocks.length > 0))).catch(() => setHasNote(false));
@@ -95,7 +87,7 @@ export function PatternDetailPage({
 
       if (!e.shiftKey && (e.key === 'n' || e.key === 'N')) {
         e.preventDefault();
-        setIsNotesOpen(prev => !prev);
+        toggleNotesPanel();
       }
     };
 
@@ -356,7 +348,7 @@ export function PatternDetailPage({
           <AppTooltip content={isNotesOpen ? "Collapse study notes (N)" : "Open study notes (N)"}>
             <button
               type="button"
-              onClick={() => setIsNotesOpen(prev => !prev)}
+              onClick={() => toggleNotesPanel()}
               data-testid="toggle-notes-panel-btn"
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                 isNotesOpen
@@ -690,9 +682,8 @@ export function PatternDetailPage({
                   onToggleOrientation={() => {
                     const next = notesDirection === 'horizontal' ? 'vertical' : 'horizontal';
                     setNotesDirection(next);
-                    localStorage.setItem('gof-notes-panel-orientation', next);
                   }}
-                  onClose={() => setIsNotesOpen(false)}
+                  onClose={() => setNotesPanelOpen(false)}
                 />
               </ErrorBoundary>
             </Panel>

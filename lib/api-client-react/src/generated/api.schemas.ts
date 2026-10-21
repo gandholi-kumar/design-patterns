@@ -103,3 +103,147 @@ export interface NotesImportResponse {
   status: string;
 }
 
+export interface ProgressRecord {
+  id?: string;
+  userId?: string;
+  patternId: string;
+  attempts: number;
+  correct: number;
+  box: number;
+  note?: string;
+  updatedAt?: string;
+}
+
+export interface UserProgressItem {
+  attempts: number;
+  correct: number;
+  box: number;
+  note?: string;
+}
+
+export type UserProgressResponseProgress = {[key: string]: UserProgressItem};
+
+export interface UserProgressResponse {
+  progress: UserProgressResponseProgress;
+}
+
+export interface UpsertProgressRequest {
+  patternId: string;
+  attempts?: number;
+  correct?: number;
+  box?: number;
+  note?: string;
+}
+
+export interface ToggleBookmarkRequest {
+  patternId: string;
+}
+
+export interface BookmarkToggleResult {
+  patternId: string;
+  bookmarked: boolean;
+}
+
+export interface MediaUploadResponse {
+  id: string;
+  url: string;
+  s3Key: string;
+  publicUrl: string;
+}
+
+export interface DeleteMediaResponse {
+  success: boolean;
+  assetId: string;
+}
+
+export type AiTurnRole = typeof AiTurnRole[keyof typeof AiTurnRole];
+
+
+export const AiTurnRole = {
+  user: 'user',
+  assistant: 'assistant',
+} as const;
+
+export interface AiTurn {
+  role: AiTurnRole;
+  content: string;
+}
+
+export interface ConsultArchitectRequest {
+  problemStatement: string;
+  turns?: AiTurn[];
+}
+
+export type GoFPatternVerdictCategory = typeof GoFPatternVerdictCategory[keyof typeof GoFPatternVerdictCategory];
+
+
+export const GoFPatternVerdictCategory = {
+  Creational: 'Creational',
+  Structural: 'Structural',
+  Behavioral: 'Behavioral',
+} as const;
+
+export interface GoFPatternVerdict {
+  id: string;
+  name: string;
+  category: GoFPatternVerdictCategory;
+  confidence: number;
+  architecturalRationale: string;
+  structuralApplicability: string;
+}
+
+export type GoFRunnerUpVerdictCategory = typeof GoFRunnerUpVerdictCategory[keyof typeof GoFRunnerUpVerdictCategory];
+
+
+export const GoFRunnerUpVerdictCategory = {
+  Creational: 'Creational',
+  Structural: 'Structural',
+  Behavioral: 'Behavioral',
+} as const;
+
+export interface GoFRunnerUpVerdict {
+  id: string;
+  name: string;
+  category: GoFRunnerUpVerdictCategory;
+  confidence: number;
+  whyConsidered: string;
+  whenToChooseRunnerUpOverPrimary: string;
+}
+
+export interface GoFTradeOffDilemma {
+  primaryGains: string[];
+  primaryTaxes: string[];
+  decisiveDifferentiator: string;
+}
+
+export interface GoFDecisionVerdict {
+  primaryPattern: GoFPatternVerdict;
+  runnerUpPattern: GoFRunnerUpVerdict;
+  tradeOffDilemma: GoFTradeOffDilemma;
+  codeSmellWarning: string;
+}
+
+export interface ArchitectConsultResult {
+  verdict: GoFDecisionVerdict;
+  mode: string;
+  engine: string;
+}
+
+export interface DecisionLedgerItem {
+  id: string;
+  userId: string;
+  problemStatement: string;
+  primaryPattern: string;
+  runnerUpPattern?: string;
+  confidence?: number;
+  tradeOffs?: string[];
+  createdAt?: string;
+}
+
+export type DecisionLedgerListResponse = DecisionLedgerItem[];
+
+export type UploadMediaParams = {
+patternId?: string;
+filename?: string;
+};
+
