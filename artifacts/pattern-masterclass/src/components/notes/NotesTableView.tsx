@@ -119,7 +119,7 @@ export function NotesTableView({
         <table className="w-full text-left text-xs border-collapse">
           {/* Table Header */}
           <thead>
-            <tr className="border-b border-border/80 bg-muted/40 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider select-none">
+            <tr className="border-b border-border/80 bg-muted/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider select-none">
               {/* Checkbox column */}
               <th className="py-3 px-3.5 w-10 text-center">
                 <button
@@ -264,7 +264,7 @@ export function NotesTableView({
                         <span className="font-semibold text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                           {pattern.name}
                         </span>
-                        <div className="text-[10px] text-muted-foreground/70 font-mono sm:hidden">
+                        <div className="text-xs text-muted-foreground font-mono sm:hidden">
                           {pattern.category}
                         </div>
                       </div>
@@ -273,7 +273,7 @@ export function NotesTableView({
 
                   {/* Domain Tag (Extensible for GoF, Saga, Live Playground) */}
                   <td className="py-3 px-3 hidden sm:table-cell">
-                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                    <span className="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
                       GoF
                     </span>
                   </td>
@@ -281,7 +281,7 @@ export function NotesTableView({
                   {/* Category */}
                   <td className="py-3 px-3">
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${getCategoryBadgeClass(
+                      className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border ${getCategoryBadgeClass(
                         pattern.category
                       )}`}
                     >
@@ -290,20 +290,20 @@ export function NotesTableView({
                   </td>
 
                   {/* Snippet Preview */}
-                  <td className="py-3 px-4 hidden md:table-cell max-w-xs">
+                  <td className="py-3 px-4 hidden md:table-cell max-w-xs lg:max-w-md xl:max-w-xl 2xl:max-w-2xl">
                     {note ? (
                       <p className="text-xs text-muted-foreground truncate leading-normal" title={snippet}>
                         {snippet}
                       </p>
                     ) : (
-                      <span className="text-muted-foreground/40 italic text-[11px]">
+                      <span className="text-muted-foreground/50 italic text-xs">
                         No notes yet
                       </span>
                     )}
                   </td>
 
                   {/* Stats (Blocks & Images) */}
-                  <td className="py-3 px-3 hidden lg:table-cell text-muted-foreground font-mono text-[11px]">
+                  <td className="py-3 px-3 hidden lg:table-cell text-muted-foreground font-mono text-xs">
                     {note ? (
                       <div className="flex items-center gap-2">
                         <span>{blockCount} {blockCount === 1 ? "block" : "blocks"}</span>
@@ -322,20 +322,20 @@ export function NotesTableView({
                   {/* Status Pill */}
                   <td className="py-3 px-3">
                     {note ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                         <span>Annotated</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground/70 border border-border/40">
-                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border/40">
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
                         <span>Empty</span>
                       </span>
                     )}
                   </td>
 
                   {/* Last Modified */}
-                  <td className="py-3 px-3 hidden sm:table-cell text-muted-foreground text-[11px] whitespace-nowrap">
+                  <td className="py-3 px-3 hidden sm:table-cell text-muted-foreground text-xs whitespace-nowrap">
                     {formattedDate}
                   </td>
 
@@ -373,7 +373,7 @@ export function NotesTableView({
                             e.stopPropagation();
                             onOpenNote(pattern.id);
                           }}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-border/80 hover:bg-amber-500/15 hover:text-amber-700 dark:hover:text-amber-300 hover:border-amber-500/40 text-muted-foreground transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border border-border/80 hover:bg-amber-500/15 hover:text-amber-700 dark:hover:text-amber-300 hover:border-amber-500/40 text-muted-foreground transition-colors"
                         >
                           <span>Open</span>
                           <ExternalLink className="w-3 h-3" />

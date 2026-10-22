@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Route, Switch, useLocation } from 'wouter';
 import {
-  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   Bookmark,
@@ -37,6 +36,7 @@ import { NotesWorkspacePage } from './pages/NotesWorkspacePage';
 import { CatalogPage } from './pages/CatalogPage';
 import { SimulatorsPage } from './pages/SimulatorsPage';
 import { QuizLabPage } from './pages/QuizLabPage';
+import { WipModulePlaceholder } from './components/WipModulePlaceholder';
 import { NoteRepositoryProvider } from './lib/notes/NoteRepositoryContext';
 import { AppTooltip } from './components/ui/app-tooltip';
 import { AppToaster } from './components/ui/app-toaster';
@@ -134,25 +134,7 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPatternPage, activePattern, studioMode, toggleSidebar, setStudioMode, toggleBookmark, setLoc]);
 
-  const queryParams = useMemo(() => new URLSearchParams(window.location.search), [loc]);
-  const familyFilter = queryParams.get('family');
-  const searchQuery = queryParams.get('q');
-  const fromParam = queryParams.get('from');
-  const backLabel = useMemo(() => {
-    if (fromParam === 'decision-engine') return 'Back to Decision Engine';
-    if (familyFilter && familyFilter !== 'All patterns') return `Back to ${familyFilter} patterns`;
-    if (searchQuery) return `Back to results ("${searchQuery}")`;
-    return 'Back to library';
-  }, [familyFilter, searchQuery, fromParam]);
 
-  const handleBack = () => {
-    if (fromParam === 'decision-engine') {
-      setLoc('/decision-engine');
-      return;
-    }
-    const qs = window.location.search;
-    setLoc(`/${qs}`);
-  };
 
   const page = isPatternPage ? 'catalog' : (nav.find((n) => n.path === loc)?.id || 'catalog');
   const progressList = Object.values(progress);
@@ -360,19 +342,7 @@ export function App() {
                 </button>
               </AppTooltip>
 
-              {isPatternPage && (
-                <AppTooltip content={`${backLabel} (Esc)`} shortcut="Esc">
-                  <button
-                    type="button"
-                    className="icon-btn topbar-back-btn"
-                    onClick={handleBack}
-                    aria-label={backLabel}
-                    data-testid="topbar-back-btn"
-                  >
-                    <ArrowLeft size={18} />
-                  </button>
-                </AppTooltip>
-              )}
+
 
               <div className="crumb">
                 <AppTooltip content="Go to Library">
@@ -534,7 +504,11 @@ export function App() {
             </div>
           </header>
 
-          <div className={`workspace ${isPatternPage ? 'workspace-studio' : ''}`}>
+          <div
+            className={`workspace ${
+              isPatternPage ? 'workspace-studio' : page === 'notes' ? 'workspace-notes' : ''
+            }`}
+          >
             <Switch>
               <Route path="/">
                 <CatalogPage
@@ -566,10 +540,10 @@ export function App() {
                 <NotesWorkspacePage />
               </Route>
               <Route path="/simulators">
-                <SimulatorsPage onSelect={handleSelectPattern} />
+                <SimulatorsWipRoute onSelect={handleSelectPattern} />
               </Route>
               <Route path="/quiz-lab">
-                <QuizLabPage />
+                <QuizLabWipRoute />
               </Route>
               <Route>
                 <NotFound goHome={() => setLoc('/')} />
@@ -619,6 +593,110 @@ export function App() {
         <AppToaster />
       </div>
     </NoteRepositoryProvider>
+  );
+}
+
+function SimulatorsWipRoute({ onSelect }: { onSelect: (pattern: Pattern) => void }) {
+  const [showPrototype, setShowPrototype] = useState(false);
+  const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isPreview = search?.get('preview') === 'true' || showPrototype;
+
+  if (isPreview) {
+    return (
+      <div className="wip-preview-host">
+        <div className="wip-preview-banner">
+          <div className="wip-banner-left">
+            <span className="wip-banner-pill">EARLY ALPHA</span>
+            <span className="wip-banner-text">You are testing the experimental prototype of Pattern Studio.</span>
+          </div>
+          <button
+            type="button"
+            className="wip-banner-exit-btn"
+            onClick={() => setShowPrototype(false)}
+          >
+            Back to Roadmap
+          </button>
+        </div>
+        <SimulatorsPage onSelect={onSelect} />
+      </div>
+    );
+  }
+
+  return (
+    <WipModulePlaceholder
+      moduleIndex="05 / PATTERN STUDIO"
+      moduleTitle="Interactive Pattern Studio"
+      moduleHeadline="Visual drag-and-drop structural simulator & reactive event debugger for Gang of Four patterns."
+      courtesyMessage="We are currently building high-fidelity visual diagrams, real-time message buses, and state-machine sandboxes. This module is in active development and will be published in the next update."
+      onLaunchPrototype={() => setShowPrototype(true)}
+      prototypeName="Pattern Studio Alpha"
+      upcomingFeatures={[
+        {
+          title: 'Visual Component Wiring',
+          desc: 'Connect Strategy algorithms, Observer dispatchers, and Decorator wrappers on an interactive HTML5 canvas.',
+        },
+        {
+          title: 'Live Execution Visualizer',
+          desc: 'Watch object allocations, virtual call dispatches, and memory footprints step-by-step in real time.',
+        },
+        {
+          title: 'Interactive State Replay',
+          desc: 'Step forward and backward through State transitions and Memento snapshots with time-travel debugging.',
+        },
+      ]}
+    />
+  );
+}
+
+function QuizLabWipRoute() {
+  const [showPrototype, setShowPrototype] = useState(false);
+  const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isPreview = search?.get('preview') === 'true' || showPrototype;
+
+  if (isPreview) {
+    return (
+      <div className="wip-preview-host">
+        <div className="wip-preview-banner">
+          <div className="wip-banner-left">
+            <span className="wip-banner-pill">EARLY ALPHA</span>
+            <span className="wip-banner-text">You are testing the experimental prototype of Scenario Lab.</span>
+          </div>
+          <button
+            type="button"
+            className="wip-banner-exit-btn"
+            onClick={() => setShowPrototype(false)}
+          >
+            Back to Roadmap
+          </button>
+        </div>
+        <QuizLabPage />
+      </div>
+    );
+  }
+
+  return (
+    <WipModulePlaceholder
+      moduleIndex="06 / SCENARIO LAB"
+      moduleTitle="Scenario Lab & Knowledge Arena"
+      moduleHeadline="Real-world system design challenges, timed pattern quizzes, and architectural trade-off evaluations."
+      courtesyMessage="Scenario Lab is currently being populated with production enterprise incident post-mortems and GoF system refactoring challenges. Stay tuned for the upcoming interactive release!"
+      onLaunchPrototype={() => setShowPrototype(true)}
+      prototypeName="Scenario Lab Alpha"
+      upcomingFeatures={[
+        {
+          title: 'Architecture Incident Drills',
+          desc: 'Analyze broken microservice topologies and select the exact GoF pattern required to stop cascading failures.',
+        },
+        {
+          title: 'Timed Pattern Diagnostic Gauntlets',
+          desc: 'Test your pattern recognition reflex with 30-second rapid-fire architectural dilemma quizzes.',
+        },
+        {
+          title: 'Automated ADR Rubric & Scoring',
+          desc: 'Draft your architectural decision records and receive instant automated rubric feedback on trade-off coverage.',
+        },
+      ]}
+    />
   );
 }
 

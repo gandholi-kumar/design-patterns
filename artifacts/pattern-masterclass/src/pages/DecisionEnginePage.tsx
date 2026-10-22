@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { PATTERNS } from '../data';
 import type { Pattern } from '../pattern-types';
-import { PageIntro } from '../components/PageIntro';
 import { NotesDrawer } from '../components/NotesDrawer';
 import { AIArchitectBar } from './decision/AIArchitectBar';
 import { DiagnosticWizard } from './decision/DiagnosticWizard';
@@ -42,14 +41,83 @@ type DrawerTabKey = 'verdict' | 'guide' | 'ledger';
 export function DecisionEnginePage({ onSelect }: DecisionEnginePageProps) {
   const [, setLoc] = useLocation();
   const { data: session } = useSession();
-  const [activeMode, setActiveMode] = useState<MainModeKey>('diagnostic');
-  const [diagnosticSubTab, setDiagnosticSubTab] = useState<DiagnosticSubTab>('ai');
+
+  // Helper to parse query parameters from the browser URL
+  const parseUrlParams = () => {
+    if (typeof window === 'undefined') {
+      return {
+        mode: 'diagnostic' as MainModeKey,
+        diagSubTab: 'ai' as DiagnosticSubTab,
+        vSubTab: 'curated' as 'curated' | 'custom',
+        dilemma: '',
+        pA: '',
+        pB: '',
+      };
+    }
+    const params = new URLSearchParams(window.location.search);
+    const m = params.get('mode');
+    const mode: MainModeKey = m === 'versus' || m === 'scenarios' || m === 'diagnostic' ? m : 'diagnostic';
+    const t = params.get('tab');
+    const diagSubTab: DiagnosticSubTab = t === 'wizard' ? 'wizard' : 'ai';
+    const vSubTab: 'curated' | 'custom' = t === 'custom' ? 'custom' : 'curated';
+    const dilemma = params.get('dilemma') || '';
+    const pA = params.get('pA') || '';
+    const pB = params.get('pB') || '';
+    return { mode, diagSubTab, vSubTab, dilemma, pA, pB };
+  };
+
+  const initialParams = parseUrlParams();
+  const [activeMode, setActiveMode] = useState<MainModeKey>(initialParams.mode);
+  const [diagnosticSubTab, setDiagnosticSubTab] = useState<DiagnosticSubTab>(initialParams.diagSubTab);
+  const [versusSubTab, setVersusSubTab] = useState<'curated' | 'custom'>(initialParams.vSubTab);
+  const [activeDilemmaId, setActiveDilemmaId] = useState<string>(initialParams.dilemma);
+  const [patternAId, setPatternAId] = useState<string>(initialParams.pA);
+  const [patternBId, setPatternBId] = useState<string>(initialParams.pB);
+
   const [verdict, setVerdict] = useState<GoFDecisionVerdict | null>(null);
   const [ledger, setLedger] = useState<GoFDecisionVerdict[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [drawerTab, setDrawerTab] = useState<DrawerTabKey>('guide');
   const [isKeyModalOpen, setIsKeyModalOpen] = useState<boolean>(false);
   const [copiedAllLedger, setCopiedAllLedger] = useState(false);
+
+  // Sync state changes to browser URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (activeMode !== 'diagnostic') {
+      params.set('mode', activeMode);
+    }
+    if (activeMode === 'diagnostic') {
+      if (diagnosticSubTab !== 'ai') params.set('tab', diagnosticSubTab);
+    } else if (activeMode === 'versus') {
+      if (versusSubTab !== 'curated') params.set('tab', versusSubTab);
+      if (versusSubTab === 'curated' && activeDilemmaId) params.set('dilemma', activeDilemmaId);
+      if (versusSubTab === 'custom') {
+        if (patternAId) params.set('pA', patternAId);
+        if (patternBId) params.set('pB', patternBId);
+      }
+    }
+    const searchString = params.toString() ? `?${params.toString()}` : '';
+    if (window.location.search !== searchString) {
+      const newUrl = `${window.location.pathname}${searchString}${window.location.hash}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [activeMode, diagnosticSubTab, versusSubTab, activeDilemmaId, patternAId, patternBId]);
+
+  // Listen to popstate (back/forward browser navigation)
+  useEffect(() => {
+    const handlePopState = () => {
+      const p = parseUrlParams();
+      setActiveMode(p.mode);
+      setDiagnosticSubTab(p.diagSubTab);
+      setVersusSubTab(p.vSubTab);
+      setActiveDilemmaId(p.dilemma);
+      setPatternAId(p.pA);
+      setPatternBId(p.pB);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Default to Built-in Pro AI (managed) with fallback to BYOK
   const [aiConfig, setAiConfig] = useState<AIProviderConfig>({
@@ -129,7 +197,9 @@ ${v.codeSmellWarning}
     const p = PATTERNS.find((item: Pattern) => item.id === id);
     if (p) {
       setIsDrawerOpen(false);
-      setLoc(`/pattern/${p.id}?from=decision-engine`);
+      const currentQuery = window.location.search;
+      const returnUrl = `/decision-engine${currentQuery}`;
+      setLoc(`/pattern/${p.id}?from=${encodeURIComponent(returnUrl)}`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -138,11 +208,16 @@ ${v.codeSmellWarning}
     window.location.href = `/playground?pattern=${id}`;
   };
 
-  // Keyboard shortcut Ctrl+\ or Alt+D to toggle NotesDrawer
+  // Keyboard shortcuts: Ctrl+\ for Guide, Alt+D for Decision Ledger
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey && e.key === '\\') || (e.altKey && (e.key === 'd' || e.key === 'D'))) {
+      if (e.altKey && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
+        setDrawerTab('ledger');
+        setIsDrawerOpen((prev) => !prev);
+      } else if (e.ctrlKey && e.key === '\\') {
+        e.preventDefault();
+        setDrawerTab('guide');
         setIsDrawerOpen((prev) => !prev);
       }
     };
@@ -201,68 +276,100 @@ ${v.codeSmellWarning}
 
   return (
     <div className="page-content reveal decision-engine-page">
-      <div className="decision-header-row">
-        <PageIntro
-          index="02 / ARCHITECTURAL DECISION ENGINE"
-          title={
-            <>
-              Find the pattern
-              <br />
-              <em>behind the forces.</em>
-            </>
-          }
-          text="Start with what hurts. Diagnose architectural problems with the GoF 3-question decision tree or AI Copilot, disambiguate classic sibling dilemmas, and explore 16+ production enterprise implementations."
-        />
+      {/* 1. Header intro matching Playground & Pattern Library layout */}
+      <section className="page-intro" aria-label="Decision Engine Header">
+        <div className="intro-left">
+          <span className="eyebrow">
+            <i className="eyebrow-line" />
+            02 / ARCHITECTURAL DECISION ENGINE
+          </span>
+          <h1>
+            Find the pattern
+            <br />
+            <em>behind the forces.</em>
+          </h1>
+        </div>
 
-        {/* Top Quick Action Status Badges */}
-        <div className="decision-header-actions">
-          {verdict && (
-            <AppTooltip content="View latest architectural decision record in side drawer">
+        <div className="intro-right">
+          <p>
+            Start with what hurts. Diagnose architectural problems with the GoF 3-question decision tree or AI Copilot, disambiguate classic sibling dilemmas, and explore 16+ production enterprise implementations.
+          </p>
+        </div>
+
+        <div className="intro-actions-cluster">
+          {/* Quick Icon Tools with Tooltips */}
+          <div className="intro-icon-group" role="toolbar" aria-label="Decision Engine Quick Actions">
+            {verdict && (
+              <AppTooltip
+                content={`Latest Verdict: ${verdict.primaryPattern.name} (${verdict.primaryPattern.confidence}%) — View in side drawer`}
+              >
+                <button
+                  type="button"
+                  className="intro-icon-btn verdict-active"
+                  onClick={() => {
+                    setDrawerTab('verdict');
+                    setIsDrawerOpen(true);
+                  }}
+                  aria-label={`Latest Verdict: ${verdict.primaryPattern.name}`}
+                  data-testid="header-action-verdict"
+                >
+                  <Zap size={16} />
+                  <span className="intro-btn-pulse-dot" />
+                </button>
+              </AppTooltip>
+            )}
+
+            <AppTooltip
+              content={
+                ledger.length > 0
+                  ? `Decision Ledger (${ledger.length} recorded) — Alt+D`
+                  : 'Open Decision Ledger (0 recorded) — Alt+D'
+              }
+              shortcut="Alt+D"
+            >
               <button
                 type="button"
-                className="quick-verdict-pill active-glow"
+                className={`intro-icon-btn ${ledger.length > 0 ? 'active' : ''}`}
                 onClick={() => {
-                  setDrawerTab('verdict');
+                  setDrawerTab('ledger');
                   setIsDrawerOpen(true);
                 }}
+                aria-label="Open Decision Ledger"
+                data-testid="header-action-ledger"
               >
-                <Zap size={14} />
-                <span>
-                  Verdict: <b>{verdict.primaryPattern.name}</b> ({verdict.primaryPattern.confidence}%)
-                </span>
+                <BookmarkCheck size={16} />
+                {ledger.length > 0 && (
+                  <span className="intro-icon-badge">{ledger.length}</span>
+                )}
               </button>
             </AppTooltip>
-          )}
 
-          <AppTooltip content="Open session decision ledger (in-memory RAM)">
-            <button
-              type="button"
-              className={`decision-ledger-pill ${ledger.length > 0 ? 'active' : ''}`}
-              onClick={() => {
-                setDrawerTab('ledger');
-                setIsDrawerOpen(true);
-              }}
-            >
-              <BookmarkCheck size={14} />
-              <span>Decision Ledger ({ledger.length})</span>
-            </button>
-          </AppTooltip>
+            <AppTooltip content="Gang of Four Field Guide & Principles" shortcut="Ctrl+\">
+              <button
+                type="button"
+                className="intro-icon-btn"
+                onClick={() => {
+                  setDrawerTab('guide');
+                  setIsDrawerOpen(true);
+                }}
+                aria-label="Open Gang of Four Field Guide & Rules"
+                data-testid="header-action-guide"
+              >
+                <BookOpen size={16} />
+              </button>
+            </AppTooltip>
+          </div>
 
-          <AppTooltip content="Open Gang of Four Field Guide & Principles" shortcut="Ctrl+\">
-            <button
-              type="button"
-              className="field-guide-toggle-btn"
-              onClick={() => {
-                setDrawerTab('guide');
-                setIsDrawerOpen(true);
-              }}
-            >
-              <BookOpen size={15} />
-              <span>Field Guide & Rules</span>
-            </button>
-          </AppTooltip>
+          <div className="intro-stamp" aria-hidden="true">
+            <Compass size={17} />
+            <span>
+              DECISION
+              <br />
+              ENGINE
+            </span>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Primary Intent-Driven Navigation Tabs */}
       <nav className="decision-intent-nav" aria-label="Decision Engine Modes">
@@ -378,6 +485,16 @@ ${v.codeSmellWarning}
         {activeMode === 'versus' && (
           <section className="versus-view-wrapper">
             <DisambiguationMatrix
+              initialSubTab={versusSubTab}
+              initialDilemmaId={activeDilemmaId}
+              initialPatternAId={patternAId}
+              initialPatternBId={patternBId}
+              onStateChange={(state) => {
+                setVersusSubTab(state.subTab);
+                setActiveDilemmaId(state.dilemmaId);
+                setPatternAId(state.patternAId);
+                setPatternBId(state.patternBId);
+              }}
               onPublishVerdict={handleVerdictGenerated}
               onSaveToLedger={handleSaveToLedger}
             />

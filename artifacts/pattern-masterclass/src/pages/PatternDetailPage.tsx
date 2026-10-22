@@ -141,9 +141,20 @@ export function PatternDetailPage({
   const fromParam = queryParams.get('from');
 
   const handleBack = () => {
-    if (fromParam === 'decision-engine') {
-      setLoc('/decision-engine');
-      return;
+    if (fromParam) {
+      try {
+        const decoded = decodeURIComponent(fromParam);
+        if (decoded.startsWith('/') && !decoded.startsWith('//')) {
+          setLoc(decoded);
+          return;
+        }
+      } catch {
+        // fallback
+      }
+      if (fromParam.includes('decision-engine')) {
+        setLoc('/decision-engine');
+        return;
+      }
     }
     const qs = window.location.search;
     setLoc(`/${qs}`);
@@ -220,6 +231,12 @@ export function PatternDetailPage({
   }
 
   const tabs: DetailTab[] = ['overview', 'code', 'diagrams', 'trade-offs'];
+  const tabLabels: Record<DetailTab, string> = {
+    overview: 'Overview',
+    code: 'Code',
+    diagrams: 'Diagrams',
+    'trade-offs': 'Trade-Offs',
+  };
 
   return (
     <div className="pattern-studio-layout" data-testid="pattern-studio-page">
@@ -228,7 +245,7 @@ export function PatternDetailPage({
         <div className="studio-hero-row1">
           <div className="studio-identity">
             <div className="studio-meta">
-              {fromParam === 'decision-engine' && (
+              {Boolean(fromParam && fromParam.includes('decision-engine')) && (
                 <AppTooltip content="Return to Decision Engine">
                   <button
                     type="button"
@@ -329,7 +346,7 @@ export function PatternDetailPage({
 
       {/* 2. The 4 Standard Tabs Bar */}
       <div className="studio-tabs-bar" role="tablist" aria-label="Pattern detail tabs">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-6 sm:gap-7">
           {tabs.map(t => (
             <button
               key={t}
@@ -339,7 +356,7 @@ export function PatternDetailPage({
               onClick={() => setTab(t)}
               data-testid={`studio-tab-${t}`}
             >
-              {t}
+              {tabLabels[t]}
             </button>
           ))}
         </div>
@@ -350,18 +367,18 @@ export function PatternDetailPage({
               type="button"
               onClick={() => toggleNotesPanel()}
               data-testid="toggle-notes-panel-btn"
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 isNotesOpen
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/40 font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
               }`}
             >
               <PenLine className="w-3.5 h-3.5" />
               <span>Notes</span>
               {hasNote && (
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.8)]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.8)]" />
               )}
-              <kbd className="text-[10px] text-muted-foreground/70 font-mono">N</kbd>
+              <kbd className="text-xs text-muted-foreground font-mono font-medium px-1 rounded bg-muted/70">N</kbd>
             </button>
           </AppTooltip>
         </div>

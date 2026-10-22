@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   ArrowLeftRight,
   Check,
@@ -21,29 +21,55 @@ import {
 import type { GoFDecisionVerdict } from './ai-service';
 import { AppTooltip } from '../../components/ui/app-tooltip';
 
+export type VersusSubTab = 'curated' | 'custom';
+
 interface DisambiguationMatrixProps {
   onPublishVerdict: (v: GoFDecisionVerdict) => void;
   onSaveToLedger?: (v: GoFDecisionVerdict) => void;
+  initialSubTab?: VersusSubTab;
+  initialDilemmaId?: string;
+  initialPatternAId?: string;
+  initialPatternBId?: string;
+  onStateChange?: (state: {
+    subTab: VersusSubTab;
+    dilemmaId: string;
+    patternAId: string;
+    patternBId: string;
+  }) => void;
 }
 
-type VersusSubTab = 'curated' | 'custom';
 type CategoryFilter = 'All' | 'Behavioral' | 'Structural' | 'Creational';
 
 export function DisambiguationMatrix({
   onPublishVerdict,
   onSaveToLedger,
+  initialSubTab = 'curated',
+  initialDilemmaId = 'strategy-vs-state',
+  initialPatternAId = 'strategy',
+  initialPatternBId = 'state',
+  onStateChange,
 }: DisambiguationMatrixProps) {
   // Top-level switcher: 7 Curated GoF Dilemmas vs. Custom 2-Pattern Comparator
-  const [versusSubTab, setVersusSubTab] = useState<VersusSubTab>('curated');
+  const [versusSubTab, setVersusSubTab] = useState<VersusSubTab>(initialSubTab);
 
   // Curated state
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('All');
-  const [activeDilemmaId, setActiveDilemmaId] = useState<string>('strategy-vs-state');
+  const [activeDilemmaId, setActiveDilemmaId] = useState<string>(initialDilemmaId);
   const [selectedSide, setSelectedSide] = useState<'A' | 'B'>('A');
 
   // Custom 2-Pattern Comparator state
-  const [patternAId, setPatternAId] = useState<string>('strategy');
-  const [patternBId, setPatternBId] = useState<string>('state');
+  const [patternAId, setPatternAId] = useState<string>(initialPatternAId);
+  const [patternBId, setPatternBId] = useState<string>(initialPatternBId);
+
+  // Notify parent of state changes to synchronize URL search parameters
+  useEffect(() => {
+    onStateChange?.({
+      subTab: versusSubTab,
+      dilemmaId: activeDilemmaId,
+      patternAId,
+      patternBId,
+    });
+  }, [versusSubTab, activeDilemmaId, patternAId, patternBId, onStateChange]);
 
   // Feedback notifications
   const [recordedNotice, setRecordedNotice] = useState<string | null>(null);
@@ -672,7 +698,7 @@ export function DisambiguationMatrix({
               </div>
 
               <div className="versus-metric-card anti-pattern-card">
-                <span className="metric-label flex items-center gap-1.5 text-amber-400">
+                <span className="metric-label flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-semibold">
                   <AlertTriangle size={13} /> ANTI-PATTERN WARNING TO AVOID
                 </span>
                 <p>{metaA.antiPatternWarning}</p>
@@ -693,7 +719,7 @@ export function DisambiguationMatrix({
                     <ExternalLink size={11} />
                   </a>
                   <a
-                    href={`/pattern/${metaA.id}?from=decision-engine`}
+                    href={`/pattern/${metaA.id}?from=${encodeURIComponent('/decision-engine' + window.location.search)}`}
                     className="citation-int-link"
                     title={`Study ${metaA.name} masterclass blueprint and trade-offs`}
                   >
@@ -769,7 +795,7 @@ export function DisambiguationMatrix({
               </div>
 
               <div className="versus-metric-card anti-pattern-card">
-                <span className="metric-label flex items-center gap-1.5 text-amber-400">
+                <span className="metric-label flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-semibold">
                   <AlertTriangle size={13} /> ANTI-PATTERN WARNING TO AVOID
                 </span>
                 <p>{metaB.antiPatternWarning}</p>
@@ -790,7 +816,7 @@ export function DisambiguationMatrix({
                     <ExternalLink size={11} />
                   </a>
                   <a
-                    href={`/pattern/${metaB.id}?from=decision-engine`}
+                    href={`/pattern/${metaB.id}?from=${encodeURIComponent('/decision-engine' + window.location.search)}`}
                     className="citation-int-link"
                     title={`Study ${metaB.name} masterclass blueprint and trade-offs`}
                   >
