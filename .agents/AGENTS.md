@@ -16,6 +16,14 @@ The following rule files are located in [`.agents/rules/`](file:///h:/System%20d
 
 ---
 
+## Workspace Skills
+
+The following on-demand skills are located in [`.agents/skills/`](file:///h:/System%20design/design-pattern/replet/design-patterns/.agents/skills/):
+
+* **[radix-ui-modernization](file:///h:/System%20design/design-pattern/replet/design-patterns/.agents/skills/radix-ui-modernization/SKILL.md)**: React 19 + Radix UI modernization procedures, Viewport height traps, empty string value guards, and accessible inverted surface / shortcut keycap styling across light and dark themes.
+
+---
+
 ## Workspace Precedence
 
 1. Any constraints defined in `.agents/rules/*.md` take immediate precedence when modifying code within their domain.

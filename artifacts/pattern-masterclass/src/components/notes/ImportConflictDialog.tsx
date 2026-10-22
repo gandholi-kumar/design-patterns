@@ -8,6 +8,7 @@ import {
   AlertDialogFooter,
 } from "../ui/alert-dialog";
 import { AlertTriangle, GitMerge, RefreshCw, SkipForward } from "lucide-react";
+import { Checkbox } from "../ui/checkbox";
 
 export type ImportCollisionStrategy = "append" | "overwrite" | "skip";
 
@@ -161,15 +162,17 @@ export function ImportConflictDialog({
         </div>
 
         {/* Remember choice checkbox */}
-        <label className="flex items-center gap-2 mt-2 px-1 text-xs text-muted-foreground cursor-pointer select-none">
-          <input
-            type="checkbox"
+        <div className="flex items-center gap-2 mt-2 px-1 text-xs text-muted-foreground select-none">
+          <Checkbox
+            id="remember-default"
             checked={rememberAsDefault}
-            onChange={(e) => setRememberAsDefault(e.target.checked)}
-            className="rounded border-border text-amber-500 focus:ring-amber-400"
+            onCheckedChange={(checked) => setRememberAsDefault(!!checked)}
+            className="border-border/80 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 data-[state=checked]:text-white"
           />
-          <span>Remember this choice as default for future imports</span>
-        </label>
+          <label htmlFor="remember-default" className="cursor-pointer">
+            Remember this choice as default for future imports
+          </label>
+        </div>
 
         <AlertDialogFooter className="mt-4 pt-3 border-t border-border/40 flex items-center justify-end gap-2">
           <button

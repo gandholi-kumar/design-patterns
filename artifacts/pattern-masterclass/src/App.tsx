@@ -47,6 +47,7 @@ import { PatternDialog } from './components/dialogs/PatternDialog';
 import { BackupDialog } from './components/dialogs/BackupDialog';
 import { downloadBlob, zipStore } from './lib/zip-utils';
 import { useLearningStore, useWorkspacePreferencesStore } from './stores';
+import { ENABLE_FULL_FEATURES } from './config/features';
 
 type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz' | 'notes';
 
@@ -290,16 +291,18 @@ export function App() {
               </div>
               <small>Small steps. Stronger instincts.</small>
             </div>
-            <button
-              type="button"
-              className="nav-item"
-              onClick={() => setBackupOpen(true)}
-              data-testid="open-backup"
-            >
-              <FileJson2 size={17} />
-              <span>Backup & settings</span>
-              <ArrowUpRight size={14} className="nav-trailing" />
-            </button>
+            {ENABLE_FULL_FEATURES && (
+              <button
+                type="button"
+                className="nav-item"
+                onClick={() => setBackupOpen(true)}
+                data-testid="open-backup"
+              >
+                <FileJson2 size={17} />
+                <span>Backup & settings</span>
+                <ArrowUpRight size={14} className="nav-trailing" />
+              </button>
+            )}
             <div className="side-footer">
               <span className="status-dot" /> A field guide for better software
             </div>
@@ -328,7 +331,7 @@ export function App() {
               </button>
 
               <AppTooltip
-                content={sidebarCollapsed ? 'Expand sidebar (Ctrl+B)' : 'Collapse sidebar (Ctrl+B)'}
+                content={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 shortcut="Ctrl+B"
               >
                 <button
@@ -371,8 +374,8 @@ export function App() {
                   <AppTooltip
                     content={
                       bookmarks.includes(activePattern.id)
-                        ? 'Saved in bookmarks (B)'
-                        : 'Save to bookmarks (B)'
+                        ? 'Saved in bookmarks'
+                        : 'Save to bookmarks'
                     }
                     shortcut="B"
                   >
@@ -395,7 +398,7 @@ export function App() {
                     </button>
                   </AppTooltip>
 
-                  <AppTooltip content="Open in live playground (P)" shortcut="P">
+                  <AppTooltip content="Open in live playground" shortcut="P">
                     <button
                       type="button"
                       className="icon-btn topbar-action-btn playground-btn"
@@ -448,7 +451,7 @@ export function App() {
               )}
 
               <AppTooltip
-                content={studioMode ? 'Exit Studio Focus Mode (Alt+F)' : 'Enter Studio Focus Mode (Alt+F)'}
+                content={studioMode ? 'Exit Studio Focus Mode' : 'Enter Studio Focus Mode'}
                 shortcut="Alt+F"
               >
                 <button
@@ -476,30 +479,32 @@ export function App() {
                 </button>
               </AppTooltip>
 
-              {session?.user ? (
-                <UserProfileDropdown
-                  user={session.user}
-                  bookmarksCount={bookmarks.length}
-                  onExportBackup={onExport}
-                />
-              ) : (
-                <button
-                  type="button"
-                  className="primary-btn"
-                  onClick={() => setAuthDialogOpen(true)}
-                  style={{
-                    fontSize: '0.8125rem',
-                    padding: '0.375rem 0.75rem',
-                    height: '2rem',
-                    borderRadius: '0.375rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.375rem',
-                  }}
-                >
-                  <LogIn size={14} />
-                  <span>Sign In</span>
-                </button>
+              {ENABLE_FULL_FEATURES && (
+                session?.user ? (
+                  <UserProfileDropdown
+                    user={session.user}
+                    bookmarksCount={bookmarks.length}
+                    onExportBackup={onExport}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    onClick={() => setAuthDialogOpen(true)}
+                    style={{
+                      fontSize: '0.8125rem',
+                      padding: '0.375rem 0.75rem',
+                      height: '2rem',
+                      borderRadius: '0.375rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.375rem',
+                    }}
+                  >
+                    <LogIn size={14} />
+                    <span>Sign In</span>
+                  </button>
+                )
               )}
             </div>
           </header>

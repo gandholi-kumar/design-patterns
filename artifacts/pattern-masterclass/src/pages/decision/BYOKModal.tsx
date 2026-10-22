@@ -158,7 +158,7 @@ export function BYOKModal({ isOpen, onClose, config, onSaveConfig, onPurgeConfig
               </h3>
             </div>
           </div>
-          <AppTooltip content="Close dialog (Esc)" shortcut="Esc">
+          <AppTooltip content="Close dialog" shortcut="Esc">
             <button type="button" className="icon-close-btn" onClick={onClose} aria-label="Close dialog" disabled={isTesting}>
               <X size={18} />
             </button>

@@ -44,7 +44,7 @@ const DEFAULT_PROGRESS_ITEM: ProgressItem = {
 export const useLearningStore = create<LearningState>()(
   persist(
     (set) => ({
-      theme: 'light',
+      theme: 'dark',
       bookmarks: [],
       progress: {},
       perspective: 'canonical',

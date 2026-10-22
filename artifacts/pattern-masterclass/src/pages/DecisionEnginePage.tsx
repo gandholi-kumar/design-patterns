@@ -29,6 +29,7 @@ import type { GoFDecisionVerdict, AIProviderConfig } from './decision/ai-service
 import { AppTooltip } from '../components/ui/app-tooltip';
 import { useSession } from '../lib/auth-client';
 import { getDecisionLedger, type DecisionLedgerItem } from '@workspace/api-client-react';
+import { ENABLE_FULL_FEATURES } from '../config/features';
 
 interface DecisionEnginePageProps {
   onSelect: (pattern: Pattern) => void;
@@ -47,7 +48,7 @@ export function DecisionEnginePage({ onSelect }: DecisionEnginePageProps) {
     if (typeof window === 'undefined') {
       return {
         mode: 'diagnostic' as MainModeKey,
-        diagSubTab: 'ai' as DiagnosticSubTab,
+        diagSubTab: (ENABLE_FULL_FEATURES ? 'ai' : 'wizard') as DiagnosticSubTab,
         vSubTab: 'curated' as 'curated' | 'custom',
         dilemma: '',
         pA: '',
@@ -58,11 +59,13 @@ export function DecisionEnginePage({ onSelect }: DecisionEnginePageProps) {
     const m = params.get('mode');
     const mode: MainModeKey = m === 'versus' || m === 'scenarios' || m === 'diagnostic' ? m : 'diagnostic';
     const t = params.get('tab');
-    const diagSubTab: DiagnosticSubTab = t === 'wizard' ? 'wizard' : 'ai';
+    const diagSubTab: DiagnosticSubTab = ENABLE_FULL_FEATURES
+      ? (t === 'wizard' ? 'wizard' : 'ai')
+      : 'wizard';
     const vSubTab: 'curated' | 'custom' = t === 'custom' ? 'custom' : 'curated';
     const dilemma = params.get('dilemma') || '';
-    const pA = params.get('pA') || '';
-    const pB = params.get('pB') || '';
+    const pA = params.get('pA') || (vSubTab === 'custom' ? 'strategy' : '');
+    const pB = params.get('pB') || (vSubTab === 'custom' ? 'state' : '');
     return { mode, diagSubTab, vSubTab, dilemma, pA, pB };
   };
 
@@ -75,11 +78,32 @@ export function DecisionEnginePage({ onSelect }: DecisionEnginePageProps) {
   const [patternBId, setPatternBId] = useState<string>(initialParams.pB);
 
   const [verdict, setVerdict] = useState<GoFDecisionVerdict | null>(null);
-  const [ledger, setLedger] = useState<GoFDecisionVerdict[]>([]);
+  const [ledger, setLedger] = useState<GoFDecisionVerdict[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('gof-decision-ledger');
+        if (stored) return JSON.parse(stored);
+      } catch {
+        // Fallback to empty ledger
+      }
+    }
+    return [];
+  });
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [drawerTab, setDrawerTab] = useState<DrawerTabKey>('guide');
   const [isKeyModalOpen, setIsKeyModalOpen] = useState<boolean>(false);
   const [copiedAllLedger, setCopiedAllLedger] = useState(false);
+
+  // Persist ledger to browser sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('gof-decision-ledger', JSON.stringify(ledger));
+      } catch {
+        // Ignore quota/serialization issues
+      }
+    }
+  }, [ledger]);
 
   // Sync state changes to browser URL query parameters
   useEffect(() => {
@@ -88,7 +112,8 @@ export function DecisionEnginePage({ onSelect }: DecisionEnginePageProps) {
       params.set('mode', activeMode);
     }
     if (activeMode === 'diagnostic') {
-      if (diagnosticSubTab !== 'ai') params.set('tab', diagnosticSubTab);
+      const defaultDiag = ENABLE_FULL_FEATURES ? 'ai' : 'wizard';
+      if (diagnosticSubTab !== defaultDiag) params.set('tab', diagnosticSubTab);
     } else if (activeMode === 'versus') {
       if (versusSubTab !== 'curated') params.set('tab', versusSubTab);
       if (versusSubTab === 'curated' && activeDilemmaId) params.set('dilemma', activeDilemmaId);
@@ -227,7 +252,7 @@ ${v.codeSmellWarning}
 
   // Cloud synchronization: Fetch persisted decision ledger from PostgreSQL for authenticated users
   useEffect(() => {
-    if (!session?.user) return;
+    if (!ENABLE_FULL_FEATURES || !session?.user) return;
     getDecisionLedger()
       .then((entries: DecisionLedgerItem[]) => {
         if (Array.isArray(entries) && entries.length > 0) {
@@ -292,7 +317,7 @@ ${v.codeSmellWarning}
 
         <div className="intro-right">
           <p>
-            Start with what hurts. Diagnose architectural problems with the GoF 3-question decision tree or AI Copilot, disambiguate classic sibling dilemmas, and explore 16+ production enterprise implementations.
+            Start with what hurts. Diagnose architectural problems with the GoF 3-question decision tree{ENABLE_FULL_FEATURES ? ' or AI Copilot' : ''}, disambiguate classic sibling dilemmas, and explore 16+ production enterprise implementations.
           </p>
         </div>
 
@@ -322,8 +347,8 @@ ${v.codeSmellWarning}
             <AppTooltip
               content={
                 ledger.length > 0
-                  ? `Decision Ledger (${ledger.length} recorded) — Alt+D`
-                  : 'Open Decision Ledger (0 recorded) — Alt+D'
+                  ? `Decision Ledger (${ledger.length} recorded)`
+                  : 'Open Decision Ledger (0 recorded)'
               }
               shortcut="Alt+D"
             >
@@ -383,7 +408,9 @@ ${v.codeSmellWarning}
             <Compass size={18} />
             <div className="intent-label-group">
               <span className="intent-title">Problem Diagnostic</span>
-              <span className="intent-desc">AI Copilot & GoF Redesign Tree</span>
+              <span className="intent-desc">
+                {ENABLE_FULL_FEATURES ? 'AI Copilot & GoF Redesign Tree' : 'GoF 3-Question Decision Tree'}
+              </span>
             </div>
           </button>
 
@@ -421,49 +448,71 @@ ${v.codeSmellWarning}
         {activeMode === 'diagnostic' && (
           <section className="diagnostic-view-wrapper">
             {/* High-Contrast Segmented Switcher */}
-            <div className="diagnostic-subnav-bar">
-              <div
-                className="segmented-diagnostic-control"
-                role="tablist"
-                aria-label="Diagnostic Engine Mode"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={diagnosticSubTab === 'ai'}
-                  className={`segmented-tab-btn ${diagnosticSubTab === 'ai' ? 'active' : ''}`}
-                  onClick={() => setDiagnosticSubTab('ai')}
+            {ENABLE_FULL_FEATURES ? (
+              <div className="diagnostic-subnav-bar">
+                <div
+                  className="segmented-diagnostic-control"
+                  role="tablist"
+                  aria-label="Diagnostic Engine Mode"
                 >
-                  <Sparkles size={16} className="tab-icon" />
-                  <div className="tab-meta">
-                    <span className="tab-primary-title">AI Architect Copilot</span>
-                    <span className="tab-sub-hint">Interactive Requirements & Debate</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={diagnosticSubTab === 'wizard'}
-                  className={`segmented-tab-btn ${diagnosticSubTab === 'wizard' ? 'active' : ''}`}
-                  onClick={() => setDiagnosticSubTab('wizard')}
-                >
-                  <Compass size={16} className="tab-icon" />
-                  <div className="tab-meta">
-                    <span className="tab-primary-title">GoF Causes of Redesign</span>
-                    <span className="tab-sub-hint">Deterministic 3-Step Decision Tree</span>
-                  </div>
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={diagnosticSubTab === 'ai'}
+                    className={`segmented-tab-btn ${diagnosticSubTab === 'ai' ? 'active' : ''}`}
+                    onClick={() => setDiagnosticSubTab('ai')}
+                  >
+                    <Sparkles size={16} className="tab-icon" />
+                    <div className="tab-meta">
+                      <span className="tab-primary-title">AI Architect Copilot</span>
+                      <span className="tab-sub-hint">Interactive Requirements & Debate</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={diagnosticSubTab === 'wizard'}
+                    className={`segmented-tab-btn ${diagnosticSubTab === 'wizard' ? 'active' : ''}`}
+                    onClick={() => setDiagnosticSubTab('wizard')}
+                  >
+                    <Compass size={16} className="tab-icon" />
+                    <div className="tab-meta">
+                      <span className="tab-primary-title">GoF Causes of Redesign</span>
+                      <span className="tab-sub-hint">Deterministic 3-Step Decision Tree</span>
+                    </div>
+                  </button>
+                </div>
 
-              <span className="diagnostic-subnav-hint">
-                {diagnosticSubTab === 'ai'
-                  ? 'Type your architectural requirements or select prompt chips for AI analysis.'
-                  : 'Follow the 3-step decision flow mapped to the original GoF book Chapter 1.7.'}
-              </span>
-            </div>
+                <span className="diagnostic-subnav-hint">
+                  {diagnosticSubTab === 'ai'
+                    ? 'Type your architectural requirements or select prompt chips for AI analysis.'
+                    : 'Follow the 3-step decision flow mapped to the original GoF book Chapter 1.7.'}
+                </span>
+              </div>
+            ) : (
+              <div className="diagnostic-subnav-bar" style={{ justifyContent: 'space-between' }}>
+                <div className="segmented-diagnostic-control" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={true}
+                    className="segmented-tab-btn active"
+                  >
+                    <Compass size={16} className="tab-icon" />
+                    <div className="tab-meta">
+                      <span className="tab-primary-title">GoF Causes of Redesign</span>
+                      <span className="tab-sub-hint">Deterministic 3-Step Decision Tree</span>
+                    </div>
+                  </button>
+                </div>
+                <span className="diagnostic-subnav-hint">
+                  Follow the 3-step decision flow mapped to the original GoF book Chapter 1.7.
+                </span>
+              </div>
+            )}
 
             {/* Diagnostic Content */}
-            {diagnosticSubTab === 'ai' ? (
+            {ENABLE_FULL_FEATURES && diagnosticSubTab === 'ai' ? (
               <AIArchitectBar
                 config={aiConfig}
                 onOpenKeyModal={() => setIsKeyModalOpen(true)}
@@ -708,13 +757,15 @@ ${v.codeSmellWarning}
       />
 
       {/* Zero-Trust BYOK Security Modal */}
-      <BYOKModal
-        isOpen={isKeyModalOpen}
-        onClose={() => setIsKeyModalOpen(false)}
-        config={aiConfig}
-        onSaveConfig={(cfg) => setAiConfig(cfg)}
-        onPurgeConfig={() => setAiConfig({ provider: 'gemini', apiKey: '' })}
-      />
+      {ENABLE_FULL_FEATURES && (
+        <BYOKModal
+          isOpen={isKeyModalOpen}
+          onClose={() => setIsKeyModalOpen(false)}
+          config={aiConfig}
+          onSaveConfig={(cfg) => setAiConfig(cfg)}
+          onPurgeConfig={() => setAiConfig({ provider: 'gemini', apiKey: '' })}
+        />
+      )}
     </div>
   );
 }

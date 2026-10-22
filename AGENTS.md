@@ -54,10 +54,20 @@ Specific engineering standards are partitioned into modular rules inside [`.agen
 | **[state-management.md](./.agents/rules/state-management.md)** | The 4-Layer State Architecture: TanStack Query (server), Zustand (global client), `useState`/`useReducer` (local), and Context (static values). |
 | **[backend.md](./.agents/rules/backend.md)** | Node.js & Express 5 standards, Clean Architecture layers, Drizzle ORM queries, error middleware, and graceful shutdown. |
 | **[backend-testing.md](./.agents/rules/backend-testing.md)** | Node.js, Express 5, Vitest/Jest & Supertest standards: Clean Architecture layers, Zod boundary validation, error middleware. |
+ 
+---
+
+## 4. Workspace Skills Index
+
+Specialized procedures and runbooks are organized under [`.agents/skills/`](./.agents/skills/):
+
+| Skill Name | Purpose & Domain |
+| :--- | :--- |
+| **[radix-ui-modernization](./.agents/skills/radix-ui-modernization/SKILL.md)** | React 19 + Radix UI modernization, Viewport height trap avoidance, empty string value guards, and accessible inverted surface / shortcut keycap styling across light and dark themes. |
 
 ---
 
-## 4. Verification & Quality Gates
+## 5. Verification & Quality Gates
 
 Before declaring any coding task complete, verify that the workspace passes all quality gates:
 

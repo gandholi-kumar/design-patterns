@@ -362,7 +362,10 @@ export function PatternDetailPage({
         </div>
 
         <div className="studio-tabs-right ml-auto flex items-center gap-2">
-          <AppTooltip content={isNotesOpen ? "Collapse study notes (N)" : "Open study notes (N)"}>
+          <AppTooltip
+            content={isNotesOpen ? "Collapse study notes" : "Open study notes"}
+            shortcut="N"
+          >
             <button
               type="button"
               onClick={() => toggleNotesPanel()}

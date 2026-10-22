@@ -4,14 +4,21 @@ import { admin } from "better-auth/plugins";
 import { db } from "@workspace/db";
 import * as schema from "@workspace/db/schema";
 
+const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+const vercelOrigin = vercelHost ? `https://${vercelHost.replace(/^https?:\/\//, "")}` : null;
+const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/+$/, "") : null;
+const resolvedBaseUrl = process.env.BETTER_AUTH_URL || frontendUrl || vercelOrigin || "http://localhost:3000";
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET || "gof_masterclass_dev_secret_key_32_chars_long_2026",
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: resolvedBaseUrl,
   trustedOrigins: [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    ...(frontendUrl ? [frontendUrl] : []),
+    ...(vercelOrigin ? [vercelOrigin] : []),
     ...(process.env.CORS_ORIGIN || "").split(",").map((o) => o.trim()).filter(Boolean),
   ],
   user: {

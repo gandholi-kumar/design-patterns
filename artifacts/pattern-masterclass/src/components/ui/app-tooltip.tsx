@@ -36,7 +36,7 @@ export function AppTooltip({
         >
           <span>{content}</span>
           {shortcut && (
-            <kbd className="app-tooltip-kbd text-[0.625rem] px-1 py-0.5 rounded bg-muted/30 border border-border/40 font-mono opacity-80">
+            <kbd className="app-tooltip-kbd inline-flex items-center justify-center font-mono text-[0.625rem] font-semibold px-1.5 py-0.5 rounded text-primary-foreground bg-primary-foreground/15 border border-primary-foreground/30 leading-none shadow-xs">
               {shortcut}
             </kbd>
           )}

@@ -90,7 +90,7 @@ export function NotesDrawer({
             </div>
             <div className="notes-drawer-controls">
               {headerActions}
-              <AppTooltip content="Close drawer (Esc)" shortcut="Esc">
+              <AppTooltip content="Close drawer" shortcut="Esc">
                 <button
                   type="button"
                   className="icon-btn notes-drawer-close-btn"
