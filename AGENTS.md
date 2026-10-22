@@ -50,8 +50,10 @@ Specific engineering standards are partitioned into modular rules inside [`.agen
 | Rule Document | Domain & Scope |
 | :--- | :--- |
 | **[frontend.md](./.agents/rules/frontend.md)** | React 19 best practices, JSX hygiene, custom hooks, accessible UI primitives, and Tailwind CSS v4 design tokens. |
+| **[frontend-testing.md](./.agents/rules/frontend-testing.md)** | React 19 & Vitest/Jest unit testing standards: behavior-driven tests, RTL query hierarchy, userEvent, mocking, async & a11y. |
 | **[state-management.md](./.agents/rules/state-management.md)** | The 4-Layer State Architecture: TanStack Query (server), Zustand (global client), `useState`/`useReducer` (local), and Context (static values). |
 | **[backend.md](./.agents/rules/backend.md)** | Node.js & Express 5 standards, Clean Architecture layers, Drizzle ORM queries, error middleware, and graceful shutdown. |
+| **[backend-testing.md](./.agents/rules/backend-testing.md)** | Node.js, Express 5, Vitest/Jest & Supertest standards: Clean Architecture layers, Zod boundary validation, error middleware. |
 
 ---
 
