@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "serve": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npx tsx --test src/test/*.test.ts"
   },
   "dependencies": {
     "@blocknote/core": "^0.55.0",

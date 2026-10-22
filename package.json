@@ -9,7 +9,10 @@
     "dev:api": "npx -y pnpm@10 --filter @workspace/api-server run dev",
     "build": "npx -y pnpm@10 run typecheck && npx -y pnpm@10 -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "npx -y pnpm@10 run typecheck:libs && npx -y pnpm@10 -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "npx -y pnpm@10 run typecheck:libs && npx -y pnpm@10 -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "npx -y pnpm@10 --filter @workspace/pattern-masterclass run test",
+    "test:backend": "npx tsx --test \"artifacts/api-server/src/test/*.test.ts\""
   },
   "private": true,
   "dependencies": {
