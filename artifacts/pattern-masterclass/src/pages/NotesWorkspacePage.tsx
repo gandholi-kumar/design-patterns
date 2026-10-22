@@ -7,7 +7,6 @@ import {
   Search,
   Upload,
   Download,
-  ArrowLeft,
   ArrowUp,
   ArrowDown,
   Calendar,
@@ -511,29 +510,18 @@ export function NotesWorkspacePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground select-text">
       {/* Top Header */}
-      <header className="border-b border-border/80 bg-card/60 backdrop-blur-md px-6 py-4 flex-shrink-0 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="border-b border-border/80 bg-card/60 backdrop-blur-md px-4 sm:px-6 py-4 flex-shrink-0 sticky top-0 z-20">
+        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <AppTooltip content="Back to Masterclass">
-              <button
-                type="button"
-                onClick={() => setLoc("/")}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shadow-2xs shrink-0"
-                aria-label="Back to Masterclass"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            </AppTooltip>
-
             <div>
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-                <h1 className="text-lg font-bold tracking-tight">Study Notes Workspace</h1>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <h1 className="text-xl font-bold tracking-tight text-foreground">Study Notes Workspace</h1>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                   {totalAnnotated} / {PATTERNS.length} Annotated
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Centralized knowledge repository across all 23 GoF design patterns
               </p>
             </div>
@@ -549,7 +537,7 @@ export function NotesWorkspacePage() {
                   onClick={() => setPolicyMenuOpen((prev) => !prev)}
                   className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors shadow-2xs ${
                     policyMenuOpen
-                      ? "bg-muted border-amber-500/60 text-amber-500"
+                      ? "bg-muted border-amber-500/60 text-amber-600 dark:text-amber-400"
                       : "border-border/80 hover:bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                   aria-label="Configure collision strategy for bundle imports"
@@ -559,8 +547,8 @@ export function NotesWorkspacePage() {
               </AppTooltip>
 
               {policyMenuOpen && (
-                <div className="absolute right-0 mt-2 w-72 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 text-xs flex flex-col gap-1 text-slate-900 dark:text-slate-100">
-                  <div className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                <div className="absolute right-0 mt-2 w-80 rounded-xl bg-card border border-border shadow-2xl p-1.5 z-50 text-xs flex flex-col gap-1 text-foreground">
+                  <div className="px-2.5 py-1.5 text-xs font-semibold text-muted-foreground border-b border-border">
                     Import Collision Strategy
                   </div>
 
@@ -570,7 +558,7 @@ export function NotesWorkspacePage() {
                     className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
                       importPolicy === "append"
                         ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
+                        : "hover:bg-muted text-foreground"
                     }`}
                   >
                     <Check
@@ -580,12 +568,12 @@ export function NotesWorkspacePage() {
                     />
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span>Append (Merge)</span>
-                        <span className="text-[10px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-normal">
+                        <span className="font-medium">Append (Merge)</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-normal">
                           Default
                         </span>
                       </div>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal block mt-0.5">
+                      <span className="text-xs text-muted-foreground font-normal block mt-0.5">
                         Preserves notes; appends imported blocks below a divider
                       </span>
                     </div>
@@ -597,7 +585,7 @@ export function NotesWorkspacePage() {
                     className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
                       importPolicy === "overwrite"
                         ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
+                        : "hover:bg-muted text-foreground"
                     }`}
                   >
                     <Check
@@ -606,8 +594,8 @@ export function NotesWorkspacePage() {
                       }`}
                     />
                     <div>
-                      <span>Overwrite (Replace)</span>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal block mt-0.5">
+                      <span className="font-medium">Overwrite (Replace)</span>
+                      <span className="text-xs text-muted-foreground font-normal block mt-0.5">
                         Replaces existing notes with incoming version
                       </span>
                     </div>
@@ -619,7 +607,7 @@ export function NotesWorkspacePage() {
                     className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
                       importPolicy === "skip"
                         ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
+                        : "hover:bg-muted text-foreground"
                     }`}
                   >
                     <Check
@@ -628,8 +616,8 @@ export function NotesWorkspacePage() {
                       }`}
                     />
                     <div>
-                      <span>Skip Existing</span>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal block mt-0.5">
+                      <span className="font-medium">Skip Existing</span>
+                      <span className="text-xs text-muted-foreground font-normal block mt-0.5">
                         Leaves current notes untouched; only imports new ones
                       </span>
                     </div>
@@ -641,7 +629,7 @@ export function NotesWorkspacePage() {
                     className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
                       importPolicy === "ask"
                         ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
+                        : "hover:bg-muted text-foreground"
                     }`}
                   >
                     <Check
@@ -650,8 +638,8 @@ export function NotesWorkspacePage() {
                       }`}
                     />
                     <div>
-                      <span>Always Ask on Conflict</span>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal block mt-0.5">
+                      <span className="font-medium">Always Ask on Conflict</span>
+                      <span className="text-xs text-muted-foreground font-normal block mt-0.5">
                         Show dialog to choose strategy for each import
                       </span>
                     </div>
@@ -707,7 +695,7 @@ export function NotesWorkspacePage() {
       </header>
 
       {/* Main Workspace Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-6 flex flex-col gap-6">
+      <main className="flex-1 w-full mx-auto px-1 sm:px-2 md:px-4 py-6 flex flex-col gap-6">
         {/* Controls Toolbar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card/40 p-3.5 rounded-xl border border-border/60">
           {/* Search Box & Select All toggle */}
@@ -828,7 +816,7 @@ export function NotesWorkspacePage() {
               isLoading={true}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
@@ -870,7 +858,7 @@ export function NotesWorkspacePage() {
           </div>
         ) : (
           <div className="flex flex-col gap-4 pb-20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {paginatedPatterns.map((pattern) => {
                 const note = notesMap[pattern.id];
                 const isSelected = selectedPatternIds.has(pattern.id);
@@ -914,7 +902,7 @@ export function NotesWorkspacePage() {
                           </button>
 
                           <div>
-                            <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground">
+                            <span className="text-xs font-bold tracking-wider uppercase text-muted-foreground">
                               {pattern.category}
                             </span>
                             <h3 className="text-sm font-bold text-foreground group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors">
@@ -924,12 +912,12 @@ export function NotesWorkspacePage() {
                         </div>
 
                         {note ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                             <PenTool className="w-2.5 h-2.5" />
                             <span>Notes</span>
                           </span>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground/50">
+                          <span className="text-xs text-muted-foreground">
                             Empty
                           </span>
                         )}
@@ -950,7 +938,7 @@ export function NotesWorkspacePage() {
                     </div>
 
                     {/* Card Footer */}
-                    <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
                       {formattedDate ? (
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-muted-foreground/60" />

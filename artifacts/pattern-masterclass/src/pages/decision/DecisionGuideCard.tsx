@@ -145,21 +145,21 @@ export function DecisionGuideCard({
           <span className="section-label">PATTERN RELATIONSHIP TAXONOMY</span>
           <div className="taxonomy-grid">
             <div className="taxonomy-card competitor-tax">
-              <div className="taxonomy-tag text-rose-400">🔴 SIBLING COMPETITORS</div>
+              <div className="taxonomy-tag text-rose-700 dark:text-rose-400 font-bold">🔴 SIBLING COMPETITORS</div>
               <h6>Structural Isomorphism</h6>
               <p>
                 Patterns share identical UML class diagrams (e.g. Strategy vs. State) but solve competing architectural intents. Disambiguate using the Decisive Pivot Rule.
               </p>
             </div>
             <div className="taxonomy-card collaborator-tax">
-              <div className="taxonomy-tag text-emerald-400">🟢 SYNERGISTIC COLLABORATORS</div>
+              <div className="taxonomy-tag text-emerald-700 dark:text-emerald-400 font-bold">🟢 SYNERGISTIC COLLABORATORS</div>
               <h6>Pipeline Partners</h6>
               <p>
                 Patterns that do not compete, but layer together in production subsystems (e.g. Composite + Visitor, Command + Memento).
               </p>
             </div>
             <div className="taxonomy-card orthogonal-tax">
-              <div className="taxonomy-tag text-zinc-400">⚪ ORTHOGONAL CONCERNS</div>
+              <div className="taxonomy-tag text-slate-700 dark:text-zinc-400 font-bold">⚪ ORTHOGONAL CONCERNS</div>
               <h6>Independent Problem Spaces</h6>
               <p>
                 Patterns operating on completely separate axes of change (e.g. Singleton vs. Visitor). Comparing them is an architectural false dilemma.
@@ -172,10 +172,10 @@ export function DecisionGuideCard({
         <div className="guide-section">
           <span className="section-label">ANTI-PATTERN & PREMATURE ABSTRACTION GUARDRAILS</span>
           <div className="guardrail-callout-box">
-            <div className="flex items-center gap-2 text-amber-400 mb-1.5 font-semibold text-xs tracking-wider uppercase">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 mb-1.5 font-bold text-xs tracking-wider uppercase">
               <AlertOctagon size={15} /> The Rule of Three (Joshua Kerievsky)
             </div>
-            <p className="text-sm text-zinc-300 leading-relaxed mb-3">
+            <p className="text-sm text-foreground/90 leading-relaxed mb-3">
               "Never introduce a pattern on the first occurrence. Refactor to a pattern only when the third variation emerges and the true axis of change becomes undeniable."
             </p>
             <div className="guardrail-subpoints">

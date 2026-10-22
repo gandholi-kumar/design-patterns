@@ -1,5 +1,5 @@
 import { useLocation } from 'wouter';
-import { Compass, Terminal, Layers3, ArrowRight, Clock, Sparkles } from 'lucide-react';
+import { Compass, Terminal, Layers3, ArrowRight, Clock, Sparkles, Play } from 'lucide-react';
 
 interface WipFeature {
   title: string;
@@ -12,6 +12,8 @@ interface WipModulePlaceholderProps {
   moduleHeadline: string;
   courtesyMessage?: string;
   upcomingFeatures: WipFeature[];
+  onLaunchPrototype?: () => void;
+  prototypeName?: string;
 }
 
 export function WipModulePlaceholder({
@@ -20,6 +22,8 @@ export function WipModulePlaceholder({
   moduleHeadline,
   courtesyMessage,
   upcomingFeatures,
+  onLaunchPrototype,
+  prototypeName,
 }: WipModulePlaceholderProps) {
   const [, setLoc] = useLocation();
 
@@ -75,6 +79,24 @@ export function WipModulePlaceholder({
 
           {/* Alternative Navigation Actions */}
           <div className="wip-nav-divider" />
+          {onLaunchPrototype && (
+            <div className="wip-prototype-box">
+              <div className="wip-prototype-copy">
+                <strong>Interactive Alpha Sandbox Available</strong>
+                <span>Experience the raw, experimental prototype before official release.</span>
+              </div>
+              <button
+                type="button"
+                className="wip-action-btn prototype-btn"
+                onClick={onLaunchPrototype}
+                data-testid="wip-launch-prototype"
+              >
+                <Play size={15} />
+                <span>Launch {prototypeName || 'Sandbox Prototype'}</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          )}
           <div className="wip-action-row">
             <span className="wip-action-prompt">CONTINUE PRACTICING WITH ACTIVE TOOLS:</span>
             <div className="wip-buttons-group">

@@ -184,13 +184,13 @@ function ToastCard({
 
         <div className="flex-1 min-w-0 pr-1">
           <div className="flex items-center justify-between gap-2">
-            <h4 className="text-xs font-semibold leading-tight text-slate-900 dark:text-slate-100">
+            <h4 className="text-sm font-semibold leading-tight text-slate-900 dark:text-slate-100">
               {toast.title}
             </h4>
 
             {/* Countdown Badge / Paused status */}
             <span
-              className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+              className={`shrink-0 inline-flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded border transition-colors ${
                 isHovered
                   ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 font-semibold"
                   : badgeThemeMap[toast.type]
@@ -198,12 +198,12 @@ function ToastCard({
             >
               {isHovered ? (
                 <>
-                  <Pause className="w-2.5 h-2.5 animate-pulse" />
+                  <Pause className="w-3 h-3 animate-pulse" />
                   <span>Paused</span>
                 </>
               ) : (
                 <>
-                  <Clock className="w-2.5 h-2.5" />
+                  <Clock className="w-3 h-3" />
                   <span>{remainingSeconds}s</span>
                 </>
               )}
@@ -211,16 +211,16 @@ function ToastCard({
           </div>
 
           {toast.description && (
-            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-700 dark:text-slate-300 mt-1.5 leading-relaxed">
               {toast.description}
             </p>
           )}
 
           {/* Status line stating that after 10sec it automatically closes */}
-          <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-400 mt-2 font-sans">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-2.5 font-sans">
             <span className="flex items-center gap-1">
               {isHovered ? (
-                <span className="text-amber-600 dark:text-amber-400 font-medium">
+                <span className="text-amber-700 dark:text-amber-400 font-medium">
                   ⏸ Auto-close paused on mouse hover
                 </span>
               ) : (
@@ -235,7 +235,7 @@ function ToastCard({
                   toast.action?.onClick();
                   onDismiss(toast.id);
                 }}
-                className="inline-flex items-center text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline underline-offset-2"
+                className="inline-flex items-center text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline underline-offset-2"
               >
                 {toast.action.label}
               </button>
