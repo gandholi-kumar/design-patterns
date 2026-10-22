@@ -22,6 +22,13 @@ import {
   LayoutGrid,
   List,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { PATTERNS } from "../data";
 import { useNoteRepository } from "../lib/notes/NoteRepositoryContext";
 import type { PatternNote, NotesExportPayload } from "../lib/notes/notes-schema";
@@ -99,21 +106,8 @@ export function NotesWorkspacePage() {
   // Import Collision Policy
   const importPolicy = useWorkspacePreferencesStore((s) => s.notesImportPolicy);
   const setImportPolicy = useWorkspacePreferencesStore((s) => s.setNotesImportPolicy);
-  const [policyMenuOpen, setPolicyMenuOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const policyMenuRef = useRef<HTMLDivElement>(null);
-
-  // Close menus on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (policyMenuRef.current && !policyMenuRef.current.contains(e.target as Node)) {
-        setPolicyMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   // Load all notes from repository
   const loadNotes = () => {
@@ -493,7 +487,6 @@ export function NotesWorkspacePage() {
   // Change default collision policy from header
   const handleSelectPolicy = (newPolicy: ImportCollisionStrategy | "ask") => {
     setImportPolicy(newPolicy);
-    setPolicyMenuOpen(false);
 
     const desc =
       newPolicy === "append"
@@ -529,124 +522,115 @@ export function NotesWorkspacePage() {
 
           {/* Header Action Buttons (Icon-only with Tooltips) */}
           <div className="flex items-center gap-2">
-            {/* Import Policy Selector Dropdown (Icon-only) */}
-            <div className="relative" ref={policyMenuRef}>
+            {/* Import Policy Selector Dropdown (Radix DropdownMenu) */}
+            <DropdownMenu>
               <AppTooltip content={`Collision policy: ${importPolicy === "ask" ? "Always Ask" : importPolicy.toUpperCase()}`}>
-                <button
-                  type="button"
-                  onClick={() => setPolicyMenuOpen((prev) => !prev)}
-                  className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors shadow-2xs ${
-                    policyMenuOpen
-                      ? "bg-muted border-amber-500/60 text-amber-600 dark:text-amber-400"
-                      : "border-border/80 hover:bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
-                  aria-label="Configure collision strategy for bundle imports"
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shadow-2xs data-[state=open]:bg-muted data-[state=open]:border-amber-500/60 data-[state=open]:text-amber-600 dark:data-[state=open]:text-amber-400"
+                    aria-label="Configure collision strategy for bundle imports"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                </DropdownMenuTrigger>
               </AppTooltip>
 
-              {policyMenuOpen && (
-                <div className="absolute right-0 mt-2 w-80 rounded-xl bg-card border border-border shadow-2xl p-1.5 z-50 text-xs flex flex-col gap-1 text-foreground">
-                  <div className="px-2.5 py-1.5 text-xs font-semibold text-muted-foreground border-b border-border">
-                    Import Collision Strategy
+              <DropdownMenuContent align="end" className="w-80 p-1.5 text-xs flex flex-col gap-1">
+                <DropdownMenuLabel className="px-2.5 py-1.5 text-xs font-semibold text-muted-foreground border-b border-border">
+                  Import Collision Strategy
+                </DropdownMenuLabel>
+
+                <DropdownMenuItem
+                  onClick={() => handleSelectPolicy("append")}
+                  className={`flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                    importPolicy === "append"
+                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
+                      : "hover:bg-muted text-foreground"
+                  }`}
+                >
+                  <Check
+                    className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                      importPolicy === "append" ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium">Append (Merge)</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-normal">
+                        Default
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-normal block mt-0.5">
+                      Preserves notes; appends imported blocks below a divider
+                    </span>
                   </div>
+                </DropdownMenuItem>
 
-                  <button
-                    type="button"
-                    onClick={() => handleSelectPolicy("append")}
-                    className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
-                      importPolicy === "append"
-                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-muted text-foreground"
+                <DropdownMenuItem
+                  onClick={() => handleSelectPolicy("overwrite")}
+                  className={`flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                    importPolicy === "overwrite"
+                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
+                      : "hover:bg-muted text-foreground"
+                  }`}
+                >
+                  <Check
+                    className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                      importPolicy === "overwrite" ? "opacity-100" : "opacity-0"
                     }`}
-                  >
-                    <Check
-                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
-                        importPolicy === "append" ? "opacity-100" : "opacity-0"
-                      }`}
-                    />
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-medium">Append (Merge)</span>
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-normal">
-                          Default
-                        </span>
-                      </div>
-                      <span className="text-xs text-muted-foreground font-normal block mt-0.5">
-                        Preserves notes; appends imported blocks below a divider
-                      </span>
-                    </div>
-                  </button>
+                  />
+                  <div>
+                    <span className="font-medium">Overwrite (Replace)</span>
+                    <span className="text-xs text-muted-foreground font-normal block mt-0.5">
+                      Replaces existing notes with incoming version
+                    </span>
+                  </div>
+                </DropdownMenuItem>
 
-                  <button
-                    type="button"
-                    onClick={() => handleSelectPolicy("overwrite")}
-                    className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
-                      importPolicy === "overwrite"
-                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-muted text-foreground"
+                <DropdownMenuItem
+                  onClick={() => handleSelectPolicy("skip")}
+                  className={`flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                    importPolicy === "skip"
+                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
+                      : "hover:bg-muted text-foreground"
+                  }`}
+                >
+                  <Check
+                    className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                      importPolicy === "skip" ? "opacity-100" : "opacity-0"
                     }`}
-                  >
-                    <Check
-                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
-                        importPolicy === "overwrite" ? "opacity-100" : "opacity-0"
-                      }`}
-                    />
-                    <div>
-                      <span className="font-medium">Overwrite (Replace)</span>
-                      <span className="text-xs text-muted-foreground font-normal block mt-0.5">
-                        Replaces existing notes with incoming version
-                      </span>
-                    </div>
-                  </button>
+                  />
+                  <div>
+                    <span className="font-medium">Skip Existing</span>
+                    <span className="text-xs text-muted-foreground font-normal block mt-0.5">
+                      Leaves current notes untouched; only imports new ones
+                    </span>
+                  </div>
+                </DropdownMenuItem>
 
-                  <button
-                    type="button"
-                    onClick={() => handleSelectPolicy("skip")}
-                    className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
-                      importPolicy === "skip"
-                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-muted text-foreground"
+                <DropdownMenuItem
+                  onClick={() => handleSelectPolicy("ask")}
+                  className={`flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                    importPolicy === "ask"
+                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
+                      : "hover:bg-muted text-foreground"
+                  }`}
+                >
+                  <Check
+                    className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                      importPolicy === "ask" ? "opacity-100" : "opacity-0"
                     }`}
-                  >
-                    <Check
-                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
-                        importPolicy === "skip" ? "opacity-100" : "opacity-0"
-                      }`}
-                    />
-                    <div>
-                      <span className="font-medium">Skip Existing</span>
-                      <span className="text-xs text-muted-foreground font-normal block mt-0.5">
-                        Leaves current notes untouched; only imports new ones
-                      </span>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleSelectPolicy("ask")}
-                    className={`flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
-                      importPolicy === "ask"
-                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold"
-                        : "hover:bg-muted text-foreground"
-                    }`}
-                  >
-                    <Check
-                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
-                        importPolicy === "ask" ? "opacity-100" : "opacity-0"
-                      }`}
-                    />
-                    <div>
-                      <span className="font-medium">Always Ask on Conflict</span>
-                      <span className="text-xs text-muted-foreground font-normal block mt-0.5">
-                        Show dialog to choose strategy for each import
-                      </span>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
+                  />
+                  <div>
+                    <span className="font-medium">Always Ask on Conflict</span>
+                    <span className="text-xs text-muted-foreground font-normal block mt-0.5">
+                      Show dialog to choose strategy for each import
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Export JSON Button (Micro-pill: Arrow Up) */}
             <AppTooltip content="Export notes bundle (JSON)">

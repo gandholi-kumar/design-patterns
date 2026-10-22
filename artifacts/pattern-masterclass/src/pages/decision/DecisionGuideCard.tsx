@@ -75,7 +75,7 @@ export function DecisionGuideCard({
             </button>
           </div>
           {onCloseDrawer && (
-            <AppTooltip content="Close drawer panel (Esc)">
+            <AppTooltip content="Close drawer panel" shortcut="Esc">
               <button
                 type="button"
                 className="drawer-close-btn"

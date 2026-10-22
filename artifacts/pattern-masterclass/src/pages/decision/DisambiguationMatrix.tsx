@@ -20,6 +20,17 @@ import {
 } from './decision-data';
 import type { GoFDecisionVerdict } from './ai-service';
 import { AppTooltip } from '../../components/ui/app-tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { cn } from '../../lib/utils';
 
 export type VersusSubTab = 'curated' | 'custom';
 
@@ -58,8 +69,19 @@ export function DisambiguationMatrix({
   const [selectedSide, setSelectedSide] = useState<'A' | 'B'>('A');
 
   // Custom 2-Pattern Comparator state
-  const [patternAId, setPatternAId] = useState<string>(initialPatternAId);
-  const [patternBId, setPatternBId] = useState<string>(initialPatternBId);
+  const [patternAId, setPatternAId] = useState<string>(initialPatternAId || 'strategy');
+  const [patternBId, setPatternBId] = useState<string>(initialPatternBId || 'state');
+
+  useEffect(() => {
+    if (initialPatternAId) setPatternAId(initialPatternAId);
+  }, [initialPatternAId]);
+
+  useEffect(() => {
+    if (initialPatternBId) setPatternBId(initialPatternBId);
+  }, [initialPatternBId]);
+
+  const patternA = useMemo(() => PATTERNS.find((p) => p.id === patternAId), [patternAId]);
+  const patternB = useMemo(() => PATTERNS.find((p) => p.id === patternBId), [patternBId]);
 
   // Notify parent of state changes to synchronize URL search parameters
   useEffect(() => {
@@ -537,23 +559,56 @@ export function DisambiguationMatrix({
           {/* Dropdown Selectors */}
           <div className="custom-selectors-bar">
             <div className="selector-group">
-              <label htmlFor="custom-pattern-a">CANDIDATE 01:</label>
-              <select
-                id="custom-pattern-a"
-                value={patternAId}
-                onChange={(e) => setPatternAId(e.target.value)}
-                className="pattern-dropdown-select"
-              >
-                {(['Creational', 'Structural', 'Behavioral'] as const).map((cat) => (
-                  <optgroup key={cat} label={`${cat} Patterns`}>
-                    {PATTERNS.filter((p) => p.category === cat).map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({cat})
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <label htmlFor="custom-pattern-a" id="label-candidate-a">CANDIDATE 01:</label>
+              <Select value={patternAId} onValueChange={(val) => val && setPatternAId(val)}>
+                <SelectTrigger
+                  id="custom-pattern-a"
+                  aria-labelledby="label-candidate-a"
+                  data-testid="custom-pattern-a"
+                  className="h-11 w-full rounded-md border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-2xs hover:bg-muted/40 focus:ring-1 focus:ring-accent"
+                >
+                  <SelectValue placeholder="Select candidate 01">
+                    {patternA ? `${patternA.name} (${patternA.category})` : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="max-h-80 w-[var(--radix-select-trigger-width)] min-w-[16rem]">
+                  {(['Creational', 'Structural', 'Behavioral'] as const).map((cat, idx) => (
+                    <SelectGroup key={cat}>
+                      {idx > 0 && <SelectSeparator className="my-1" />}
+                      <SelectLabel
+                        className={cn(
+                          'text-[11px] font-bold uppercase tracking-wider px-2.5 py-1.5 flex items-center gap-1.5',
+                          cat === 'Creational' && 'text-amber-500',
+                          cat === 'Structural' && 'text-blue-500',
+                          cat === 'Behavioral' && 'text-emerald-500',
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'w-1.5 h-1.5 rounded-full',
+                            cat === 'Creational' && 'bg-amber-500',
+                            cat === 'Structural' && 'bg-blue-500',
+                            cat === 'Behavioral' && 'bg-emerald-500',
+                          )}
+                        />
+                        {cat} Patterns
+                      </SelectLabel>
+                      {PATTERNS.filter((p) => p.category === cat).map((p) => (
+                        <SelectItem
+                          key={p.id}
+                          value={p.id}
+                          className="cursor-pointer py-2 px-2.5 text-sm rounded-sm focus:bg-accent focus:text-accent-foreground"
+                        >
+                          <div className="flex items-center justify-between w-full gap-2">
+                            <span className="font-medium text-foreground">{p.name}</span>
+                            <span className="text-[11px] text-muted-foreground font-mono">({cat})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="comparator-vs-badge">
@@ -561,23 +616,56 @@ export function DisambiguationMatrix({
             </div>
 
             <div className="selector-group">
-              <label htmlFor="custom-pattern-b">CANDIDATE 02:</label>
-              <select
-                id="custom-pattern-b"
-                value={patternBId}
-                onChange={(e) => setPatternBId(e.target.value)}
-                className="pattern-dropdown-select"
-              >
-                {(['Creational', 'Structural', 'Behavioral'] as const).map((cat) => (
-                  <optgroup key={cat} label={`${cat} Patterns`}>
-                    {PATTERNS.filter((p) => p.category === cat).map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({cat})
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <label htmlFor="custom-pattern-b" id="label-candidate-b">CANDIDATE 02:</label>
+              <Select value={patternBId} onValueChange={(val) => val && setPatternBId(val)}>
+                <SelectTrigger
+                  id="custom-pattern-b"
+                  aria-labelledby="label-candidate-b"
+                  data-testid="custom-pattern-b"
+                  className="h-11 w-full rounded-md border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-2xs hover:bg-muted/40 focus:ring-1 focus:ring-accent"
+                >
+                  <SelectValue placeholder="Select candidate 02">
+                    {patternB ? `${patternB.name} (${patternB.category})` : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="max-h-80 w-[var(--radix-select-trigger-width)] min-w-[16rem]">
+                  {(['Creational', 'Structural', 'Behavioral'] as const).map((cat, idx) => (
+                    <SelectGroup key={cat}>
+                      {idx > 0 && <SelectSeparator className="my-1" />}
+                      <SelectLabel
+                        className={cn(
+                          'text-[11px] font-bold uppercase tracking-wider px-2.5 py-1.5 flex items-center gap-1.5',
+                          cat === 'Creational' && 'text-amber-500',
+                          cat === 'Structural' && 'text-blue-500',
+                          cat === 'Behavioral' && 'text-emerald-500',
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'w-1.5 h-1.5 rounded-full',
+                            cat === 'Creational' && 'bg-amber-500',
+                            cat === 'Structural' && 'bg-blue-500',
+                            cat === 'Behavioral' && 'bg-emerald-500',
+                          )}
+                        />
+                        {cat} Patterns
+                      </SelectLabel>
+                      {PATTERNS.filter((p) => p.category === cat).map((p) => (
+                        <SelectItem
+                          key={p.id}
+                          value={p.id}
+                          className="cursor-pointer py-2 px-2.5 text-sm rounded-sm focus:bg-accent focus:text-accent-foreground"
+                        >
+                          <div className="flex items-center justify-between w-full gap-2">
+                            <span className="font-medium text-foreground">{p.name}</span>
+                            <span className="text-[11px] text-muted-foreground font-mono">({cat})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

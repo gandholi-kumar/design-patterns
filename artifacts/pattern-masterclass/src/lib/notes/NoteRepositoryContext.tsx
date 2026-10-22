@@ -3,6 +3,7 @@ import type { NoteRepository } from "./NoteRepository";
 import { LocalStorageNoteRepository } from "./LocalStorageNoteRepository";
 import { ApiNoteRepository } from "./ApiNoteRepository";
 import { useSession } from "../auth-client";
+import { ENABLE_FULL_FEATURES } from "../../config/features";
 
 const NoteRepositoryContext = createContext<NoteRepository | null>(null);
 
@@ -13,7 +14,7 @@ interface NoteRepositoryProviderProps {
 
 /**
  * Provides the active NoteRepository to the component tree.
- * Automatically chooses ApiNoteRepository for authenticated members,
+ * Automatically chooses ApiNoteRepository for authenticated members when ENABLE_FULL_FEATURES is true,
  * or LocalStorageNoteRepository for offline guest users.
  */
 export function NoteRepositoryProvider({
@@ -24,7 +25,7 @@ export function NoteRepositoryProvider({
 
   const instance = useMemo(() => {
     if (repository) return repository;
-    if (session?.user) {
+    if (ENABLE_FULL_FEATURES && session?.user) {
       return new ApiNoteRepository();
     }
     return new LocalStorageNoteRepository();

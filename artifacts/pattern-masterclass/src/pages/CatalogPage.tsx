@@ -13,6 +13,13 @@ import {
 } from 'lucide-react';
 import { PATTERNS, type Pattern } from '../data';
 import { AppTooltip } from '../components/ui/app-tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 
 const categoryStyle: Record<string, string> = {
   Creational: 'tag-create',
@@ -202,20 +209,25 @@ export function CatalogPage({
             </AppTooltip>
           </div>
 
-          <label className="select-wrap">
-            <Filter size={14} />
-            <select
-              aria-label="Sort patterns"
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              data-testid="pattern-sort"
-            >
-              <option>A–Z</option>
-              <option>Family</option>
-              <option>Saved first</option>
-            </select>
-            <ChevronDown size={13} />
-          </label>
+          <div className="relative">
+            <Select value={sort} onValueChange={(val) => setSort(val)}>
+              <SelectTrigger
+                aria-label="Sort patterns"
+                data-testid="pattern-sort"
+                className="h-[2.625rem] min-w-[9.5rem] rounded-[0.25rem] border border-border bg-card px-3 text-sm font-medium text-foreground hover:bg-muted/40 focus:ring-1 focus:ring-accent"
+              >
+                <div className="flex items-center gap-2">
+                  <Filter size={14} className="text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="Sort patterns" />
+                </div>
+              </SelectTrigger>
+              <SelectContent align="end" className="w-[10rem]">
+                <SelectItem value="A–Z" className="cursor-pointer">A–Z</SelectItem>
+                <SelectItem value="Family" className="cursor-pointer">Family</SelectItem>
+                <SelectItem value="Saved first" className="cursor-pointer">Saved first</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </section>
 

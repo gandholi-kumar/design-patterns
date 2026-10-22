@@ -10,13 +10,13 @@ describe('Frontend State: useLearningStore Unit Tests', () => {
 
   it('toggles and sets visual themes', () => {
     const store = useLearningStore.getState();
-    assert.equal(store.theme, 'light');
+    assert.equal(store.theme, 'dark');
 
     store.toggleTheme();
-    assert.equal(useLearningStore.getState().theme, 'dark');
-
-    store.setTheme('light');
     assert.equal(useLearningStore.getState().theme, 'light');
+
+    store.setTheme('dark');
+    assert.equal(useLearningStore.getState().theme, 'dark');
   });
 
   it('manages bookmarks with idempotency and toggling', () => {
