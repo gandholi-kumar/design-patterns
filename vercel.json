@@ -4,15 +4,7 @@
     "api-server": {
       "root": "artifacts/api-server",
       "framework": "express",
-      "entrypoint": "src/index.ts",
-      "bindings": [
-        {
-          "type": "service",
-          "service": "pattern-masterclass",
-          "format": "url",
-          "env": "FRONTEND_URL"
-        }
-      ]
+      "entrypoint": "src/index.ts"
     },
     "pattern-masterclass": {
       "root": "artifacts/pattern-masterclass",
