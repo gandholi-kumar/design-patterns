@@ -64,7 +64,6 @@ async function buildAll() {
       "@better-auth/memory-adapter",
       "@better-auth/mongo-adapter",
       "@better-auth/prisma-adapter",
-      "@opentelemetry/*",
       "*.node",
       "sharp",
       "better-sqlite3",
