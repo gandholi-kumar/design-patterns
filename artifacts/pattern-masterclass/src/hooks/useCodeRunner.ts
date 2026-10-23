@@ -211,12 +211,13 @@ export function useCodeRunner() {
       } catch (err: unknown) {
         setIsRunning(false);
         const isAbort = err instanceof DOMException && err.name === 'AbortError';
+        const errDetail = err instanceof Error && err.message ? ` [Details: ${err.message}]` : '';
         const netResult: RunResult = {
           status: isAbort ? 'idle' : 'runtime_error',
           stdout: [],
           stderr: isAbort
             ? ['[Execution cancelled]']
-            : ['Cannot connect to backend runner at /api/code/run. Ensure the api-server is running.'],
+            : [`Cannot connect to backend runner at /api/code/run. Ensure the api-server is running.${errDetail}`],
           exitCode: 1,
           durationMs: Math.round(performance.now() - startTime),
         };
