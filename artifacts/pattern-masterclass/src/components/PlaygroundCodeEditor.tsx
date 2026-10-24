@@ -129,6 +129,12 @@ function defineCustomThemes(monaco: typeof MonacoType) {
       'editorHoverWidget.border': '#353b47',
       'editorHoverWidget.foreground': '#ece8de',
       'editorHoverWidget.statusBarBackground': '#15181f',
+      'menu.background': '#161820',
+      'menu.foreground': '#ece8de',
+      'menu.selectionBackground': '#242a35',
+      'menu.selectionForeground': '#ffffff',
+      'menu.separatorBackground': '#353b47',
+      'menu.border': '#353b47',
     },
   });
 
@@ -180,6 +186,12 @@ function defineCustomThemes(monaco: typeof MonacoType) {
       'editorHoverWidget.border': '#dcd6c8',
       'editorHoverWidget.foreground': '#1f2328',
       'editorHoverWidget.statusBarBackground': '#f6f8fa',
+      'menu.background': '#ffffff',
+      'menu.foreground': '#1f2328',
+      'menu.selectionBackground': '#f4f0e6',
+      'menu.selectionForeground': '#0f141c',
+      'menu.separatorBackground': '#dcd6c8',
+      'menu.border': '#dcd6c8',
     },
   });
 }

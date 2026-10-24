@@ -60,3 +60,9 @@ Thumbs.db
 docs/private/
 PRIVATE_*.md
 *.private.md
+
+# Scratch scripts, test fixtures, and local scratchpads
+scratch/
+test-results/
+.tempmediaStorage/
+

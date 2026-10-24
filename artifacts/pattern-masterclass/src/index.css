@@ -3108,6 +3108,146 @@ kbd {
   box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.5) !important;
 }
 
+/* ==========================================================================
+   Monaco Editor Context Menu (Right-Click Context Menu)
+   Guaranteed Solid Opaque Dark Background & Premium Contrast
+   ========================================================================== */
+
+/* 1. Context View & Menu Container Base - Guaranteed Opacity 1 and Solid Surfaces */
+.context-view,
+.context-view.monaco-menu-container,
+.monaco-menu-container,
+.monaco-menu,
+.monaco-menu .monaco-scrollable-element,
+.monaco-menu .monaco-action-bar,
+.monaco-menu .actions-container,
+.monaco-menu .monaco-action-bar .action-item {
+  opacity: 1 !important;
+  background-color: #181b24 !important;
+  background: #181b24 !important;
+  backdrop-filter: none !important;
+}
+
+.monaco-menu-container,
+.context-view.monaco-menu-container,
+.monaco-menu {
+  z-index: 999999 !important;
+  border: 1px solid #353b47 !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 0.75rem 2.5rem rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  padding: 0.25rem 0 !important;
+  overflow: hidden !important;
+}
+
+/* 2. Action Bar & Action Container */
+.monaco-menu .monaco-action-bar,
+.monaco-menu .monaco-action-bar.animated,
+.monaco-menu .actions-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+}
+
+/* 3. Action Items */
+.monaco-menu .monaco-action-bar .action-item {
+  display: flex !important;
+  align-items: center !important;
+  height: 1.875rem !important;
+  line-height: 1.875rem !important;
+  margin: 0.0625rem 0.25rem !important;
+  padding: 0 0.5rem !important;
+  border-radius: 0.3125rem !important;
+  color: #ece8de !important;
+  font-size: 0.8125rem !important;
+  cursor: pointer !important;
+  transition: background-color 0.12s ease, color 0.12s ease !important;
+}
+
+/* Action Item Hover / Focus */
+.monaco-menu .monaco-action-bar .action-item:hover,
+.monaco-menu .monaco-action-bar .action-item.focused {
+  background-color: #242a35 !important;
+  background: #242a35 !important;
+  color: #ffffff !important;
+}
+
+/* 4. Action Menu Item Link & Labels */
+.monaco-menu .monaco-action-bar .action-item .action-menu-item {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  color: inherit !important;
+  text-decoration: none !important;
+  background: transparent !important;
+}
+
+.monaco-menu .monaco-action-bar .action-item .action-label {
+  flex: 1 1 auto !important;
+  font-size: 0.8125rem !important;
+  color: inherit !important;
+  white-space: nowrap !important;
+}
+
+.monaco-menu .monaco-action-bar .action-item .keybinding {
+  margin-left: 2rem !important;
+  font-size: 0.6875rem !important;
+  color: #8b949e !important;
+  font-family: var(--app-font-mono, monospace) !important;
+  white-space: nowrap !important;
+}
+
+/* 5. Separator & Disabled States */
+.monaco-menu .monaco-action-bar .action-item.disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+.monaco-menu .monaco-action-bar .action-item.separator {
+  height: 1px !important;
+  min-height: 1px !important;
+  margin: 0.25rem 0.5rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #353b47 !important;
+  background: transparent !important;
+  cursor: default !important;
+}
+
+/* 6. Light Theme Overrides (if app is toggled to light) */
+html:not(.dark) .context-view,
+html:not(.dark) .context-view.monaco-menu-container,
+html:not(.dark) .monaco-menu-container,
+html:not(.dark) .monaco-menu,
+html:not(.dark) .monaco-menu .monaco-scrollable-element,
+html:not(.dark) .monaco-menu .monaco-action-bar,
+html:not(.dark) .monaco-menu .actions-container,
+html:not(.dark) .monaco-menu .monaco-action-bar .action-item {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #1f2328 !important;
+}
+
+html:not(.dark) .monaco-menu-container {
+  border: 1px solid #dcd6c8 !important;
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.25) !important;
+}
+
+html:not(.dark) .monaco-menu .monaco-action-bar .action-item:hover,
+html:not(.dark) .monaco-menu .monaco-action-bar .action-item.focused {
+  background-color: #f4f0e6 !important;
+  background: #f4f0e6 !important;
+  color: #0f141c !important;
+}
+
+html:not(.dark) .monaco-menu .monaco-action-bar .action-item .keybinding {
+  color: #64748b !important;
+}
+
+html:not(.dark) .monaco-menu .monaco-action-bar .action-item.separator {
+  border-bottom: 1px solid #dcd6c8 !important;
+}
+
 .editor-loading-shimmer {
   display: flex;
   align-items: center;
