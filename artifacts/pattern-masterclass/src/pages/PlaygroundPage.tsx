@@ -478,9 +478,9 @@ export function PlaygroundPage({
       {layoutMode === 'split' ? (
         /* MODE B: SIDE-BY-SIDE RESIZABLE SPLIT (Sliding Window Divider) */
         <div className="playground-split-wrapper">
-          <PanelGroup direction="horizontal" autoSaveId="gof-playground-panel-sizes-v2">
+          <PanelGroup id="playground-split-group" direction="horizontal" autoSaveId="gof-playground-panel-sizes-v2">
             {/* Left Panel: Editor & Tabs (Threshold minSize=48 prevents tab bar shrink and horizontal scroll) */}
-            <Panel defaultSize={65} minSize={48} maxSize={80} className="playground-editor-panel">
+            <Panel id="playground-editor-panel" defaultSize={65} minSize={48} maxSize={80} className="playground-editor-panel">
               <div className="editor-card playground-editor-card split-editor-card">
                 <PlaygroundFileTabs
                   files={projectFiles}
@@ -566,7 +566,7 @@ export function PlaygroundPage({
             </Panel>
 
             {/* Draggable Sliding Window Handle */}
-            <PanelResizeHandle className="playground-resize-handle">
+            <PanelResizeHandle id="playground-resize-handle" className="playground-resize-handle">
               <AppTooltip content="Drag to adjust editor/console width">
                 <div className="resize-handle-pill">
                   <span />
@@ -575,7 +575,7 @@ export function PlaygroundPage({
             </PanelResizeHandle>
 
             {/* Right Panel: Terminal Output */}
-            <Panel defaultSize={35} minSize={20} maxSize={52} className="playground-terminal-panel">
+            <Panel id="playground-terminal-panel" defaultSize={35} minSize={20} maxSize={52} className="playground-terminal-panel">
               <PlaygroundTerminal result={result} isRunning={isRunning} onClear={clearOutput} />
             </Panel>
           </PanelGroup>
