@@ -110,7 +110,7 @@ export function App() {
 
   const isPatternPage = loc.startsWith('/pattern/');
   const patternIdFromUrl = isPatternPage ? loc.split('/pattern/')[1]?.split('?')[0] : null;
-  const activePattern = patternIdFromUrl ? PATTERNS.find((p) => p.id === patternIdFromUrl) : null;
+  const activePattern = patternIdFromUrl ? (PATTERNS.find((p) => p.id === patternIdFromUrl) || null) : null;
 
   // Global shortcuts: Ctrl+B (sidebar), Alt+F (Studio focus mode), P (Open playground for active pattern), B (Bookmark)
   useGlobalKeyboardShortcuts({

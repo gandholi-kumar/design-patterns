@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Code2, ChevronDown, Search, Check, X } from 'lucide-react';
+import { Code2, ChevronDown, Search, Check, X, FileCode } from 'lucide-react';
 import { PATTERNS } from '../data';
 import type { Pattern, Category } from '../data';
+import { BLANK_PROJECT_ID, BLANK_PATTERN } from '../data/playground-starters';
 
 interface PlaygroundPatternComboboxProps {
   selectedPatternId: string;
   onSelectPattern: (patternId: string) => void;
 }
 
-const CATEGORY_COLORS: Record<Category, { bg: string; text: string; border: string }> = {
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   Creational: {
     bg: 'rgba(212, 163, 86, 0.15)',
     text: '#d4a356',
@@ -24,7 +25,14 @@ const CATEGORY_COLORS: Record<Category, { bg: string; text: string; border: stri
     text: '#5db084',
     border: 'rgba(100, 165, 125, 0.3)',
   },
+  Scratchpad: {
+    bg: 'rgba(168, 85, 247, 0.15)',
+    text: '#c084fc',
+    border: 'rgba(168, 85, 247, 0.3)',
+  },
 };
+
+const ALL_PLAYGROUND_ITEMS: Pattern[] = [BLANK_PATTERN, ...PATTERNS];
 
 export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps> = ({
   selectedPatternId,
@@ -39,22 +47,30 @@ export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps>
   const listRef = useRef<HTMLDivElement>(null);
 
   const currentPattern = useMemo(() => {
+    if (selectedPatternId === BLANK_PROJECT_ID) {
+      return BLANK_PATTERN;
+    }
     return PATTERNS.find((p) => p.id === selectedPatternId) || PATTERNS[0];
   }, [selectedPatternId]);
+
+  const currentCategory = currentPattern.id === BLANK_PROJECT_ID ? 'Scratchpad' : currentPattern.category;
 
   // Filter patterns based on search query
   const filteredPatterns = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return PATTERNS;
+    if (!q) return ALL_PLAYGROUND_ITEMS;
 
-    return PATTERNS.filter(
-      (p) =>
+    return ALL_PLAYGROUND_ITEMS.filter((p) => {
+      const isBlank = p.id === BLANK_PROJECT_ID;
+      return (
         p.name.toLowerCase().includes(q) ||
         p.id.toLowerCase().includes(q) ||
+        (isBlank && ('scratchpad'.includes(q) || 'blank'.includes(q) || 'empty'.includes(q) || 'custom'.includes(q))) ||
         p.category.toLowerCase().includes(q) ||
         p.intent.toLowerCase().includes(q) ||
         p.tagline.toLowerCase().includes(q)
-    );
+      );
+    });
   }, [searchQuery]);
 
   // Keep highlighted item in view
@@ -142,19 +158,19 @@ export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps>
         data-testid="playground-pattern-combobox"
       >
         <span className="combobox-trigger-icon">
-          <Code2 size={15} />
+          {currentPattern.id === BLANK_PROJECT_ID ? <FileCode size={15} /> : <Code2 size={15} />}
         </span>
         <span className="combobox-trigger-text">
           <span className="combobox-selected-name">{currentPattern.name}</span>
           <span
             className="combobox-category-pill"
             style={{
-              backgroundColor: CATEGORY_COLORS[currentPattern.category]?.bg,
-              color: CATEGORY_COLORS[currentPattern.category]?.text,
-              borderColor: CATEGORY_COLORS[currentPattern.category]?.border,
+              backgroundColor: CATEGORY_COLORS[currentCategory]?.bg,
+              color: CATEGORY_COLORS[currentCategory]?.text,
+              borderColor: CATEGORY_COLORS[currentCategory]?.border,
             }}
           >
-            {currentPattern.category}
+            {currentCategory}
           </span>
         </span>
         <span className={`combobox-chevron ${isOpen ? 'rotated' : ''}`}>
@@ -180,7 +196,7 @@ export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps>
                 setSearchQuery(e.target.value);
                 setHighlightedIndex(0);
               }}
-              placeholder="Search 23 patterns (e.g. factory, observer, singleton)..."
+              placeholder="Search 23 patterns or blank scratchpad..."
               className="combobox-search-input"
               aria-label="Search pattern list"
               data-testid="combobox-search-input"
@@ -200,7 +216,9 @@ export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps>
           {/* Patterns Count / Category Info */}
           <div className="combobox-results-count">
             <span>
-              {filteredPatterns.length} pattern{filteredPatterns.length === 1 ? '' : 's'} available
+              {filteredPatterns.length === ALL_PLAYGROUND_ITEMS.length
+                ? '23 GoF Patterns + Blank Scratchpad'
+                : `${filteredPatterns.length} item${filteredPatterns.length === 1 ? '' : 's'} available`}
             </span>
           </div>
 
@@ -215,6 +233,8 @@ export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps>
               filteredPatterns.map((p, idx) => {
                 const isSelected = p.id === selectedPatternId;
                 const isHighlighted = idx === highlightedIndex;
+                const isScratchpad = p.id === BLANK_PROJECT_ID;
+                const categoryLabel = isScratchpad ? 'Scratchpad' : p.category;
 
                 return (
                   <div
@@ -223,22 +243,35 @@ export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps>
                     aria-selected={isSelected}
                     className={`combobox-option-item ${isSelected ? 'selected' : ''} ${
                       isHighlighted ? 'highlighted' : ''
-                    }`}
+                    } ${isScratchpad ? 'scratchpad-option' : ''}`}
                     onClick={() => handleSelect(p)}
                     onMouseEnter={() => setHighlightedIndex(idx)}
                   >
                     <div className="combobox-option-content">
                       <div className="combobox-option-title-row">
-                        <span className="combobox-option-name">{p.name}</span>
+                        <span className="combobox-option-name">
+                          {isScratchpad && (
+                            <FileCode
+                              size={13}
+                              style={{
+                                display: 'inline',
+                                verticalAlign: 'text-bottom',
+                                marginRight: '0.375rem',
+                                opacity: 0.85,
+                              }}
+                            />
+                          )}
+                          {p.name}
+                        </span>
                         <span
                           className="combobox-category-badge"
                           style={{
-                            backgroundColor: CATEGORY_COLORS[p.category]?.bg,
-                            color: CATEGORY_COLORS[p.category]?.text,
-                            borderColor: CATEGORY_COLORS[p.category]?.border,
+                            backgroundColor: CATEGORY_COLORS[categoryLabel]?.bg,
+                            color: CATEGORY_COLORS[categoryLabel]?.text,
+                            borderColor: CATEGORY_COLORS[categoryLabel]?.border,
                           }}
                         >
-                          {p.category}
+                          {categoryLabel}
                         </span>
                       </div>
                       <p className="combobox-option-intent">{p.tagline || p.intent}</p>

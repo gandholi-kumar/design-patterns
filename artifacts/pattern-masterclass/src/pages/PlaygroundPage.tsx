@@ -13,6 +13,7 @@ import {
   BookOpen,
   Check,
   Files,
+  FileCode,
 } from 'lucide-react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { PATTERNS } from '../data';
@@ -23,7 +24,7 @@ import { PlaygroundPatternCombobox } from '../components/PlaygroundPatternCombob
 import { NotesDrawer } from '../components/NotesDrawer';
 import { PlaygroundDocContent } from '../components/PlaygroundDocContent';
 import { useCodeRunner } from '../hooks/useCodeRunner';
-import { buildProjectFiles } from '../data/playground-starters';
+import { buildProjectFiles, BLANK_PROJECT_ID, BLANK_PATTERN } from '../data/playground-starters';
 import { AppTooltip } from '../components/ui/app-tooltip';
 import { PlaygroundCodeEditor } from '../components/PlaygroundCodeEditor';
 import { useWorkspacePreferencesStore, useLearningStore } from '../stores';
@@ -60,7 +61,7 @@ export function PlaygroundPage({
     const handlePopState = () => {
       const sp = new URLSearchParams(window.location.search);
       const qp = sp.get('pattern');
-      if (qp && PATTERNS.some((p) => p.id === qp)) {
+      if (qp && (PATTERNS.some((p) => p.id === qp) || qp === BLANK_PROJECT_ID)) {
         setPatternId(qp);
       }
     };
@@ -112,6 +113,9 @@ export function PlaygroundPage({
 
   // 3. Multi-file Project State
   const pattern: Pattern = useMemo(() => {
+    if (patternId === BLANK_PROJECT_ID) {
+      return BLANK_PATTERN;
+    }
     return PATTERNS.find((p) => p.id === patternId) || PATTERNS[0];
   }, [patternId]);
 
@@ -225,7 +229,8 @@ export function PlaygroundPage({
   };
 
   const handleResetProject = () => {
-    if (window.confirm(`Reset "${pattern.name}" project files back to original template?`)) {
+    const title = pattern.id === BLANK_PROJECT_ID ? 'Blank Scratchpad' : `"${pattern.name}"`;
+    if (window.confirm(`Reset ${title} project files back to original template?`)) {
       const resetFiles = createInitialFiles(pattern, language);
       setProjectFiles(resetFiles);
       setActiveFileId(resetFiles[0]?.id || 'main');
@@ -272,6 +277,27 @@ export function PlaygroundPage({
           selectedPatternId={patternId}
           onSelectPattern={handleSelectPattern}
         />
+
+        {/* Dedicated Blank Scratchpad Quick-Toggle Button */}
+        {patternId !== BLANK_PROJECT_ID ? (
+          <AppTooltip content="Open blank editor with default method calling to practice your own code">
+            <button
+              type="button"
+              className="subtle-btn playground-blank-btn"
+              onClick={() => handleSelectPattern(BLANK_PROJECT_ID)}
+              aria-label="Switch to Blank Editor"
+              data-testid="switch-blank-editor-btn"
+            >
+              <FileCode size={13} />
+              <span>Blank Scratchpad</span>
+            </button>
+          </AppTooltip>
+        ) : (
+          <div className="playground-scratchpad-pill">
+            <FileCode size={13} />
+            <span>Active Scratchpad</span>
+          </div>
+        )}
 
         {/* Language Switcher */}
         <div className="language-switch" role="group" aria-label="Code language">
@@ -386,63 +412,47 @@ export function PlaygroundPage({
                     <span className="file-type-badge">{language.toUpperCase()}</span>
                   </div>
                   <div className="editor-tools">
-                    <AppTooltip content="Toggle Word Wrap" shortcut="Alt+Z">
+                    <AppTooltip content={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut="Alt+Z">
                       <button
                         type="button"
-                        className={`subtle-btn ${wordWrap ? 'active' : ''}`}
+                        className={`subtle-btn icon-only-btn ${wordWrap ? 'active' : ''}`}
                         onClick={toggleWordWrap}
-                        aria-label="Toggle Word Wrap"
+                        aria-label={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`}
                       >
-                        <WrapText size={13} /> Wrap: {wordWrap ? 'On' : 'Off'}
+                        <WrapText size={14} />
                       </button>
                     </AppTooltip>
-                    <AppTooltip content={`Copy active file (${activeFile?.name}) to clipboard`}>
+                    <AppTooltip content={copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
                       <button
                         type="button"
-                        className={`subtle-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
+                        className={`subtle-btn icon-only-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
                         onClick={handleCopyActiveFile}
                         data-testid="copy-code"
-                        aria-label="Copy active file"
+                        aria-label={`Copy active file (${activeFile?.name})`}
                       >
-                        {copiedMode === 'file' ? (
-                          <>
-                            <Check size={13} /> Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={13} /> Copy
-                          </>
-                        )}
+                        {copiedMode === 'file' ? <Check size={14} /> : <Copy size={14} />}
                       </button>
                     </AppTooltip>
-                    <AppTooltip content="Copy all project files combined to clipboard">
+                    <AppTooltip content={copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
                       <button
                         type="button"
-                        className={`subtle-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
+                        className={`subtle-btn icon-only-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
                         onClick={handleCopyAllFiles}
                         data-testid="copy-all-code"
-                        aria-label="Copy all files"
+                        aria-label="Copy all project files combined"
                       >
-                        {copiedMode === 'all' ? (
-                          <>
-                            <Check size={13} /> All copied!
-                          </>
-                        ) : (
-                          <>
-                            <Files size={13} /> Copy all
-                          </>
-                        )}
+                        {copiedMode === 'all' ? <Check size={14} /> : <Files size={14} />}
                       </button>
                     </AppTooltip>
                     <AppTooltip content="Reset project files to clean starter code">
                       <button
                         type="button"
-                        className="subtle-btn"
+                        className="subtle-btn icon-only-btn"
                         onClick={handleResetProject}
                         data-testid="reset-code"
                         aria-label="Reset files to default code"
                       >
-                        <RotateCcw size={13} /> Reset
+                        <RotateCcw size={14} />
                       </button>
                     </AppTooltip>
                   </div>
@@ -504,63 +514,47 @@ export function PlaygroundPage({
                 <span className="file-type-badge">{language.toUpperCase()}</span>
               </div>
               <div className="editor-tools">
-                <AppTooltip content="Toggle Word Wrap" shortcut="Alt+Z">
+                <AppTooltip content={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut="Alt+Z">
                   <button
                     type="button"
-                    className={`subtle-btn ${wordWrap ? 'active' : ''}`}
+                    className={`subtle-btn icon-only-btn ${wordWrap ? 'active' : ''}`}
                     onClick={toggleWordWrap}
-                    aria-label="Toggle Word Wrap"
+                    aria-label={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`}
                   >
-                    <WrapText size={13} /> Wrap: {wordWrap ? 'On' : 'Off'}
+                    <WrapText size={14} />
                   </button>
                 </AppTooltip>
-                <AppTooltip content={`Copy active file (${activeFile?.name}) to clipboard`}>
+                <AppTooltip content={copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
                   <button
                     type="button"
-                    className={`subtle-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
+                    className={`subtle-btn icon-only-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
                     onClick={handleCopyActiveFile}
                     data-testid="copy-code"
-                    aria-label="Copy active file"
+                    aria-label={`Copy active file (${activeFile?.name})`}
                   >
-                    {copiedMode === 'file' ? (
-                      <>
-                        <Check size={13} /> Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={13} /> Copy
-                      </>
-                    )}
+                    {copiedMode === 'file' ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                 </AppTooltip>
-                <AppTooltip content="Copy all project files combined to clipboard">
+                <AppTooltip content={copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
                   <button
                     type="button"
-                    className={`subtle-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
+                    className={`subtle-btn icon-only-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
                     onClick={handleCopyAllFiles}
                     data-testid="copy-all-code"
-                    aria-label="Copy all files"
+                    aria-label="Copy all project files combined"
                   >
-                    {copiedMode === 'all' ? (
-                      <>
-                        <Check size={13} /> All copied!
-                      </>
-                    ) : (
-                      <>
-                        <Files size={13} /> Copy all
-                      </>
-                    )}
+                    {copiedMode === 'all' ? <Check size={14} /> : <Files size={14} />}
                   </button>
                 </AppTooltip>
                 <AppTooltip content="Reset project files to clean starter code">
                   <button
                     type="button"
-                    className="subtle-btn"
+                    className="subtle-btn icon-only-btn"
                     onClick={handleResetProject}
                     data-testid="reset-code"
                     aria-label="Reset files to default code"
                   >
-                    <RotateCcw size={13} /> Reset
+                    <RotateCcw size={14} />
                   </button>
                 </AppTooltip>
               </div>
