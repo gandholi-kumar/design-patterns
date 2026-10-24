@@ -30,6 +30,9 @@ export default defineConfig({
         ].filter(Boolean)
       : []),
   ],
+  worker: {
+    format: 'es',
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
