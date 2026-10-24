@@ -1,4 +1,11 @@
-import * as ts from 'typescript';
+let tsModule: typeof import('typescript') | null = null;
+
+async function getTypeScriptCompiler() {
+  if (!tsModule) {
+    tsModule = await import('typescript');
+  }
+  return tsModule;
+}
 
 export interface CodeFile {
   name: string;
@@ -26,7 +33,7 @@ export interface WorkerResultResponse {
   durationMs: number;
 }
 
-self.onmessage = (event: MessageEvent<WorkerRunMessage>) => {
+self.onmessage = async (event: MessageEvent<WorkerRunMessage>) => {
   const { type, id, payload } = event.data;
   if (type !== 'RUN') return;
 
@@ -35,6 +42,8 @@ self.onmessage = (event: MessageEvent<WorkerRunMessage>) => {
   const stderr: string[] = [];
 
   try {
+    const ts = await getTypeScriptCompiler();
+
     // 1. Transpile all TypeScript files to CommonJS JavaScript in-memory
     const transpiledMap = new Map<string, string>();
 

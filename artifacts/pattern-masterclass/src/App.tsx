@@ -32,25 +32,25 @@ import { useIsMobile } from './hooks/use-mobile';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useBackupExport } from './hooks/useBackupExport';
 import { usePageTitle } from './hooks/usePageTitle';
-import { PatternDetailPage } from './pages/PatternDetailPage';
-import { DecisionEnginePage } from './pages/DecisionEnginePage';
-import { CatalogPage } from './pages/CatalogPage';
-import { SimulatorsRoute } from './pages/SimulatorsRoute';
-import { QuizLabRoute } from './pages/QuizLabRoute';
 import { NoteRepositoryProvider } from './lib/notes/NoteRepositoryContext';
 import { AppTooltip } from './components/ui/app-tooltip';
 import { AppToaster } from './components/ui/app-toaster';
 import { useSession } from './lib/auth-client';
-import { AuthDialog } from './components/auth/AuthDialog';
 import { UserProfileDropdown } from './components/auth/UserProfileDropdown';
-import { PatternDialog } from './components/dialogs/PatternDialog';
-import { BackupDialog } from './components/dialogs/BackupDialog';
 import { useLearningStore, useWorkspacePreferencesStore } from './stores';
 import { ENABLE_FULL_FEATURES } from './config/features';
 
-// Lazy-loaded heavy modules for optimized bundle splitting & faster LCP
+// Lazy-loaded pages and heavy modal components for minimum initial bundle & fast FCP/LCP
+const CatalogPage = lazy(() => import('./pages/CatalogPage').then((m) => ({ default: m.CatalogPage })));
+const PatternDetailPage = lazy(() => import('./pages/PatternDetailPage').then((m) => ({ default: m.PatternDetailPage })));
+const DecisionEnginePage = lazy(() => import('./pages/DecisionEnginePage').then((m) => ({ default: m.DecisionEnginePage })));
 const PlaygroundPage = lazy(() => import('./pages/PlaygroundPage'));
 const NotesWorkspacePage = lazy(() => import('./pages/NotesWorkspacePage'));
+const SimulatorsRoute = lazy(() => import('./pages/SimulatorsRoute').then((m) => ({ default: m.SimulatorsRoute })));
+const QuizLabRoute = lazy(() => import('./pages/QuizLabRoute').then((m) => ({ default: m.QuizLabRoute })));
+const PatternDialog = lazy(() => import('./components/dialogs/PatternDialog').then((m) => ({ default: m.PatternDialog })));
+const BackupDialog = lazy(() => import('./components/dialogs/BackupDialog').then((m) => ({ default: m.BackupDialog })));
+const AuthDialog = lazy(() => import('./components/auth/AuthDialog').then((m) => ({ default: m.AuthDialog })));
 
 type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz' | 'notes';
 
@@ -219,43 +219,45 @@ export function App() {
             <span className="nav-count">{bookmarks.length}</span>
           </button>
           <div className="sidebar-bottom">
-            <div className="sidebar-progress">
-              <div className="progress-head">
-                <span>Your practice</span>
-                <span>
-                  {progressList.length}/{QUIZ.length}
-                </span>
-              </div>
-              <div
-                role="progressbar"
-                aria-valuenow={progressList.length}
-                aria-valuemin={0}
-                aria-valuemax={QUIZ.length}
-                aria-label="Practice quiz progress"
-                className="progress-line"
-              >
-                <div
-                  style={{
-                    width: `${Math.min(100, (progressList.length / QUIZ.length) * 100)}%`,
-                    height: '100%',
-                    backgroundColor: 'currentColor',
-                    borderRadius: '999px',
-                  }}
-                />
-              </div>
-              <small>Small steps. Stronger instincts.</small>
-            </div>
             {ENABLE_FULL_FEATURES && (
-              <button
-                type="button"
-                className="nav-item"
-                onClick={() => setBackupOpen(true)}
-                data-testid="open-backup"
-              >
-                <FileJson2 size={17} />
-                <span>Backup & settings</span>
-                <ArrowUpRight size={14} className="nav-trailing" />
-              </button>
+              <>
+                <div className="sidebar-progress">
+                  <div className="progress-head">
+                    <span>Your practice</span>
+                    <span>
+                      {progressList.length}/{QUIZ.length}
+                    </span>
+                  </div>
+                  <div
+                    role="progressbar"
+                    aria-valuenow={progressList.length}
+                    aria-valuemin={0}
+                    aria-valuemax={QUIZ.length}
+                    aria-label="Practice quiz progress"
+                    className="progress-line"
+                  >
+                    <div
+                      style={{
+                        width: `${Math.min(100, (progressList.length / QUIZ.length) * 100)}%`,
+                        height: '100%',
+                        backgroundColor: 'currentColor',
+                        borderRadius: '999px',
+                      }}
+                    />
+                  </div>
+                  <small>Small steps. Stronger instincts.</small>
+                </div>
+                <button
+                  type="button"
+                  className="nav-item"
+                  onClick={() => setBackupOpen(true)}
+                  data-testid="open-backup"
+                >
+                  <FileJson2 size={17} />
+                  <span>Backup & settings</span>
+                  <ArrowUpRight size={14} className="nav-trailing" />
+                </button>
+              </>
             )}
             <div className="side-footer">
               <span className="status-dot" /> A field guide for better software
@@ -520,35 +522,37 @@ export function App() {
           )}
         </main>
 
-        {selected && (
-          <PatternDialog
-            pattern={selected}
-            isBookmarked={bookmarks.includes(selected.id)}
-            theme={theme}
-            perspective={perspective}
-            onClose={() => setSelected(null)}
-            onBookmark={toggleBookmark}
-            goCode={() => {
-              setSelected(null);
-              setLoc(`/playground?pattern=${selected.id}`);
-            }}
-          />
-        )}
+        <Suspense fallback={null}>
+          {selected && (
+            <PatternDialog
+              pattern={selected}
+              isBookmarked={bookmarks.includes(selected.id)}
+              theme={theme}
+              perspective={perspective}
+              onClose={() => setSelected(null)}
+              onBookmark={toggleBookmark}
+              goCode={() => {
+                setSelected(null);
+                setLoc(`/playground?pattern=${selected.id}`);
+              }}
+            />
+          )}
 
-        {backupOpen && (
-          <BackupDialog
-            theme={theme}
-            zipBusy={zipBusy}
-            onClose={() => setBackupOpen(false)}
-            toggleTheme={toggleTheme}
-            onExport={onExport}
-            onRestore={onRestore}
-            onZip={exportProject}
-            onDownloadSource={downloadWorkspaceSource}
-          />
-        )}
+          {backupOpen && (
+            <BackupDialog
+              theme={theme}
+              zipBusy={zipBusy}
+              onClose={() => setBackupOpen(false)}
+              toggleTheme={toggleTheme}
+              onExport={onExport}
+              onRestore={onRestore}
+              onZip={exportProject}
+              onDownloadSource={downloadWorkspaceSource}
+            />
+          )}
 
-        <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
+          <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
+        </Suspense>
         <AppToaster />
       </div>
     </NoteRepositoryProvider>
