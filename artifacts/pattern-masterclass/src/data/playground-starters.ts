@@ -2,11 +2,33 @@ import type { Pattern } from '../data';
 import type { ProjectFile } from '../components/PlaygroundFileTabs';
 import { CURATED_JAVA_PROJECTS } from './playground-starters-java';
 import { CURATED_TS_PROJECTS } from './playground-starters-ts';
-import { CANONICAL_DATA } from './canonical-data';
-import { ENTERPRISE_DATA } from './enterprise-data';
+import {
+  CANONICAL_JAVA_PROJECTS,
+  CANONICAL_TS_PROJECTS,
+  buildCanonicalJavaProject,
+  buildCanonicalTsProject,
+} from './playground-starters-canonical';
+import {
+  ENTERPRISE_JAVA_PROJECTS,
+  ENTERPRISE_TS_PROJECTS,
+  buildEnterpriseJavaProject,
+  buildEnterpriseTsProject,
+} from './playground-starters-enterprise';
 
 export { CURATED_JAVA_PROJECTS } from './playground-starters-java';
 export { CURATED_TS_PROJECTS } from './playground-starters-ts';
+export {
+  CANONICAL_JAVA_PROJECTS,
+  CANONICAL_TS_PROJECTS,
+  buildCanonicalJavaProject,
+  buildCanonicalTsProject,
+} from './playground-starters-canonical';
+export {
+  ENTERPRISE_JAVA_PROJECTS,
+  ENTERPRISE_TS_PROJECTS,
+  buildEnterpriseJavaProject,
+  buildEnterpriseTsProject,
+} from './playground-starters-enterprise';
 
 export type PlaygroundCodeSource = 'canonical' | 'enterprise' | 'curated';
 
@@ -181,82 +203,18 @@ export function buildProjectFiles(
     }
   }
 
-  // 3. Perspective-driven Domain Variants (Canonical or Enterprise)
-  const variantMap = source === 'enterprise' ? ENTERPRISE_DATA : CANONICAL_DATA;
-  const variant = variantMap[pattern.id] || (source === 'enterprise' ? pattern.enterprise : pattern.canonical);
-
-  if (language === 'java') {
-    const rawCode = variant?.java?.code || pattern.javaImplementation?.code || '// Java implementation';
-    const rawFileName = variant?.java?.fileName || pattern.javaImplementation?.fileName || 'Pattern.java';
-    const baseName = rawFileName.replace(/\.java$/, '');
-
-    // Add java.util import if needed by collections in snippet
-    const needsUtilImport =
-      /\b(List|ArrayList|Map|HashMap|Set|HashSet|Arrays|Collections)\b/.test(rawCode) &&
-      !rawCode.includes('import java.util');
-    const importHeader = needsUtilImport ? 'import java.util.*;\n\n' : '';
-
-    // Sanitize secondary public classes to avoid javac single-file public class constraints
-    const sanitizedCode = importHeader + rawCode.replace(
-      /public\s+(class|interface|abstract\s+class|enum)\s+([A-Za-z0-9_]+)/g,
-      (match, type, name) => {
-        if (name === baseName) return match;
-        return `${type} ${name}`;
-      }
-    );
-
-    // If snippet already contains a main method, provide it directly as the entrypoint
-    if (rawCode.includes('public static void main')) {
-      return [
-        {
-          id: `${source}-java-main`,
-          name: `${baseName}.java`,
-          isEntryPoint: true,
-          content: sanitizedCode,
-        },
-      ];
+  // 3. Enterprise Perspective Modular Projects
+  if (source === 'enterprise') {
+    if (language === 'java') {
+      return buildEnterpriseJavaProject(pattern);
     }
-
-    // Otherwise provide the pattern file first (active file) and Main.java as the entry point runner
-    const sourceLabel = source === 'enterprise' ? 'Enterprise Cloud' : 'Canonical Refactoring Guru';
-    return [
-      {
-        id: `${source}-java-pattern`,
-        name: `${baseName}.java`,
-        isEntryPoint: false,
-        content: sanitizedCode,
-      },
-      {
-        id: `${source}-java-main`,
-        name: 'Main.java',
-        isEntryPoint: true,
-        content: `public class Main {
-    public static void main(String[] args) {
-        System.out.println("=== ${pattern.name} Pattern (${sourceLabel}) ===");
-        System.out.println("Scenario: ${variant?.scenario?.replace(/"/g, '\\"') || pattern.intent.replace(/"/g, '\\"')}");
-        System.out.println("\\nPattern components loaded in ${baseName}.java. Modify Main.java to instantiate and test.");
-    }
-}
-`,
-      },
-    ];
+    return buildEnterpriseTsProject(pattern);
   }
 
-  // TypeScript: Canonical or Enterprise single-file runnable execution
-  const rawCode =
-    variant?.typeScript?.code ||
-    pattern.runnableCode ||
-    pattern.typeScriptImplementation?.code ||
-    '// TypeScript implementation';
-  const rawFileName = variant?.typeScript?.fileName || pattern.typeScriptImplementation?.fileName || 'index.ts';
-  const fileName = rawFileName.endsWith('.ts') ? rawFileName : `${rawFileName}.ts`;
-
-  return [
-    {
-      id: `${source}-ts-main`,
-      name: fileName,
-      isEntryPoint: true,
-      content: rawCode,
-    },
-  ];
+  // 4. Canonical Perspective Modular Projects (default)
+  if (language === 'java') {
+    return buildCanonicalJavaProject(pattern);
+  }
+  return buildCanonicalTsProject(pattern);
 }
+

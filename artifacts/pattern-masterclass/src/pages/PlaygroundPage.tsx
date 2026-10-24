@@ -297,35 +297,38 @@ export function PlaygroundPage({
           <AppTooltip content={`Read ${pattern.name} architectural documentation & trade-offs`}>
             <Link
               to={`/pattern/${pattern.id}`}
-              className="subtle-btn playground-view-pattern-btn"
+              className="subtle-btn playground-view-pattern-btn icon-only-btn"
               data-testid="view-pattern-study-link"
-              aria-label={`Open ${pattern.name} guide`}
+              aria-label={`Open ${pattern.name} study guide`}
             >
-              <BookOpen size={13} />
-              <span>Pattern Guide</span>
+              <BookOpen size={15} />
             </Link>
           </AppTooltip>
         )}
 
         {/* Dedicated Blank Scratchpad Quick-Toggle Button */}
         {patternId !== BLANK_PROJECT_ID ? (
-          <AppTooltip content="Open blank editor with default method calling to practice your own code">
+          <AppTooltip content="Open blank scratchpad with default method calling to practice custom code">
             <button
               type="button"
-              className="subtle-btn playground-blank-btn"
+              className="subtle-btn playground-blank-btn icon-only-btn"
               onClick={() => handleSelectPattern(BLANK_PROJECT_ID)}
-              aria-label="Switch to Blank Editor"
+              aria-label="Switch to Blank Scratchpad"
               data-testid="switch-blank-editor-btn"
             >
-              <FileCode size={13} />
-              <span>Blank Scratchpad</span>
+              <FileCode size={15} />
             </button>
           </AppTooltip>
         ) : (
-          <div className="playground-scratchpad-pill">
-            <FileCode size={13} />
-            <span>Active Scratchpad</span>
-          </div>
+          <AppTooltip content="Active Scratchpad (Custom Blank Canvas)">
+            <div
+              className="playground-scratchpad-pill icon-only-pill"
+              aria-label="Active Scratchpad"
+              role="status"
+            >
+              <FileCode size={15} />
+            </div>
+          </AppTooltip>
         )}
 
         {/* Local Perspective Switcher: Canonical | Enterprise | Curated */}
@@ -336,12 +339,12 @@ export function PlaygroundPage({
                 type="button"
                 role="radio"
                 aria-checked={activeSource === 'canonical'}
-                className={`source-pill ${activeSource === 'canonical' ? 'active' : ''}`}
+                className={`source-pill icon-only-pill ${activeSource === 'canonical' ? 'active' : ''}`}
                 onClick={() => setLocalSource('canonical')}
                 data-testid="playground-source-canonical"
+                aria-label="Canonical perspective"
               >
-                <GraduationCap size={13} />
-                <span>Canonical</span>
+                <GraduationCap size={15} />
               </button>
             </AppTooltip>
 
@@ -350,12 +353,12 @@ export function PlaygroundPage({
                 type="button"
                 role="radio"
                 aria-checked={activeSource === 'enterprise'}
-                className={`source-pill ${activeSource === 'enterprise' ? 'active' : ''}`}
+                className={`source-pill icon-only-pill ${activeSource === 'enterprise' ? 'active' : ''}`}
                 onClick={() => setLocalSource('enterprise')}
                 data-testid="playground-source-enterprise"
+                aria-label="Enterprise perspective"
               >
-                <Building2 size={13} />
-                <span>Enterprise</span>
+                <Building2 size={15} />
               </button>
             </AppTooltip>
 
@@ -364,12 +367,12 @@ export function PlaygroundPage({
                 type="button"
                 role="radio"
                 aria-checked={activeSource === 'curated'}
-                className={`source-pill ${activeSource === 'curated' ? 'active' : ''}`}
+                className={`source-pill icon-only-pill ${activeSource === 'curated' ? 'active' : ''}`}
                 onClick={() => setLocalSource('curated')}
                 data-testid="playground-source-curated"
+                aria-label="Curated perspective"
               >
-                <Files size={13} />
-                <span>Curated</span>
+                <Files size={15} />
               </button>
             </AppTooltip>
 
@@ -382,7 +385,7 @@ export function PlaygroundPage({
                   aria-label="Reset perspective to global default"
                   data-testid="reset-playground-source"
                 >
-                  <RotateCcw size={12} />
+                  <RotateCcw size={13} />
                 </button>
               </AppTooltip>
             )}
@@ -436,25 +439,23 @@ export function PlaygroundPage({
             <AppTooltip content="Stacked vertical flow (Full width, single scroll)">
               <button
                 type="button"
-                className={`layout-btn ${layoutMode === 'stacked' ? 'active' : ''}`}
+                className={`layout-btn icon-only-btn ${layoutMode === 'stacked' ? 'active' : ''}`}
                 onClick={() => toggleLayoutMode('stacked')}
                 data-testid="layout-stacked"
                 aria-label="Stacked layout"
               >
-                <Rows size={14} />
-                <span>Stacked</span>
+                <Rows size={15} />
               </button>
             </AppTooltip>
             <AppTooltip content="Side-by-side resizable split view (Sliding window)">
               <button
                 type="button"
-                className={`layout-btn ${layoutMode === 'split' ? 'active' : ''}`}
+                className={`layout-btn icon-only-btn ${layoutMode === 'split' ? 'active' : ''}`}
                 onClick={() => toggleLayoutMode('split')}
                 data-testid="layout-split"
                 aria-label="Split layout"
               >
-                <Columns size={14} />
-                <span>Split</span>
+                <Columns size={15} />
               </button>
             </AppTooltip>
           </div>
@@ -462,13 +463,12 @@ export function PlaygroundPage({
           <AppTooltip content="Open Playground Guide & Language Standards" shortcut="F1">
             <button
               type="button"
-              className="subtle-btn playground-guide-trigger"
+              className="subtle-btn playground-guide-trigger icon-only-btn"
               onClick={() => setIsGuideOpen(true)}
               aria-label="Open Playground Guide & Language Standards"
               data-testid="playground-guide-button"
             >
-              <BookOpen size={13} />
-              <span>Guide & Rules</span>
+              <BookOpen size={15} />
             </button>
           </AppTooltip>
         </div>

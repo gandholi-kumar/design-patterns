@@ -2063,17 +2063,18 @@ kbd {
 .playground-blank-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.4375rem 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  border-radius: 0.25rem;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  padding: 0;
+  border-radius: 0.375rem;
   border: 0.0625rem solid hsl(var(--border));
   background: hsl(var(--card));
   color: hsl(var(--foreground));
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .playground-blank-btn:hover {
@@ -2085,15 +2086,16 @@ kbd {
 .playground-scratchpad-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.4375rem 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  border-radius: 0.25rem;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  padding: 0;
+  border-radius: 0.375rem;
   border: 0.0625rem solid rgba(168, 85, 247, 0.35);
   background: rgba(168, 85, 247, 0.12);
   color: #c084fc;
   user-select: none;
+  flex-shrink: 0;
 }
 
 /* Language Switcher */
@@ -2185,6 +2187,14 @@ kbd {
   background: hsl(var(--muted));
   color: hsl(var(--foreground));
   font-weight: 600;
+}
+
+.layout-btn.icon-only-btn {
+  width: 2.125rem;
+  height: 2.125rem;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
 }
 
 .wide-toggle-btn {
@@ -6791,8 +6801,10 @@ kbd {
 .playground-view-pattern-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.625rem;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  padding: 0;
   font-size: 0.75rem;
   font-weight: 500;
   color: hsl(var(--foreground));
@@ -6803,6 +6815,7 @@ kbd {
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .playground-view-pattern-btn:hover {
@@ -6831,8 +6844,10 @@ kbd {
 .playground-source-switch .source-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.3125rem;
-  padding: 0.25rem 0.5625rem;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  padding: 0;
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 0.25rem;
@@ -6842,6 +6857,7 @@ kbd {
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .playground-source-switch .source-pill:hover {
@@ -7840,16 +7856,17 @@ kbd {
 .playground-guide-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.3125rem 0.625rem;
-  font-size: 0.78125rem;
-  font-weight: 500;
-  border-radius: 0.25rem;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  padding: 0;
+  border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.15s ease;
   border: 0.0625rem solid hsl(var(--border));
   background: hsl(var(--card)/0.7);
   color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
 }
 
 .playground-guide-trigger:hover {
