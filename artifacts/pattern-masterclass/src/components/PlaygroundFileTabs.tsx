@@ -130,12 +130,13 @@ export const PlaygroundFileTabs: React.FC<PlaygroundFileTabsProps> = ({
               role="tab"
               aria-selected={isActive}
               tabIndex={0}
-              className={`playground-tab ${isActive ? 'active' : ''}`}
+              draggable={false}
+              className={`playground-tab ${isActive ? 'active' : ''} ${file.isEntryPoint ? 'pinned-tab' : ''}`}
               onClick={() => onSelectFile(file.id)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') onSelectFile(file.id);
               }}
-              title={file.isEntryPoint ? `${file.name} (Entry point)` : file.name}
+              title={file.isEntryPoint ? `${file.name} (Pinned Starting Entrypoint)` : file.name}
             >
               <FileCode size={13} className="tab-icon" />
               <span className="tab-name">{file.name}</span>

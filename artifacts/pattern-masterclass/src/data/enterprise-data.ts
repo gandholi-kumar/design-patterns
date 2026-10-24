@@ -1673,6 +1673,11 @@ const breaker = new CircuitBreaker();
       fileName: 'CircuitBreakerState.java',
       explanation: 'Production Java State pattern implementing a microservice Circuit Breaker.',
       code: `public interface CircuitState { String call(Supplier<String> s); }
+public class ClosedState implements CircuitState {
+    private CircuitBreaker cb;
+    public ClosedState(CircuitBreaker cb) { this.cb = cb; }
+    public String call(Supplier<String> s) { return s.get(); }
+}
 public class CircuitBreaker {
     private CircuitState state = new ClosedState(this);
     public void setState(CircuitState s) { this.state = s; }
@@ -1940,7 +1945,8 @@ resources.forEach(r => r.accept(linter));`,
       explanation: 'Visitor pattern in Java auditing cloud infrastructure nodes.',
       code: `public interface IacVisitor { void visit(S3Node s); void visit(Ec2Node e); }
 public interface IacNode { void accept(IacVisitor v); }
-public class S3Node implements IacNode { public void accept(IacVisitor v) { v.visit(this); } }`,
+public class S3Node implements IacNode { public void accept(IacVisitor v) { v.visit(this); } }
+public class Ec2Node implements IacNode { public void accept(IacVisitor v) { v.visit(this); } }`,
     },
     diagramUml: `classDiagram
 direction LR

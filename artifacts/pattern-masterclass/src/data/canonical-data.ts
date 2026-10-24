@@ -546,7 +546,18 @@ console.log("Fits large square peg?", hole.fits(new SquarePegAdapter(largeSquare
     java: {
       fileName: 'SquarePegAdapter.java',
       explanation: 'Java Object Adapter extending RoundPeg and wrapping SquarePeg.',
-      code: `public class RoundHole {
+      code: `public class RoundPeg {
+    private double radius;
+    public RoundPeg() {}
+    public RoundPeg(double radius) { this.radius = radius; }
+    public double getRadius() { return radius; }
+}
+public class SquarePeg {
+    private double width;
+    public SquarePeg(double width) { this.width = width; }
+    public double getWidth() { return width; }
+}
+public class RoundHole {
     private double radius;
     public RoundHole(double radius) { this.radius = radius; }
     public boolean fits(RoundPeg peg) { return peg.getRadius() <= this.radius; }
@@ -1852,7 +1863,8 @@ shapes.forEach(s => s.accept(exporter));`,
       explanation: 'Java Visitor pattern implementing double dispatch.',
       code: `public interface Visitor { void visit(Dot d); void visit(Circle c); }
 public interface Element { void accept(Visitor v); }
-public class Dot implements Element { public void accept(Visitor v) { v.visit(this); } }`,
+public class Dot implements Element { public void accept(Visitor v) { v.visit(this); } }
+public class Circle implements Element { public void accept(Visitor v) { v.visit(this); } }`,
     },
     diagramUml: `classDiagram
 direction LR

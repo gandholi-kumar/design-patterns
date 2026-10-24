@@ -17,6 +17,8 @@ import {
   FileCode,
   GraduationCap,
   Building2,
+  Coffee,
+  FileCode2,
 } from 'lucide-react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { PATTERNS } from '../data';
@@ -154,8 +156,10 @@ export function PlaygroundPage({
   // Reload project files when pattern, language, or perspective source changes
   useEffect(() => {
     const initial = createInitialFiles(pattern, language, activeSource);
-    setProjectFiles(initial);
-    setActiveFileId(initial[0]?.id || 'main');
+    // Ensure primary entrypoint file (Main.java / index.ts) is strictly pinned at starting tab (index 0)
+    const sorted = [...initial].sort((a, b) => (b.isEntryPoint ? 1 : 0) - (a.isEntryPoint ? 1 : 0));
+    setProjectFiles(sorted);
+    setActiveFileId(sorted[0]?.id || 'main');
     clearOutput();
   }, [patternId, language, activeSource]);
 
@@ -394,41 +398,43 @@ export function PlaygroundPage({
 
         {/* Language Switcher */}
         <div className="language-switch" role="group" aria-label="Code language">
-          <button
-            type="button"
-            onClick={() => toggleLanguageMode('java')}
-            className={language === 'java' ? 'active' : ''}
-            data-testid="language-java"
-          >
-            Java
-          </button>
-          <button
-            type="button"
-            onClick={() => toggleLanguageMode('typescript')}
-            className={language === 'typescript' ? 'active' : ''}
-            data-testid="language-typescript"
-          >
-            TypeScript
-          </button>
+          <AppTooltip content="Switch to Java (JDK 25 LTS Sandbox)">
+            <button
+              type="button"
+              onClick={() => toggleLanguageMode('java')}
+              className={`lang-btn icon-only-btn ${language === 'java' ? 'active' : ''}`}
+              data-testid="language-java"
+              aria-label="Switch to Java 25 LTS"
+            >
+              <Coffee size={15} />
+            </button>
+          </AppTooltip>
+          <AppTooltip content="Switch to TypeScript (Web Worker Sandbox)">
+            <button
+              type="button"
+              onClick={() => toggleLanguageMode('typescript')}
+              className={`lang-btn icon-only-btn ${language === 'typescript' ? 'active' : ''}`}
+              data-testid="language-typescript"
+              aria-label="Switch to TypeScript"
+            >
+              <FileCode2 size={15} />
+            </button>
+          </AppTooltip>
         </div>
 
         {/* Run Button */}
-        <AppTooltip content="Execute code in browser sandbox" shortcut="Ctrl+Enter">
+        <AppTooltip content={isRunning ? "Stop execution" : "Execute code in sandbox"} shortcut="Ctrl+Enter">
           <button
             type="button"
-            className={`run-btn playground-run-action ${isRunning ? 'running' : ''}`}
+            className={`run-btn playground-run-action icon-only-run-btn ${isRunning ? 'running' : ''}`}
             onClick={handleRun}
             data-testid="run-example"
-            aria-label="Run code"
+            aria-label={isRunning ? "Stop execution" : "Run code"}
           >
             {isRunning ? (
-              <>
-                <Square size={13} fill="currentColor" /> Stop
-              </>
+              <Square size={14} fill="currentColor" />
             ) : (
-              <>
-                <Play size={14} fill="currentColor" /> Run code
-              </>
+              <Play size={15} fill="currentColor" />
             )}
           </button>
         </AppTooltip>

@@ -157,9 +157,12 @@ self.onmessage = async (event: MessageEvent<WorkerRunMessage>) => {
       'exports',
       'module',
       'console',
-      entryCode
+      `return (async () => {\n${entryCode}\n})();`
     );
-    entryFn(createRequire(entryName), entryMod.exports, entryMod, sandboxedConsole);
+    const executionPromise = entryFn(createRequire(entryName), entryMod.exports, entryMod, sandboxedConsole);
+    if (executionPromise && typeof executionPromise.then === 'function') {
+      await executionPromise;
+    }
 
     const response: WorkerResultResponse = {
       type: 'RESULT',

@@ -8,29 +8,29 @@ import {
 } from '../data/playground-starters';
 
 describe('Playground Perspectives (Canonical, Enterprise, Curated) Unit Tests', () => {
-  it('generates canonical TypeScript code for all 23 GoF patterns', () => {
+  it('generates canonical TypeScript code as modular multi-file projects for all 23 GoF patterns', () => {
     for (const pattern of PATTERNS) {
       const files = buildProjectFiles(pattern, 'typescript', 'canonical');
       assert.ok(Array.isArray(files), `Files must be array for ${pattern.id}`);
-      assert.ok(files.length >= 1, `Must have at least 1 file for ${pattern.id}`);
+      assert.ok(files.length >= 2, `Canonical TS must be modular with at least 2 files for ${pattern.id}`);
 
-      const entryFile = files.find((f) => f.isEntryPoint);
-      assert.ok(entryFile, `Must have entry point for ${pattern.id}`);
-      assert.ok(entryFile.content.length > 50, `Content must be substantial for ${pattern.id}`);
-      assert.ok(entryFile.name.endsWith('.ts'), `Entry file must be .ts for ${pattern.id}`);
+      // Tab 0 must be index.ts entrypoint
+      assert.equal(files[0].name, 'index.ts', `Tab 0 must be index.ts for ${pattern.id}`);
+      assert.equal(files[0].isEntryPoint, true, `Tab 0 must be entry point for ${pattern.id}`);
+      assert.ok(files[0].content.includes(`from './`), `index.ts must import from module for ${pattern.id}`);
     }
   });
 
-  it('generates enterprise TypeScript code for all 23 GoF patterns', () => {
+  it('generates enterprise TypeScript code as modular multi-file projects for all 23 GoF patterns', () => {
     for (const pattern of PATTERNS) {
       const files = buildProjectFiles(pattern, 'typescript', 'enterprise');
       assert.ok(Array.isArray(files), `Files must be array for ${pattern.id}`);
-      assert.ok(files.length >= 1, `Must have at least 1 file for ${pattern.id}`);
+      assert.ok(files.length >= 2, `Enterprise TS must be modular with at least 2 files for ${pattern.id}`);
 
-      const entryFile = files.find((f) => f.isEntryPoint);
-      assert.ok(entryFile, `Must have entry point for ${pattern.id}`);
-      assert.ok(entryFile.content.length > 50, `Content must be substantial for ${pattern.id}`);
-      assert.ok(entryFile.name.endsWith('.ts'), `Entry file must be .ts for ${pattern.id}`);
+      // Tab 0 must be index.ts entrypoint
+      assert.equal(files[0].name, 'index.ts', `Tab 0 must be index.ts for ${pattern.id}`);
+      assert.equal(files[0].isEntryPoint, true, `Tab 0 must be entry point for ${pattern.id}`);
+      assert.ok(files[0].content.includes(`from './`), `index.ts must import from module for ${pattern.id}`);
     }
   });
 
@@ -49,39 +49,41 @@ describe('Playground Perspectives (Canonical, Enterprise, Curated) Unit Tests', 
     for (const pattern of PATTERNS) {
       const files = buildProjectFiles(pattern, 'typescript', 'curated');
       assert.ok(Array.isArray(files));
-      assert.ok(files.length >= 1, `Curated project for ${pattern.id} must have files`);
+      assert.ok(files.length >= 2, `Curated project for ${pattern.id} must have multiple files`);
 
-      const entry = files.find((f) => f.isEntryPoint);
-      assert.ok(entry, `Curated project for ${pattern.id} must have an entry point`);
+      assert.equal(files[0].name, 'index.ts', `Curated TS tab 0 must be index.ts for ${pattern.id}`);
+      assert.equal(files[0].isEntryPoint, true, `Curated project for ${pattern.id} must have an entry point`);
     }
   });
 
-  it('generates canonical Java projects with valid entry points for all 23 patterns', () => {
+  it('guarantees Main.java is always the permanent starting tab 0 across all 23 patterns in Canonical Java', () => {
     for (const pattern of PATTERNS) {
       const files = buildProjectFiles(pattern, 'java', 'canonical');
       assert.ok(Array.isArray(files));
-      assert.ok(files.length >= 1);
+      assert.ok(files.length >= 2, `Canonical Java must be modular for ${pattern.id}`);
 
-      const entry = files.find((f) => f.isEntryPoint);
-      assert.ok(entry, `Canonical Java for ${pattern.id} must have entry point`);
+      // Primary starting tab MUST be Main.java
+      assert.equal(files[0].name, 'Main.java', `Starting tab must be Main.java for ${pattern.id}`);
+      assert.equal(files[0].isEntryPoint, true, `Starting tab Main.java must be isEntryPoint for ${pattern.id}`);
       assert.ok(
-        entry.content.includes('public static void main'),
-        `Entry point for ${pattern.id} must contain main method`
+        files[0].content.includes('public static void main'),
+        `Main.java for ${pattern.id} must contain main method`
       );
     }
   });
 
-  it('generates enterprise Java projects with valid entry points for all 23 patterns', () => {
+  it('guarantees Main.java is always the permanent starting tab 0 across all 23 patterns in Enterprise Java', () => {
     for (const pattern of PATTERNS) {
       const files = buildProjectFiles(pattern, 'java', 'enterprise');
       assert.ok(Array.isArray(files));
-      assert.ok(files.length >= 1);
+      assert.ok(files.length >= 2, `Enterprise Java must be modular for ${pattern.id}`);
 
-      const entry = files.find((f) => f.isEntryPoint);
-      assert.ok(entry, `Enterprise Java for ${pattern.id} must have entry point`);
+      // Primary starting tab MUST be Main.java
+      assert.equal(files[0].name, 'Main.java', `Starting tab must be Main.java for ${pattern.id}`);
+      assert.equal(files[0].isEntryPoint, true, `Starting tab Main.java must be isEntryPoint for ${pattern.id}`);
       assert.ok(
-        entry.content.includes('public static void main'),
-        `Entry point for ${pattern.id} must contain main method`
+        files[0].content.includes('public static void main'),
+        `Main.java for ${pattern.id} must contain main method`
       );
     }
   });
