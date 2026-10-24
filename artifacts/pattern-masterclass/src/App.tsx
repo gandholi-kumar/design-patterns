@@ -59,7 +59,7 @@ const nav: { path: string; name: string; icon: typeof Layers3; id: Page; badge?:
   { path: '/playground', name: 'Code playground', icon: Terminal, id: 'playground' },
   { path: '/decision-engine', name: 'Decision engine', icon: Compass, id: 'decision' },
   { path: '/notes', name: 'My notes', icon: FileText, id: 'notes' },
-  { path: '/simulators', name: 'Pattern studio', icon: GitBranch, id: 'simulators', badge: 'WIP' },
+  { path: '/simulators', name: 'Pattern studio', icon: GitBranch, id: 'simulators', badge: 'NEW' },
   { path: '/quiz-lab', name: 'Scenario lab', icon: CircleHelp, id: 'quiz', badge: 'WIP' },
 ];
 
@@ -110,7 +110,7 @@ export function App() {
 
   const isPatternPage = loc.startsWith('/pattern/');
   const patternIdFromUrl = isPatternPage ? loc.split('/pattern/')[1]?.split('?')[0] : null;
-  const activePattern = patternIdFromUrl ? PATTERNS.find((p) => p.id === patternIdFromUrl) : null;
+  const activePattern = patternIdFromUrl ? (PATTERNS.find((p) => p.id === patternIdFromUrl) ?? null) : null;
 
   // Global shortcuts: Ctrl+B (sidebar), Alt+F (Studio focus mode), P (Open playground for active pattern), B (Bookmark)
   useGlobalKeyboardShortcuts({

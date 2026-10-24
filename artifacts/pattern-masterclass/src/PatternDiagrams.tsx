@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Eye, EyeOff, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { Check, Copy, ExternalLink, Eye, EyeOff, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { getPatternDiagram, PATTERN_DIAGRAMS } from './pattern-diagrams';
 import type { Perspective } from './pattern-types';
 import { AppTooltip } from './components/ui/app-tooltip';
@@ -31,8 +31,16 @@ export function PatternDiagrams({ patternId, patternName, theme, perspective = '
 
   return (
     <section className="pattern-diagrams" aria-label={`${patternName} diagrams`}>
-      <div className="diagram-intro">
+      <div className="diagram-intro flex items-center justify-between">
         <span className="eyebrow">DESIGN MAP / {patternName.toUpperCase()} · {perspectiveLabel.toUpperCase()}</span>
+        <a
+          href={`/simulators?pattern=${patternId}&perspective=${perspective}`}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors"
+          data-testid="launch-pattern-studio"
+        >
+          <span>Launch in Pattern Studio</span>
+          <ExternalLink className="h-3 w-3" />
+        </a>
       </div>
       <div className="diagram-tabs" role="tablist" aria-label="Diagram type">
         <button

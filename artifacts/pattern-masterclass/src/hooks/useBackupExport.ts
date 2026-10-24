@@ -64,7 +64,9 @@ export function useBackupExport() {
           bookmarks: data.bookmarks,
           progress: restoredProgress,
           ...(data.theme ? { theme: data.theme } : {}),
-          ...(data.perspective ? { perspective: data.perspective } : {}),
+          ...(data.perspective === 'canonical' || data.perspective === 'enterprise'
+            ? { perspective: data.perspective }
+            : {}),
           ...(typeof data.studioMode === 'boolean' ? { studioMode: data.studioMode } : {}),
         });
 
