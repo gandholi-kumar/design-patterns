@@ -1775,4 +1775,27 @@ export class SubtractExpression implements Expression {
 `,
     },
   ],
+
+  // 24. Blank Editor (Scratchpad with default function calling)
+  'blank-editor': [
+    {
+      id: 'index-ts',
+      name: 'index.ts',
+      isEntryPoint: true,
+      content: `/**
+ * TypeScript Scratchpad
+ * Write your custom implementation, classes, or design patterns below.
+ */
+export function run(): void {
+  console.log("=== TypeScript Scratchpad ===");
+  console.log("Execution started in run(). Ready to code!");
+
+  // TODO: Start writing your custom code or design pattern here
+}
+
+// Default method call
+run();
+`,
+    },
+  ],
 };

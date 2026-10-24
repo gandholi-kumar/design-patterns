@@ -11,7 +11,7 @@ export const BackupSchema = z.object({
   bookmarks: z.array(z.string()),
   progress: z.record(z.unknown()).optional(),
   quizProgress: z.record(z.unknown()).optional(),
-  perspective: z.enum(['canonical', 'modern', 'enterprise', 'pragmatic']).optional(),
+  perspective: z.enum(['canonical', 'enterprise']).optional(),
   studioMode: z.boolean().optional(),
   settings: z.record(z.unknown()).optional(),
 });

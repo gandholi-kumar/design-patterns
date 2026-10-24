@@ -1873,4 +1873,32 @@ class SubtractExpression implements Expression {
 `,
     },
   ],
+
+  // 24. Blank Editor (Scratchpad with default method calling)
+  'blank-editor': [
+    {
+      id: 'main-java',
+      name: 'Main.java',
+      isEntryPoint: true,
+      content: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("=== Java Scratchpad ===");
+
+        // Default method call
+        run();
+    }
+
+    /**
+     * Default method called from main().
+     * Write your custom implementation, classes, or design patterns below.
+     */
+    public static void run() {
+        System.out.println("Execution started in run(). Ready to code!");
+
+        // TODO: Start writing your custom code or design pattern here
+    }
+}
+`,
+    },
+  ],
 };

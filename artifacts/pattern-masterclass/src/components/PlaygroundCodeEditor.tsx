@@ -345,7 +345,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
       }
       ts.typescriptDefaults.setCompilerOptions({
         target: 9, // ES2022
-        allowNonTsExtensions: true,
+        allowNonTsExtensions: false, // Disallow non-TS extensions so TypeScript compiler worker never lints .java files
         moduleResolution: 2, // NodeJs
         module: 1, // CommonJS
         noEmit: true,
@@ -356,7 +356,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
         allowSyntheticDefaultImports: true,
         baseUrl: 'file:///',
         paths: {
-          '*': ['*', '*.ts', '*.d.ts'],
+          '*': ['*', '*.ts'],
         },
       });
 
@@ -398,20 +398,6 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
           }
         } else if (file.name !== fileName && existingModel.getValue() !== file.content) {
           existingModel.setValue(file.content);
-        }
-
-        // Register extraLib paths so TypeScript compiler worker can resolve module imports:
-        // './strategy', './strategy.ts', 'strategy', etc.
-        try {
-          const baseNoExt = clean.replace(/\.tsx?$/, '');
-          extraLibsRef.current.push(
-            ts.typescriptDefaults.addExtraLib(file.content, `file:///${clean}`),
-            ts.typescriptDefaults.addExtraLib(file.content, `file:///${baseNoExt}`),
-            ts.typescriptDefaults.addExtraLib(file.content, `file:///${baseNoExt}.d.ts`),
-            ts.typescriptDefaults.addExtraLib(file.content, `file:///${baseNoExt}/index.d.ts`)
-          );
-        } catch {
-          // ignore duplicate
         }
       }
     });
@@ -567,16 +553,12 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
           }
         }
 
-        // B. Match identifier symbol declaration across files
+        // B. Match identifier symbol declaration across other files (cross-file only, never duplicating active file)
         if (word) {
           const term = word.word;
-          const sortedFiles = [...projectFilesRef.current].sort((a, b) => {
-            if (a.name === fileNameRef.current) return 1;
-            if (b.name === fileNameRef.current) return -1;
-            return 0;
-          });
+          const otherFiles = projectFilesRef.current.filter((f) => f.name !== fileNameRef.current);
 
-          for (const file of sortedFiles) {
+          for (const file of otherFiles) {
             const lines = file.content.split('\n');
             for (let i = 0; i < lines.length; i++) {
               const l = lines[i];
@@ -765,9 +747,26 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
       syncTypeScriptCrossFileDefs();
     } else {
       syncJavaCompletions();
+      // Ensure no rogue language diagnostics attach to Java models
+      const model = editor.getModel();
+      if (model) {
+        monaco.editor.setModelMarkers(model, 'typescript', []);
+        monaco.editor.setModelMarkers(model, 'javascript', []);
+      }
     }
     setupDefinitionProviders();
   };
+
+  // Clear any rogue diagnostics on Java files whenever active file or language changes
+  useEffect(() => {
+    if (monacoRef.current && editorRef.current && monacoLanguage === 'java') {
+      const model = editorRef.current.getModel();
+      if (model) {
+        monacoRef.current.editor.setModelMarkers(model, 'typescript', []);
+        monacoRef.current.editor.setModelMarkers(model, 'javascript', []);
+      }
+    }
+  }, [fileName, monacoLanguage]);
 
   // Sync theme changes dynamically
   useEffect(() => {
