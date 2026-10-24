@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'wouter';
 import {
   Code2,
   Play,
@@ -14,6 +15,8 @@ import {
   Check,
   Files,
   FileCode,
+  GraduationCap,
+  Building2,
 } from 'lucide-react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { PATTERNS } from '../data';
@@ -24,7 +27,12 @@ import { PlaygroundPatternCombobox } from '../components/PlaygroundPatternCombob
 import { NotesDrawer } from '../components/NotesDrawer';
 import { PlaygroundDocContent } from '../components/PlaygroundDocContent';
 import { useCodeRunner } from '../hooks/useCodeRunner';
-import { buildProjectFiles, BLANK_PROJECT_ID, BLANK_PATTERN } from '../data/playground-starters';
+import {
+  buildProjectFiles,
+  BLANK_PROJECT_ID,
+  BLANK_PATTERN,
+  type PlaygroundCodeSource,
+} from '../data/playground-starters';
 import { AppTooltip } from '../components/ui/app-tooltip';
 import { PlaygroundCodeEditor } from '../components/PlaygroundCodeEditor';
 import { useWorkspacePreferencesStore, useLearningStore } from '../stores';
@@ -47,6 +55,7 @@ export function PlaygroundPage({
 
   const handleSelectPattern = useCallback((newId: string) => {
     setPatternId(newId);
+    setLocalSource(null); // Reset local override so newly selected pattern defaults to globalPerspective
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('pattern', newId);
@@ -63,6 +72,7 @@ export function PlaygroundPage({
       const qp = sp.get('pattern');
       if (qp && (PATTERNS.some((p) => p.id === qp) || qp === BLANK_PROJECT_ID)) {
         setPatternId(qp);
+        setLocalSource(null);
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -73,6 +83,11 @@ export function PlaygroundPage({
   const setMode = useLearningStore((s) => s.setMode);
   const studioMode = useLearningStore((s) => s.studioMode);
   const theme = useLearningStore((s) => s.theme);
+  const globalPerspective = useLearningStore((s) => s.perspective);
+
+  // Local perspective override ('canonical' | 'enterprise' | 'curated'), defaults to null (synced with global)
+  const [localSource, setLocalSource] = useState<PlaygroundCodeSource | null>(null);
+  const activeSource: PlaygroundCodeSource = localSource ?? globalPerspective;
 
   const language = (mode === 'java' ? 'java' : 'typescript') as 'typescript' | 'java';
 
@@ -120,7 +135,7 @@ export function PlaygroundPage({
   }, [patternId]);
 
   const [projectFiles, setProjectFiles] = useState<ProjectFile[]>(() => {
-    return createInitialFiles(pattern, language);
+    return createInitialFiles(pattern, language, activeSource);
   });
 
   const [activeFileId, setActiveFileId] = useState<string>(() => {
@@ -136,14 +151,13 @@ export function PlaygroundPage({
     }
   }, []);
 
-
-  // Reload project files when pattern or language changes
+  // Reload project files when pattern, language, or perspective source changes
   useEffect(() => {
-    const initial = createInitialFiles(pattern, language);
+    const initial = createInitialFiles(pattern, language, activeSource);
     setProjectFiles(initial);
     setActiveFileId(initial[0]?.id || 'main');
     clearOutput();
-  }, [patternId, language]);
+  }, [patternId, language, activeSource]);
 
   const activeFile = useMemo(() => {
     return projectFiles.find((f) => f.id === activeFileId) || projectFiles[0];
@@ -231,7 +245,7 @@ export function PlaygroundPage({
   const handleResetProject = () => {
     const title = pattern.id === BLANK_PROJECT_ID ? 'Blank Scratchpad' : `"${pattern.name}"`;
     if (window.confirm(`Reset ${title} project files back to original template?`)) {
-      const resetFiles = createInitialFiles(pattern, language);
+      const resetFiles = createInitialFiles(pattern, language, activeSource);
       setProjectFiles(resetFiles);
       setActiveFileId(resetFiles[0]?.id || 'main');
       clearOutput();
@@ -278,6 +292,21 @@ export function PlaygroundPage({
           onSelectPattern={handleSelectPattern}
         />
 
+        {/* Pattern Study Guide Direct Navigation Link */}
+        {patternId !== BLANK_PROJECT_ID && (
+          <AppTooltip content={`Read ${pattern.name} architectural documentation & trade-offs`}>
+            <Link
+              to={`/pattern/${pattern.id}`}
+              className="subtle-btn playground-view-pattern-btn"
+              data-testid="view-pattern-study-link"
+              aria-label={`Open ${pattern.name} guide`}
+            >
+              <BookOpen size={13} />
+              <span>Pattern Guide</span>
+            </Link>
+          </AppTooltip>
+        )}
+
         {/* Dedicated Blank Scratchpad Quick-Toggle Button */}
         {patternId !== BLANK_PROJECT_ID ? (
           <AppTooltip content="Open blank editor with default method calling to practice your own code">
@@ -296,6 +325,67 @@ export function PlaygroundPage({
           <div className="playground-scratchpad-pill">
             <FileCode size={13} />
             <span>Active Scratchpad</span>
+          </div>
+        )}
+
+        {/* Local Perspective Switcher: Canonical | Enterprise | Curated */}
+        {patternId !== BLANK_PROJECT_ID && (
+          <div className="playground-source-switch" role="radiogroup" aria-label="Code Perspective">
+            <AppTooltip content="Canonical GoF Reference (Academic / Refactoring Guru)">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={activeSource === 'canonical'}
+                className={`source-pill ${activeSource === 'canonical' ? 'active' : ''}`}
+                onClick={() => setLocalSource('canonical')}
+                data-testid="playground-source-canonical"
+              >
+                <GraduationCap size={13} />
+                <span>Canonical</span>
+              </button>
+            </AppTooltip>
+
+            <AppTooltip content="Enterprise Cloud Architecture (Production Distributed Systems)">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={activeSource === 'enterprise'}
+                className={`source-pill ${activeSource === 'enterprise' ? 'active' : ''}`}
+                onClick={() => setLocalSource('enterprise')}
+                data-testid="playground-source-enterprise"
+              >
+                <Building2 size={13} />
+                <span>Enterprise</span>
+              </button>
+            </AppTooltip>
+
+            <AppTooltip content="Curated Modular Project (Multi-file OOP Architecture)">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={activeSource === 'curated'}
+                className={`source-pill ${activeSource === 'curated' ? 'active' : ''}`}
+                onClick={() => setLocalSource('curated')}
+                data-testid="playground-source-curated"
+              >
+                <Files size={13} />
+                <span>Curated</span>
+              </button>
+            </AppTooltip>
+
+            {localSource !== null && (
+              <AppTooltip content={`Reset to global perspective (${globalPerspective === 'canonical' ? 'Canonical' : 'Enterprise'})`}>
+                <button
+                  type="button"
+                  className="source-reset-btn"
+                  onClick={() => setLocalSource(null)}
+                  aria-label="Reset perspective to global default"
+                  data-testid="reset-playground-source"
+                >
+                  <RotateCcw size={12} />
+                </button>
+              </AppTooltip>
+            )}
           </div>
         )}
 
@@ -661,8 +751,12 @@ async function copyTextToClipboard(text: string): Promise<boolean> {
 
 
 // Helper: Seed initial project files from pattern data
-function createInitialFiles(pattern: Pattern, language: 'typescript' | 'java'): ProjectFile[] {
-  return buildProjectFiles(pattern, language);
+function createInitialFiles(
+  pattern: Pattern,
+  language: 'typescript' | 'java',
+  source: PlaygroundCodeSource = 'canonical'
+): ProjectFile[] {
+  return buildProjectFiles(pattern, language, source);
 }
 
 export default PlaygroundPage;

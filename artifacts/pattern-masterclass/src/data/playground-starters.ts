@@ -2,9 +2,13 @@ import type { Pattern } from '../data';
 import type { ProjectFile } from '../components/PlaygroundFileTabs';
 import { CURATED_JAVA_PROJECTS } from './playground-starters-java';
 import { CURATED_TS_PROJECTS } from './playground-starters-ts';
+import { CANONICAL_DATA } from './canonical-data';
+import { ENTERPRISE_DATA } from './enterprise-data';
 
 export { CURATED_JAVA_PROJECTS } from './playground-starters-java';
 export { CURATED_TS_PROJECTS } from './playground-starters-ts';
+
+export type PlaygroundCodeSource = 'canonical' | 'enterprise' | 'curated';
 
 export const BLANK_PROJECT_ID = 'blank-editor';
 
@@ -137,21 +141,63 @@ function cloneProjectFiles(files: ProjectFile[]): ProjectFile[] {
 }
 
 /**
- * Builds the initial multi-file project workspace for a given pattern and language.
- * Guarantees every GoF pattern has modular dedicated files for both Java and TypeScript.
+ * Builds the initial multi-file project workspace for a given pattern, language, and perspective source.
+ * Guarantees every GoF pattern has runnable code across Canonical, Enterprise, and Curated perspectives.
  */
-export function buildProjectFiles(pattern: Pattern, language: 'java' | 'typescript'): ProjectFile[] {
-  // 1. Java Projects
-  if (language === 'java') {
-    if (CURATED_JAVA_PROJECTS[pattern.id]) {
+export function buildProjectFiles(
+  pattern: Pattern,
+  language: 'java' | 'typescript',
+  source: PlaygroundCodeSource = 'canonical'
+): ProjectFile[] {
+  // 1. Blank Scratchpad (identical across all perspectives)
+  if (pattern.id === BLANK_PROJECT_ID) {
+    if (language === 'java') {
+      return [
+        {
+          id: 'blank-main-java',
+          name: 'Main.java',
+          isEntryPoint: true,
+          content: BLANK_JAVA_STARTER,
+        },
+      ];
+    }
+    return [
+      {
+        id: 'blank-main-ts',
+        name: 'index.ts',
+        isEntryPoint: true,
+        content: BLANK_TS_STARTER,
+      },
+    ];
+  }
+
+  // 2. Curated Modular Multi-File Projects
+  if (source === 'curated') {
+    if (language === 'java' && CURATED_JAVA_PROJECTS[pattern.id]) {
       return cloneProjectFiles(CURATED_JAVA_PROJECTS[pattern.id]);
     }
+    if (language === 'typescript' && CURATED_TS_PROJECTS[pattern.id]) {
+      return cloneProjectFiles(CURATED_TS_PROJECTS[pattern.id]);
+    }
+  }
 
-    // Safety fallback for any dynamically added patterns:
-    const rawCode = pattern.javaImplementation?.code || '// Java implementation';
-    const baseName = (pattern.javaImplementation?.fileName || 'Pattern.java').replace(/\.java$/, '');
+  // 3. Perspective-driven Domain Variants (Canonical or Enterprise)
+  const variantMap = source === 'enterprise' ? ENTERPRISE_DATA : CANONICAL_DATA;
+  const variant = variantMap[pattern.id] || (source === 'enterprise' ? pattern.enterprise : pattern.canonical);
 
-    const sanitizedCode = rawCode.replace(
+  if (language === 'java') {
+    const rawCode = variant?.java?.code || pattern.javaImplementation?.code || '// Java implementation';
+    const rawFileName = variant?.java?.fileName || pattern.javaImplementation?.fileName || 'Pattern.java';
+    const baseName = rawFileName.replace(/\.java$/, '');
+
+    // Add java.util import if needed by collections in snippet
+    const needsUtilImport =
+      /\b(List|ArrayList|Map|HashMap|Set|HashSet|Arrays|Collections)\b/.test(rawCode) &&
+      !rawCode.includes('import java.util');
+    const importHeader = needsUtilImport ? 'import java.util.*;\n\n' : '';
+
+    // Sanitize secondary public classes to avoid javac single-file public class constraints
+    const sanitizedCode = importHeader + rawCode.replace(
       /public\s+(class|interface|abstract\s+class|enum)\s+([A-Za-z0-9_]+)/g,
       (match, type, name) => {
         if (name === baseName) return match;
@@ -159,43 +205,58 @@ export function buildProjectFiles(pattern: Pattern, language: 'java' | 'typescri
       }
     );
 
+    // If snippet already contains a main method, provide it directly as the entrypoint
+    if (rawCode.includes('public static void main')) {
+      return [
+        {
+          id: `${source}-java-main`,
+          name: `${baseName}.java`,
+          isEntryPoint: true,
+          content: sanitizedCode,
+        },
+      ];
+    }
+
+    // Otherwise provide the pattern file first (active file) and Main.java as the entry point runner
+    const sourceLabel = source === 'enterprise' ? 'Enterprise Cloud' : 'Canonical Refactoring Guru';
     return [
       {
-        id: 'main-java',
+        id: `${source}-java-pattern`,
+        name: `${baseName}.java`,
+        isEntryPoint: false,
+        content: sanitizedCode,
+      },
+      {
+        id: `${source}-java-main`,
         name: 'Main.java',
         isEntryPoint: true,
         content: `public class Main {
     public static void main(String[] args) {
-        System.out.println("=== ${pattern.name} Pattern (Java) ===");
-        System.out.println("Pattern Intent: ${pattern.intent.replace(/"/g, '\\"')}");
+        System.out.println("=== ${pattern.name} Pattern (${sourceLabel}) ===");
+        System.out.println("Scenario: ${variant?.scenario?.replace(/"/g, '\\"') || pattern.intent.replace(/"/g, '\\"')}");
+        System.out.println("\\nPattern components loaded in ${baseName}.java. Modify Main.java to instantiate and test.");
     }
 }
 `,
       },
-      {
-        id: 'pattern-java',
-        name: `${baseName}.java`,
-        content: sanitizedCode,
-        isEntryPoint: false,
-      },
     ];
   }
 
-  // 2. TypeScript Projects
-  if (CURATED_TS_PROJECTS[pattern.id]) {
-    return cloneProjectFiles(CURATED_TS_PROJECTS[pattern.id]);
-  }
-
-  // Safety fallback for any dynamically added patterns:
-  const rawCode = pattern.runnableCode || pattern.typeScriptImplementation?.code || '// TypeScript implementation';
-  const fileName = pattern.typeScriptImplementation?.fileName || 'index.ts';
+  // TypeScript: Canonical or Enterprise single-file runnable execution
+  const rawCode =
+    variant?.typeScript?.code ||
+    pattern.runnableCode ||
+    pattern.typeScriptImplementation?.code ||
+    '// TypeScript implementation';
+  const rawFileName = variant?.typeScript?.fileName || pattern.typeScriptImplementation?.fileName || 'index.ts';
+  const fileName = rawFileName.endsWith('.ts') ? rawFileName : `${rawFileName}.ts`;
 
   return [
     {
-      id: 'main-ts',
+      id: `${source}-ts-main`,
       name: fileName,
-      content: rawCode,
       isEntryPoint: true,
+      content: rawCode,
     },
   ];
 }
