@@ -1,12 +1,15 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, lazy, Suspense } from "react";
 import { X, ExternalLink, Download, FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { usePatternNotes } from "../../hooks/usePatternNotes";
 import { NotesSaveIndicator } from "./NotesSaveIndicator";
 import { NotesOrientationToggle } from "./NotesOrientationToggle";
-import { NotesEditor } from "./NotesEditor";
 import { NotesErrorBoundary } from "./NotesErrorBoundary";
 import { AppTooltip } from "../ui/app-tooltip";
+
+const NotesEditor = lazy(() =>
+  import("./NotesEditor").then((m) => ({ default: m.NotesEditor }))
+);
 
 interface PatternNotesPanelProps {
   patternId: string;
@@ -222,13 +225,22 @@ export function PatternNotesPanel({
           </div>
         ) : (
           <NotesErrorBoundary resetKey={blocks} onReset={retrySave}>
-            <NotesEditor
-              initialBlocks={blocks}
-              patternName={patternName}
-              theme={theme}
-              onBlocksChange={handleBlocksChange}
-              onUploadMedia={uploadMedia}
-            />
+            <Suspense
+              fallback={
+                <div className="p-4 text-xs text-muted-foreground flex items-center gap-2">
+                  <span className="inline-block animate-spin">⏳</span>
+                  <span>Loading rich text note editor...</span>
+                </div>
+              }
+            >
+              <NotesEditor
+                initialBlocks={blocks}
+                patternName={patternName}
+                theme={theme}
+                onBlocksChange={handleBlocksChange}
+                onUploadMedia={uploadMedia}
+              />
+            </Suspense>
           </NotesErrorBoundary>
         )}
       </div>

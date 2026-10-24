@@ -30,6 +30,9 @@ export default defineConfig({
         ].filter(Boolean)
       : []),
   ],
+  worker: {
+    format: 'es',
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
@@ -42,6 +45,39 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react/') || id.includes('react-dom/') || id.includes('wouter')) {
+              return 'vendor-react';
+            }
+            if (
+              id.includes('@radix-ui') ||
+              id.includes('lucide-react') ||
+              id.includes('class-variance-authority') ||
+              id.includes('clsx')
+            ) {
+              return 'vendor-ui';
+            }
+            if (
+              id.includes('@blocknote') ||
+              id.includes('@mantine') ||
+              id.includes('prosemirror')
+            ) {
+              return 'vendor-blocknote';
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('@tanstack/react-query') || id.includes('zustand')) {
+              return 'vendor-state';
+            }
+          }
+        },
+      },
+    },
   },
   server: {
     port,
