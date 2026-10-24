@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
+import { createRateLimiter } from "../middlewares/rateLimiter";
 import { decisionService, type GoFDecisionVerdict } from "../services/decision.service";
 import { decisionController } from "../controllers/decision.controller";
 
@@ -96,11 +97,17 @@ async function resolveActiveGeminiModel(apiKey: string): Promise<string> {
   return "gemini-2.5-flash";
 }
 
+const aiConsultLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 25,
+  message: "AI consultation rate limit reached. Please wait a minute before submitting further inquiries.",
+});
+
 /**
  * Server-Side Built-in Pro AI Architect Endpoint
  * No user API key required — authenticated via Better Auth session cookie.
  */
-router.post("/ai/architect-consult", requireAuth, async (req, res, next) => {
+router.post("/ai/architect-consult", aiConsultLimiter, requireAuth, async (req, res, next) => {
   try {
     const parseResult = ConsultSchema.safeParse(req.body);
     if (!parseResult.success) {

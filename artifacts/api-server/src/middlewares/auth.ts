@@ -42,6 +42,26 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 }
 
+/**
+ * Optional authentication middleware.
+ * Attaches user session to req if present, but permits guest requests to continue.
+ */
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  try {
+    const session = await auth.api.getSession({
+      headers: req.headers,
+    });
+
+    if (session && session.user) {
+      (req as AuthenticatedRequest).user = session.user as AuthenticatedUser;
+      (req as AuthenticatedRequest).session = session.session;
+    }
+  } catch {
+    // Proceed as unauthenticated guest
+  }
+  return next();
+}
+
 export function requireRole(allowedRoles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = (req as AuthenticatedRequest).user;

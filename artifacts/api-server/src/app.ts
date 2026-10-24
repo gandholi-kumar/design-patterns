@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import { toNodeHandler } from "better-auth/node";
 import router from "./routes";
+import authDevRouter from "./routes/auth-dev";
 import { logger } from "./lib/logger";
 import { auth } from "./lib/auth";
 
@@ -46,19 +47,24 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, server-to-server)
-      if (!origin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes("*") ||
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/([a-zA-Z0-9-]+\.)*vercel\.app$/.test(origin)
+      ) {
         return callback(null, true);
       }
-      return callback(null, true); // Fallback to permissive for dev preview
+      return callback(new Error(`CORS: origin '${origin}' is not allowed`));
     },
     credentials: true,
   }),
 );
 
-import authDevRouter from "./routes/auth-dev";
-
-// Dev Google Login Bridge (mounted before Better Auth catch-all)
-app.use("/api/auth", authDevRouter);
+// Dev Google Login Bridge (only mounted in non-production environments)
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api/auth", authDevRouter);
+}
 
 // Better Auth catch-all handler for /api/auth/* (must be mounted before express.json parsing)
 app.all("/api/auth/*splat", toNodeHandler(auth));
