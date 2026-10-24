@@ -9,14 +9,22 @@ const vercelOrigin = vercelHost ? `https://${vercelHost.replace(/^https?:\/\//, 
 const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/+$/, "") : null;
 const resolvedBaseUrl = process.env.BETTER_AUTH_URL || frontendUrl || vercelOrigin || "http://localhost:3000";
 
+const betterAuthSecret = process.env.BETTER_AUTH_SECRET;
+if (!betterAuthSecret && process.env.NODE_ENV === "production") {
+  console.warn(
+    "[SECURITY WARNING] BETTER_AUTH_SECRET is not set in production. Please set this variable in your deployment dashboard (e.g. Render/Vercel)."
+  );
+}
+
 export const auth = betterAuth({
-  secret: process.env.BETTER_AUTH_SECRET || "gof_masterclass_dev_secret_key_32_chars_long_2026",
+  secret: betterAuthSecret || "gof_masterclass_dev_secret_key_32_chars_long_2026",
   baseURL: resolvedBaseUrl,
   trustedOrigins: [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://*.vercel.app",
     ...(frontendUrl ? [frontendUrl] : []),
     ...(vercelOrigin ? [vercelOrigin] : []),
     ...(process.env.CORS_ORIGIN || "").split(",").map((o) => o.trim()).filter(Boolean),

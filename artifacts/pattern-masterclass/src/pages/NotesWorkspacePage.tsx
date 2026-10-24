@@ -1053,3 +1053,5 @@ export function NotesWorkspacePage() {
     </div>
   );
 }
+
+export default NotesWorkspacePage;

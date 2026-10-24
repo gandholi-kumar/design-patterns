@@ -76,8 +76,15 @@ router.post("/dev-google-login", async (req, res) => {
     });
 
     // 4. Set Better Auth signed session cookie (Better Auth requires HMAC-SHA256 signature)
-    const secret = process.env.BETTER_AUTH_SECRET || "gof_masterclass_dev_secret_key_32_chars_long_2026";
-    const hmac = crypto.createHmac("sha256", secret).update(sessionToken).digest("base64");
+    const secret = process.env.BETTER_AUTH_SECRET;
+    if (!secret) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("BETTER_AUTH_SECRET must be configured in production environment");
+      }
+      logger.warn("BETTER_AUTH_SECRET not configured; using local development signing key");
+    }
+    const signingKey = secret || "gof_masterclass_dev_secret_key_32_chars_long_2026";
+    const hmac = crypto.createHmac("sha256", signingKey).update(sessionToken).digest("base64");
     const signedSessionToken = `${sessionToken}.${hmac}`;
 
     res.cookie("better-auth.session_token", signedSessionToken, {

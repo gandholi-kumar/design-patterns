@@ -37,3 +37,17 @@ if (zPoly.ZodObject && !zPoly.ZodObject.prototype.loose) {
   };
 }
 
+const EnvSchema = z.object({
+  PORT: z.coerce.number().default(3000),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  DATABASE_URL: z.string().optional(),
+  BETTER_AUTH_SECRET: z.string().optional(),
+  BETTER_AUTH_URL: z.string().optional(),
+  FRONTEND_URL: z.string().optional(),
+  CORS_ORIGIN: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+});
+
+export const env = EnvSchema.parse(process.env);
+export type Env = z.infer<typeof EnvSchema>;
+

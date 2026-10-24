@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Link, Route, Switch, useLocation } from 'wouter';
 import {
   ArrowRight,
@@ -29,14 +29,14 @@ import {
 import { PATTERNS, QUIZ, type Pattern } from './data';
 import type { Perspective } from './pattern-types';
 import { useIsMobile } from './hooks/use-mobile';
+import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
+import { useBackupExport } from './hooks/useBackupExport';
+import { usePageTitle } from './hooks/usePageTitle';
 import { PatternDetailPage } from './pages/PatternDetailPage';
-import { PlaygroundPage } from './pages/PlaygroundPage';
 import { DecisionEnginePage } from './pages/DecisionEnginePage';
-import { NotesWorkspacePage } from './pages/NotesWorkspacePage';
 import { CatalogPage } from './pages/CatalogPage';
-import { SimulatorsPage } from './pages/SimulatorsPage';
-import { QuizLabPage } from './pages/QuizLabPage';
-import { WipModulePlaceholder } from './components/WipModulePlaceholder';
+import { SimulatorsRoute } from './pages/SimulatorsRoute';
+import { QuizLabRoute } from './pages/QuizLabRoute';
 import { NoteRepositoryProvider } from './lib/notes/NoteRepositoryContext';
 import { AppTooltip } from './components/ui/app-tooltip';
 import { AppToaster } from './components/ui/app-toaster';
@@ -45,9 +45,12 @@ import { AuthDialog } from './components/auth/AuthDialog';
 import { UserProfileDropdown } from './components/auth/UserProfileDropdown';
 import { PatternDialog } from './components/dialogs/PatternDialog';
 import { BackupDialog } from './components/dialogs/BackupDialog';
-import { downloadBlob, zipStore } from './lib/zip-utils';
 import { useLearningStore, useWorkspacePreferencesStore } from './stores';
 import { ENABLE_FULL_FEATURES } from './config/features';
+
+// Lazy-loaded heavy modules for optimized bundle splitting & faster LCP
+const PlaygroundPage = lazy(() => import('./pages/PlaygroundPage'));
+const NotesWorkspacePage = lazy(() => import('./pages/NotesWorkspacePage'));
 
 type Page = 'catalog' | 'decision' | 'playground' | 'simulators' | 'quiz' | 'notes';
 
@@ -67,8 +70,17 @@ export function App() {
   const [selected, setSelected] = useState<Pattern | null>(null);
   const [mobileNav, setMobileNav] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
-  const [backupOpen, setBackupOpen] = useState(false);
-  const [zipBusy, setZipBusy] = useState(false);
+
+  // Backup & Project Export hook (with Zod validation)
+  const {
+    backupOpen,
+    setBackupOpen,
+    zipBusy,
+    onExport,
+    onRestore,
+    exportProject,
+    downloadWorkspaceSource,
+  } = useBackupExport();
 
   // Zustand State
   const theme = useLearningStore((s) => s.theme);
@@ -86,11 +98,6 @@ export function App() {
 
   const isMobile = useIsMobile();
 
-  // Sync theme with HTML class
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
-
   const handleSelectPattern = (pattern: Pattern) => {
     if (isMobile) {
       setSelected(pattern);
@@ -106,98 +113,35 @@ export function App() {
   const activePattern = patternIdFromUrl ? PATTERNS.find((p) => p.id === patternIdFromUrl) : null;
 
   // Global shortcuts: Ctrl+B (sidebar), Alt+F (Studio focus mode), P (Open playground for active pattern), B (Bookmark)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      const isInput =
-        target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
-
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
-        e.preventDefault();
-        toggleSidebar();
-      }
-      if (e.altKey && (e.key === 'f' || e.key === 'F')) {
-        e.preventDefault();
-        setStudioMode(!studioMode);
-      }
-      if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        if ((e.key === 'p' || e.key === 'P') && isPatternPage && activePattern) {
-          e.preventDefault();
-          setLoc(`/playground?pattern=${activePattern.id}`);
-        }
-        if ((e.key === 'b' || e.key === 'B') && isPatternPage && activePattern) {
-          e.preventDefault();
-          toggleBookmark(activePattern.id);
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPatternPage, activePattern, studioMode, toggleSidebar, setStudioMode, toggleBookmark, setLoc]);
-
-
+  useGlobalKeyboardShortcuts({
+    isPatternPage,
+    activePattern,
+    studioMode,
+    toggleSidebar,
+    setStudioMode,
+    toggleBookmark,
+    setLoc,
+  });
 
   const page = isPatternPage ? 'catalog' : (nav.find((n) => n.path === loc)?.id || 'catalog');
   const progressList = Object.values(progress);
 
-  const onExport = () => {
-    const exportData = {
-      version: '1.0.0',
-      exportTimestamp: new Date().toISOString(),
-      theme,
-      bookmarks,
-      progress,
-      perspective,
-      studioMode,
-      settings: { theme, activeCategoryFilter: 'All' },
-      quizProgress: progress,
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    downloadBlob(blob, 'gof-masterclass-backup.json');
-  };
+  // Dynamic Document Title
+  const dynamicTitle = isPatternPage && activePattern
+    ? `${activePattern.name} (${activePattern.category})`
+    : page === 'playground'
+    ? 'Interactive Code Playground'
+    : page === 'decision'
+    ? 'AI Decision Engine & Pattern Advisor'
+    : page === 'notes'
+    ? 'Architectural Notes & Annotations'
+    : page === 'simulators'
+    ? 'Pattern Studio (Alpha)'
+    : page === 'quiz'
+    ? 'Scenario Lab & Diagnostic Quizzes'
+    : 'Catalog & Pattern Directory';
 
-  const onRestore = (file?: File) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const data = JSON.parse(String(reader.result));
-        const sourceProgress = data.progress || data.quizProgress;
-        if (!sourceProgress || !Array.isArray(data.bookmarks)) {
-          throw new Error('This backup is missing required state.');
-        }
-        setBackupOpen(false);
-      } catch (e) {
-        alert(e instanceof Error ? e.message : 'Could not read this backup.');
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const exportProject = () => {
-    setZipBusy(true);
-    const files: [string, string][] = [
-      [
-        'README.md',
-        '# GoF Design Patterns Masterclass\n\nA local-first learning workspace for all 23 GoF patterns.',
-      ],
-      ['src/pattern-catalog.json', JSON.stringify(PATTERNS, null, 2)],
-      ['src/quiz-bank.json', JSON.stringify(QUIZ, null, 2)],
-      ['state-backup.json', JSON.stringify({ theme, bookmarks, progress, perspective, studioMode }, null, 2)],
-    ];
-    try {
-      downloadBlob(zipStore(files), 'gof-pattern-masterclass.zip');
-    } finally {
-      window.setTimeout(() => setZipBusy(false), 600);
-    }
-  };
-
-  const downloadWorkspaceSource = () => {
-    const link = document.createElement('a');
-    link.href = `${import.meta.env.BASE_URL}workspace-source.zip`;
-    link.download = 'pattern-masterclass-workspace-source.zip';
-    link.click();
-  };
+  usePageTitle(dynamicTitle);
 
   return (
     <NoteRepositoryProvider>
@@ -282,10 +226,20 @@ export function App() {
                   {progressList.length}/{QUIZ.length}
                 </span>
               </div>
-              <div className="progress-line">
-                <i
+              <div
+                role="progressbar"
+                aria-valuenow={progressList.length}
+                aria-valuemin={0}
+                aria-valuemax={QUIZ.length}
+                aria-label="Practice quiz progress"
+                className="progress-line"
+              >
+                <div
                   style={{
                     width: `${Math.min(100, (progressList.length / QUIZ.length) * 100)}%`,
+                    height: '100%',
+                    backgroundColor: 'currentColor',
+                    borderRadius: '999px',
                   }}
                 />
               </div>
@@ -489,17 +443,8 @@ export function App() {
                 ) : (
                   <button
                     type="button"
-                    className="primary-btn"
+                    className="primary-btn header-sign-in-btn"
                     onClick={() => setAuthDialogOpen(true)}
-                    style={{
-                      fontSize: '0.8125rem',
-                      padding: '0.375rem 0.75rem',
-                      height: '2rem',
-                      borderRadius: '0.375rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.375rem',
-                    }}
                   >
                     <LogIn size={14} />
                     <span>Sign In</span>
@@ -514,46 +459,55 @@ export function App() {
               isPatternPage ? 'workspace-studio' : page === 'notes' ? 'workspace-notes' : ''
             }`}
           >
-            <Switch>
-              <Route path="/">
-                <CatalogPage
-                  bookmarks={bookmarks}
-                  savedOnly={savedOnly}
-                  clearSaved={() => setSavedOnly(false)}
-                  onBookmark={toggleBookmark}
-                  onSelect={handleSelectPattern}
-                />
-              </Route>
-              <Route path="/pattern/:id">
-                {(params) => (
-                  <PatternDetailPage
-                    id={params.id}
-                    saved={{ theme, bookmarks }}
-                    globalPerspective={perspective}
+            <Suspense
+              fallback={
+                <div className="workspace-lazy-fallback">
+                  <span className="inline-block animate-spin">⏳</span>
+                  <span>Loading workspace module...</span>
+                </div>
+              }
+            >
+              <Switch>
+                <Route path="/">
+                  <CatalogPage
+                    bookmarks={bookmarks}
+                    savedOnly={savedOnly}
+                    clearSaved={() => setSavedOnly(false)}
                     onBookmark={toggleBookmark}
-                    goPlayground={(pid) => setLoc(`/playground?pattern=${pid || params.id}`)}
+                    onSelect={handleSelectPattern}
                   />
-                )}
-              </Route>
-              <Route path="/playground">
-                <PlaygroundPage />
-              </Route>
-              <Route path="/decision-engine">
-                <DecisionEnginePage onSelect={handleSelectPattern} />
-              </Route>
-              <Route path="/notes">
-                <NotesWorkspacePage />
-              </Route>
-              <Route path="/simulators">
-                <SimulatorsWipRoute onSelect={handleSelectPattern} />
-              </Route>
-              <Route path="/quiz-lab">
-                <QuizLabWipRoute />
-              </Route>
-              <Route>
-                <NotFound goHome={() => setLoc('/')} />
-              </Route>
-            </Switch>
+                </Route>
+                <Route path="/pattern/:id">
+                  {(params) => (
+                    <PatternDetailPage
+                      id={params.id}
+                      saved={{ theme, bookmarks }}
+                      globalPerspective={perspective}
+                      onBookmark={toggleBookmark}
+                      goPlayground={(pid) => setLoc(`/playground?pattern=${pid || params.id}`)}
+                    />
+                  )}
+                </Route>
+                <Route path="/playground">
+                  <PlaygroundPage />
+                </Route>
+                <Route path="/decision-engine">
+                  <DecisionEnginePage onSelect={handleSelectPattern} />
+                </Route>
+                <Route path="/notes">
+                  <NotesWorkspacePage />
+                </Route>
+                <Route path="/simulators">
+                  <SimulatorsRoute onSelect={handleSelectPattern} />
+                </Route>
+                <Route path="/quiz-lab">
+                  <QuizLabRoute />
+                </Route>
+                <Route>
+                  <NotFound goHome={() => setLoc('/')} />
+                </Route>
+              </Switch>
+            </Suspense>
           </div>
 
           {!isPatternPage && (
@@ -598,110 +552,6 @@ export function App() {
         <AppToaster />
       </div>
     </NoteRepositoryProvider>
-  );
-}
-
-function SimulatorsWipRoute({ onSelect }: { onSelect: (pattern: Pattern) => void }) {
-  const [showPrototype, setShowPrototype] = useState(false);
-  const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const isPreview = search?.get('preview') === 'true' || showPrototype;
-
-  if (isPreview) {
-    return (
-      <div className="wip-preview-host">
-        <div className="wip-preview-banner">
-          <div className="wip-banner-left">
-            <span className="wip-banner-pill">EARLY ALPHA</span>
-            <span className="wip-banner-text">You are testing the experimental prototype of Pattern Studio.</span>
-          </div>
-          <button
-            type="button"
-            className="wip-banner-exit-btn"
-            onClick={() => setShowPrototype(false)}
-          >
-            Back to Roadmap
-          </button>
-        </div>
-        <SimulatorsPage onSelect={onSelect} />
-      </div>
-    );
-  }
-
-  return (
-    <WipModulePlaceholder
-      moduleIndex="05 / PATTERN STUDIO"
-      moduleTitle="Interactive Pattern Studio"
-      moduleHeadline="Visual drag-and-drop structural simulator & reactive event debugger for Gang of Four patterns."
-      courtesyMessage="We are currently building high-fidelity visual diagrams, real-time message buses, and state-machine sandboxes. This module is in active development and will be published in the next update."
-      onLaunchPrototype={() => setShowPrototype(true)}
-      prototypeName="Pattern Studio Alpha"
-      upcomingFeatures={[
-        {
-          title: 'Visual Component Wiring',
-          desc: 'Connect Strategy algorithms, Observer dispatchers, and Decorator wrappers on an interactive HTML5 canvas.',
-        },
-        {
-          title: 'Live Execution Visualizer',
-          desc: 'Watch object allocations, virtual call dispatches, and memory footprints step-by-step in real time.',
-        },
-        {
-          title: 'Interactive State Replay',
-          desc: 'Step forward and backward through State transitions and Memento snapshots with time-travel debugging.',
-        },
-      ]}
-    />
-  );
-}
-
-function QuizLabWipRoute() {
-  const [showPrototype, setShowPrototype] = useState(false);
-  const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const isPreview = search?.get('preview') === 'true' || showPrototype;
-
-  if (isPreview) {
-    return (
-      <div className="wip-preview-host">
-        <div className="wip-preview-banner">
-          <div className="wip-banner-left">
-            <span className="wip-banner-pill">EARLY ALPHA</span>
-            <span className="wip-banner-text">You are testing the experimental prototype of Scenario Lab.</span>
-          </div>
-          <button
-            type="button"
-            className="wip-banner-exit-btn"
-            onClick={() => setShowPrototype(false)}
-          >
-            Back to Roadmap
-          </button>
-        </div>
-        <QuizLabPage />
-      </div>
-    );
-  }
-
-  return (
-    <WipModulePlaceholder
-      moduleIndex="06 / SCENARIO LAB"
-      moduleTitle="Scenario Lab & Knowledge Arena"
-      moduleHeadline="Real-world system design challenges, timed pattern quizzes, and architectural trade-off evaluations."
-      courtesyMessage="Scenario Lab is currently being populated with production enterprise incident post-mortems and GoF system refactoring challenges. Stay tuned for the upcoming interactive release!"
-      onLaunchPrototype={() => setShowPrototype(true)}
-      prototypeName="Scenario Lab Alpha"
-      upcomingFeatures={[
-        {
-          title: 'Architecture Incident Drills',
-          desc: 'Analyze broken microservice topologies and select the exact GoF pattern required to stop cascading failures.',
-        },
-        {
-          title: 'Timed Pattern Diagnostic Gauntlets',
-          desc: 'Test your pattern recognition reflex with 30-second rapid-fire architectural dilemma quizzes.',
-        },
-        {
-          title: 'Automated ADR Rubric & Scoring',
-          desc: 'Draft your architectural decision records and receive instant automated rubric feedback on trade-off coverage.',
-        },
-      ]}
-    />
   );
 }
 

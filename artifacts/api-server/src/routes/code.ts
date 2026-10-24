@@ -1,4 +1,6 @@
 import { Router, type Request, type Response } from "express";
+import { optionalAuth } from "../middlewares/auth";
+import { createRateLimiter } from "../middlewares/rateLimiter";
 import { ExecuteCodeBody, type ExecutionResult } from "@workspace/api-zod";
 import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
@@ -58,10 +60,18 @@ async function executeJavaProject(options: RunExecutionOptions): Promise<Executi
     });
 
     if (compileResult.exitCode !== 0) {
+      const isMissingJavac = compileResult.stderr.some(
+        (e) => e.includes("ENOENT") || e.includes("not found") || e.includes("spawn javac")
+      );
       return {
         status: "compile_error",
         stdout: compileResult.stdout,
-        stderr: compileResult.stderr,
+        stderr: isMissingJavac
+          ? [
+              "JDK (javac) is not available on this runner environment.",
+              "If running locally, verify JDK 17+ is installed and present in PATH.",
+            ]
+          : compileResult.stderr,
         exitCode: compileResult.exitCode,
         durationMs: Date.now() - startTime,
       };
@@ -240,8 +250,14 @@ function runProcess({
   });
 }
 
+const codeExecutionLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 15,
+  message: "Too many code execution requests. Please wait a minute before running code again.",
+});
+
 // POST /api/code/run
-router.post("/run", async (req: Request, res: Response) => {
+router.post("/run", codeExecutionLimiter, optionalAuth, async (req: Request, res: Response) => {
   const parsed = ExecuteCodeBody.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.format() });
