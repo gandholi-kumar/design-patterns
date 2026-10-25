@@ -32,18 +32,18 @@ export const ENTERPRISE_DATA: Record<string, DomainVariant> = {
       code: `interface UploadReceipt { storageKey: string; byteCount: number; timestamp: number; }
 
 interface StorageDriver {
-  upload(path: string, payload: Buffer): Promise<UploadReceipt>;
+  upload(path: string, payload: Uint8Array): Promise<UploadReceipt>;
 }
 
 class S3Driver implements StorageDriver {
-  async upload(path: string, payload: Buffer): Promise<UploadReceipt> {
+  async upload(path: string, payload: Uint8Array): Promise<UploadReceipt> {
     console.log(\`[AWS S3] Uploading \${payload.byteLength} bytes to s3://enterprise-prod-vault/\${path}\`);
     return { storageKey: \`s3://vault/\${path}\`, byteCount: payload.byteLength, timestamp: Date.now() };
   }
 }
 
-class GcsDriver implements StorageDriver {
-  async upload(path: string, payload: Buffer): Promise<UploadReceipt> {
+class GcpDriver implements StorageDriver {
+  async upload(path: string, payload: Uint8Array): Promise<UploadReceipt> {
     console.log(\`[GCP GCS] Uploading \${payload.byteLength} bytes to gs://global-data-lake/\${path}\`);
     return { storageKey: \`gs://lake/\${path}\`, byteCount: payload.byteLength, timestamp: Date.now() };
   }
@@ -52,7 +52,7 @@ class GcsDriver implements StorageDriver {
 abstract class StorageManager {
   abstract createDriver(): StorageDriver;
 
-  async saveDocument(filename: string, data: Buffer): Promise<UploadReceipt> {
+  async saveDocument(filename: string, data: Uint8Array): Promise<UploadReceipt> {
     const driver = this.createDriver();
     console.log(\`[AuditLog] Starting compliant document persistence for: \${filename}\`);
     return await driver.upload(filename, data);
@@ -69,7 +69,8 @@ class GcpStorageManager extends StorageManager {
 
 // Runtime tenant orchestration
 const manager: StorageManager = new AwsStorageManager();
-manager.saveDocument("compliance/2026_q1_audit.pdf", Buffer.from("SEC_REPORT"));`,
+const payload = typeof TextEncoder !== 'undefined' ? new TextEncoder().encode("SEC_REPORT") : Buffer.from("SEC_REPORT");
+manager.saveDocument("compliance/2026_q1_audit.pdf", payload);`,
     },
     java: {
       fileName: 'StorageManager.java',

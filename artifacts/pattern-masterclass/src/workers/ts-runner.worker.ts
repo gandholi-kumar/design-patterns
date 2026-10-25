@@ -1,3 +1,34 @@
+// Browser Web Worker Buffer polyfill for Node-like snippet execution
+const workerGlobal = self as unknown as { Buffer?: unknown };
+if (typeof workerGlobal.Buffer === 'undefined') {
+  workerGlobal.Buffer = {
+    from: (val: unknown, _encoding?: string) => {
+      if (typeof val === 'string') {
+        const encoder = new TextEncoder();
+        const bytes = encoder.encode(val);
+        return {
+          byteLength: bytes.byteLength,
+          length: bytes.length,
+          toString: (enc?: string) => {
+            if (enc === 'base64') return btoa(val);
+            return val;
+          },
+          [Symbol.iterator]: () => bytes[Symbol.iterator](),
+        };
+      }
+      if (val instanceof Uint8Array || Array.isArray(val)) {
+        return {
+          byteLength: (val as Uint8Array).byteLength ?? (val as number[]).length,
+          length: (val as Uint8Array).length ?? (val as number[]).length,
+          toString: () => String(val),
+        };
+      }
+      return val;
+    },
+    isBuffer: (obj: unknown) => obj != null && typeof (obj as { byteLength?: unknown }).byteLength === 'number',
+  };
+}
+
 let tsModule: typeof import('typescript') | null = null;
 
 async function getTypeScriptCompiler() {
@@ -126,9 +157,10 @@ self.onmessage = async (event: MessageEvent<WorkerRunMessage>) => {
           'exports',
           'module',
           'console',
+          'Buffer',
           code
         );
-        moduleFn(createRequire(cleanName), mod.exports, mod, sandboxedConsole);
+        moduleFn(createRequire(cleanName), mod.exports, mod, sandboxedConsole, workerGlobal.Buffer);
 
         return mod.exports;
       };
@@ -157,9 +189,10 @@ self.onmessage = async (event: MessageEvent<WorkerRunMessage>) => {
       'exports',
       'module',
       'console',
+      'Buffer',
       `return (async () => {\n${entryCode}\n})();`
     );
-    const executionPromise = entryFn(createRequire(entryName), entryMod.exports, entryMod, sandboxedConsole);
+    const executionPromise = entryFn(createRequire(entryName), entryMod.exports, entryMod, sandboxedConsole, workerGlobal.Buffer);
     if (executionPromise && typeof executionPromise.then === 'function') {
       await executionPromise;
     }

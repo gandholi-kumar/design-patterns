@@ -821,13 +821,13 @@ class DataSourceDecorator implements DataSource {
 
 class EncryptionDecorator extends DataSourceDecorator {
   writeData(data: string) {
-    const encrypted = Buffer.from(data).toString("base64");
+    const encrypted = typeof btoa !== 'undefined' ? btoa(data) : Buffer.from(data).toString("base64");
     console.log(\`[Encrypt] Encrypted payload: \${encrypted}\`);
     super.writeData(encrypted);
   }
   readData(): string {
     const raw = super.readData();
-    return Buffer.from(raw, "base64").toString("utf-8");
+    return typeof atob !== 'undefined' ? atob(raw) : Buffer.from(raw, "base64").toString("utf-8");
   }
 }
 
