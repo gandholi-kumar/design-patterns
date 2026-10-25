@@ -11,36 +11,105 @@ function splitTsPattern(rawCode: string, moduleBaseName: string) {
   const lines = rawCode.split('\n');
   const declLines: string[] = [];
   const clientLines: string[] = [];
+
+  let braceDepth = 0;
+  let inBlockComment = false;
+  let inTemplateString = false;
   let isDeclBlock = true;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (
-      isDeclBlock &&
-      declLines.length > 3 &&
-      /^(?:\/\/\s*(?:Client|Usage|Execution|Test|Demo|Runtime)|\s*(?:const|let|var)\s+[A-Za-z0-9_]+\s*=|renderUI\(|provision\w*\(|client\.|linter\.|resources\.|\(async|\s*new\s+[A-Z])/i.test(line) &&
-      !line.includes('class ') &&
-      !line.includes('interface ')
-    ) {
-      isDeclBlock = false;
+    const trimmed = line.trim();
+
+    // Only consider switching to client block when at top level (braceDepth === 0)
+    if (isDeclBlock && braceDepth === 0 && declLines.length > 0) {
+      const isClientComment = /^\/\/\s*(?:Client|Usage|Execution|Test|Demo|Runtime|Orchestration|Scenario|Consumer|Example|Trigger)/i.test(trimmed);
+      const isTopLevelStatement =
+        /^(?:const|let|var)\s+[A-Za-z0-9_$]+\s*(?::\s*[^=]+)?\s*=/i.test(trimmed) ||
+        /^(?:await\s+)?(?:[A-Za-z0-9_$]+\s*\.|\(async|renderUI\(|run\(|main\(|bootstrap\(|new\s+[A-Z])/i.test(trimmed);
+
+      const isDeclStart = /^(?:export\s+)?(?:abstract\s+class|class|interface|type|enum|function)\b/.test(trimmed);
+
+      if ((isClientComment || isTopLevelStatement) && !isDeclStart) {
+        isDeclBlock = false;
+      }
     }
 
     if (isDeclBlock) {
       declLines.push(line);
+      // Track brace depth
+      for (let c = 0; c < line.length; c++) {
+        const ch = line[c];
+        const next = line[c + 1];
+
+        if (inBlockComment) {
+          if (ch === '*' && next === '/') {
+            inBlockComment = false;
+            c++;
+          }
+          continue;
+        }
+
+        if (ch === '/' && next === '*') {
+          inBlockComment = true;
+          c++;
+          continue;
+        }
+
+        if (ch === '/' && next === '/') {
+          break;
+        }
+
+        if (ch === '`') {
+          inTemplateString = !inTemplateString;
+          continue;
+        }
+
+        if (inTemplateString) continue;
+
+        if (ch === '"' || ch === "'") {
+          const quote = ch;
+          c++;
+          while (c < line.length && line[c] !== quote) {
+            if (line[c] === '\\') c++;
+            c++;
+          }
+          continue;
+        }
+
+        if (ch === '{') braceDepth++;
+        else if (ch === '}') braceDepth = Math.max(0, braceDepth - 1);
+      }
     } else {
       clientLines.push(line);
     }
   }
 
-  const moduleContent = declLines
-    .join('\n')
-    .replace(/^(class|interface|abstract\s+class|type|enum|function)\s+([A-Za-z0-9_]+)/gm, 'export $1 $2');
+  // Prepend export only to top-level declarations in declLines
+  let currentBrace = 0;
+  const exportedDeclLines = declLines.map((line) => {
+    const trimmed = line.trim();
+    const isTopLevel = currentBrace === 0;
 
+    for (let c = 0; c < line.length; c++) {
+      if (line[c] === '{') currentBrace++;
+      else if (line[c] === '}') currentBrace = Math.max(0, currentBrace - 1);
+    }
+
+    if (isTopLevel && /^(?:abstract\s+class|class|interface|type|enum|function)\b/.test(trimmed)) {
+      return line.replace(/^(\s*)(abstract\s+class|class|interface|type|enum|function)\b/, '$1export $2');
+    }
+    return line;
+  });
+
+  const moduleContent = exportedDeclLines.join('\n');
   const matches = [...moduleContent.matchAll(/export\s+(?:abstract\s+class|class|interface|type|enum|function)\s+([A-Za-z0-9_]+)/g)];
-  const exportedNames = Array.from(new Set(matches.map((m) => m[1]))).join(', ');
+  const exportedNames = Array.from(new Set(matches.map((m) => m[1]))).join(',\n  ');
 
   const clientContent = clientLines.join('\n').trim();
-  const indexContent = `import {\n  ${exportedNames}\n} from './${moduleBaseName}';\n\n${clientContent}\n`;
+  const indexContent = clientContent
+    ? `import {\n  ${exportedNames}\n} from './${moduleBaseName}';\n\n${clientContent}\n`
+    : `import {\n  ${exportedNames}\n} from './${moduleBaseName}';\n\nconsole.log("=== ${moduleBaseName} Loaded ===");\n`;
 
   return {
     indexContent,
