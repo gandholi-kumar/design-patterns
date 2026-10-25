@@ -175,7 +175,7 @@ export function PlaygroundPage({
 
   const handleRun = useCallback(() => {
     if (isRunning) {
-      // Execution locked: user must wait until it gets resolved!
+      cancelRun();
       return;
     }
 
@@ -186,14 +186,14 @@ export function PlaygroundPage({
       entryPoint: entryFile?.name,
       timeoutMs: 25000,
     });
-  }, [isRunning, runCode, language, projectFiles]);
+  }, [isRunning, cancelRun, runCode, language, projectFiles]);
 
-  // Keyboard shortcuts: Ctrl+Enter (Run code), Alt+Z (Toggle word wrap)
+  // Keyboard shortcuts: Ctrl+Enter (Run / Cancel code), Alt+Z (Toggle word wrap)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        if (!isRunning) handleRun();
+        handleRun();
       }
       if (e.altKey && (e.key === 'z' || e.key === 'Z')) {
         e.preventDefault();
@@ -443,21 +443,20 @@ export function PlaygroundPage({
           </AppTooltip>
         </div>
 
-        {/* Run Button: Disabled during execution until resolved */}
+        {/* Run / Cancel Button: Cancel is enabled at all times during execution */}
         <AppTooltip
-          content={isRunning ? "Executing sandbox code... please wait for completion" : "Execute code in sandbox"}
-          shortcut={isRunning ? undefined : "Ctrl+Enter"}
+          content={isRunning ? "Cancel execution (Stop running)" : "Execute code in sandbox"}
+          shortcut="Ctrl+Enter"
         >
           <button
             type="button"
-            disabled={isRunning}
-            className={`run-btn playground-run-action icon-only-run-btn ${isRunning ? 'running executing-locked' : ''}`}
+            className={`run-btn playground-run-action icon-only-run-btn ${isRunning ? 'running' : ''}`}
             onClick={handleRun}
             data-testid="run-example"
-            aria-label={isRunning ? "Executing sandbox code..." : "Run code"}
+            aria-label={isRunning ? "Cancel execution" : "Run code"}
           >
             {isRunning ? (
-              <Loader2 size={15} className="spin-icon animate-spin" />
+              <Square size={14} fill="currentColor" />
             ) : (
               <Play size={15} fill="currentColor" />
             )}
