@@ -1796,8 +1796,8 @@ class XmlExportVisitor implements DocumentVisitor {
 `,
     },
     {
-      id: 'doc-elements-java',
-      name: 'DocumentElements.java',
+      id: 'doc-element-java',
+      name: 'DocumentElement.java',
       content: `public interface DocumentElement {
     void accept(DocumentVisitor visitor);
 }

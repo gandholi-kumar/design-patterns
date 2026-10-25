@@ -69,6 +69,10 @@ describe('Playground Perspectives (Canonical, Enterprise, Curated) Unit Tests', 
         files[0].content.includes('public static void main'),
         `Main.java for ${pattern.id} must contain main method`
       );
+      assert.ok(
+        !files[0].content.includes('Pattern components loaded and initialized from'),
+        `Main.java for canonical ${pattern.id} must execute real pattern components instead of static placeholder`
+      );
     }
   });
 
@@ -85,7 +89,18 @@ describe('Playground Perspectives (Canonical, Enterprise, Curated) Unit Tests', 
         files[0].content.includes('public static void main'),
         `Main.java for ${pattern.id} must contain main method`
       );
+      assert.ok(
+        !files[0].content.includes('Pattern components loaded and initialized from'),
+        `Main.java for enterprise ${pattern.id} must execute real pattern components instead of static placeholder`
+      );
     }
+  });
+
+  it('verifies visitor curated java project file name matches single public interface DocumentElement', () => {
+    const visitor = PATTERNS.find((p) => p.id === 'visitor')!;
+    const files = buildProjectFiles(visitor, 'java', 'curated');
+    assert.ok(files.some((f) => f.name === 'DocumentElement.java'), 'Must be named DocumentElement.java without plural s');
+    assert.ok(!files.some((f) => f.name === 'DocumentElements.java'), 'Must not have DocumentElements.java');
   });
 
   it('returns clean blank scratchpad for BLANK_PATTERN regardless of perspective source', () => {

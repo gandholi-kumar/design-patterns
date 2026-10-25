@@ -393,12 +393,19 @@ console.log(\`Cloned sandbox for \${customerA.tenantId} in \${customerA.region} 
       explanation: 'Java deep-cloning implementation for tenant configuration blueprints.',
       code: `public interface Prototype<T> { T copy(); }
 public class TenantConfig implements Prototype<TenantConfig> {
-    private String tenantId, region;
-    private List<String> roles;
+    private String tenantId = "default_master", region = "us-east-1";
+    private List<String> roles = new ArrayList<>(Arrays.asList("Admin", "Auditor"));
+    public TenantConfig() {}
+    public TenantConfig(String id, String r, List<String> roles) {
+        this.tenantId = id; this.region = r; this.roles = new ArrayList<>(roles);
+    }
+    public String getTenantId() { return tenantId; }
+    public String getRegion() { return region; }
+    public List<String> getRoles() { return Collections.unmodifiableList(roles); }
     public TenantConfig copy() {
         TenantConfig c = new TenantConfig();
         c.tenantId = this.tenantId; c.region = this.region;
-        c.roles = new ArrayList<>(this.roles);
+        c.roles = new ArrayList<>(this.roles != null ? this.roles : Collections.emptyList());
         return c;
     }
 }`,
