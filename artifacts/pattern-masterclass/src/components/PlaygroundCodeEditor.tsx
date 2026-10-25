@@ -12,6 +12,7 @@ interface PlaygroundCodeEditorProps {
   projectFiles?: ProjectFile[];
   height?: string;
   theme?: 'light' | 'dark';
+  readOnly?: boolean;
   onFormat?: () => void;
   onSelectFile?: (fileId: string, lineNumber?: number) => void;
   targetLine?: number | null;
@@ -287,6 +288,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
   projectFiles = [],
   height = '100%',
   theme: themeProp,
+  readOnly = false,
   onSelectFile,
   targetLine,
   onTargetLineHandled,
@@ -855,8 +857,9 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
         showSnippets: true,
       },
       padding: { top: 12, bottom: 12 },
+      readOnly,
     }),
-    [language, wordWrap]
+    [language, wordWrap, readOnly]
   );
 
   // Model URI path: Guarantees TypeScript compiler recognizes .ts files as pure TypeScript

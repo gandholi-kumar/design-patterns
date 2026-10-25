@@ -7,6 +7,7 @@ import { BLANK_PROJECT_ID, BLANK_PATTERN } from '../data/playground-starters';
 interface PlaygroundPatternComboboxProps {
   selectedPatternId: string;
   onSelectPattern: (patternId: string) => void;
+  disabled?: boolean;
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -37,6 +38,7 @@ const ALL_PLAYGROUND_ITEMS: Pattern[] = [BLANK_PATTERN, ...PATTERNS];
 export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps> = ({
   selectedPatternId,
   onSelectPattern,
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,6 +116,7 @@ export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps>
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) return;
     if (!isOpen) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
         e.preventDefault();
@@ -144,17 +147,21 @@ export const PlaygroundPatternCombobox: React.FC<PlaygroundPatternComboboxProps>
   return (
     <div
       ref={containerRef}
-      className={`combobox-container ${isOpen ? 'is-open' : ''}`}
+      className={`combobox-container ${isOpen ? 'is-open' : ''} ${disabled ? 'disabled' : ''}`}
       onKeyDown={handleKeyDown}
     >
       {/* Trigger Button */}
       <button
         type="button"
-        className="combobox-trigger"
-        onClick={() => setIsOpen((prev) => !prev)}
+        className={`combobox-trigger ${disabled ? 'disabled' : ''}`}
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) setIsOpen((prev) => !prev);
+        }}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        aria-label={`Selected pattern: ${currentPattern.name}. Click to search or switch pattern.`}
+        aria-disabled={disabled}
+        aria-label={disabled ? `Selected pattern: ${currentPattern.name} (Disabled during execution)` : `Selected pattern: ${currentPattern.name}. Click to search or switch pattern.`}
         data-testid="playground-pattern-combobox"
       >
         <span className="combobox-trigger-icon">

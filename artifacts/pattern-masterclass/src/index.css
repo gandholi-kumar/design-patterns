@@ -7072,6 +7072,35 @@ html:not(.dark) .monaco-menu .monaco-action-bar .action-item.separator {
   color: hsl(var(--accent));
 }
 
+/* Execution Locked & Disabled State across Playground */
+.playground-toolbar button:disabled,
+.playground-toolbar .combobox-trigger:disabled,
+.playground-toolbar .combobox-trigger.disabled,
+.playground-toolbar .disabled-btn,
+.playground-source-switch button:disabled,
+.playground-source-switch .source-pill:disabled,
+.playground-source-switch .source-reset-btn:disabled,
+.language-switch button:disabled,
+.language-switch .lang-btn:disabled,
+.playground-view-controls button:disabled,
+.editor-tools button:disabled,
+.playground-tab-bar button:disabled,
+.playground-tab.disabled,
+.playground-tab-bar.tabs-disabled .playground-tab {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  pointer-events: auto !important;
+}
+
+.playground-tab.disabled {
+  cursor: not-allowed !important;
+}
+
+.run-btn.executing-locked {
+  cursor: not-allowed !important;
+  opacity: 0.85 !important;
+}
+
 /* Studio Hero Actions Wrapper */
 .studio-hero-actions {
   display: flex;

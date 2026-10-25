@@ -19,6 +19,7 @@ import {
   Building2,
   Coffee,
   FileCode2,
+  Loader2,
 } from 'lucide-react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { PATTERNS } from '../data';
@@ -26,6 +27,7 @@ import type { Pattern } from '../data';
 import { PlaygroundFileTabs, type ProjectFile } from '../components/PlaygroundFileTabs';
 import { PlaygroundTerminal } from '../components/PlaygroundTerminal';
 import { PlaygroundPatternCombobox } from '../components/PlaygroundPatternCombobox';
+import { PlaygroundResetConfirmDialog } from '../components/PlaygroundResetConfirmDialog';
 import { NotesDrawer } from '../components/NotesDrawer';
 import { PlaygroundDocContent } from '../components/PlaygroundDocContent';
 import { useCodeRunner } from '../hooks/useCodeRunner';
@@ -104,6 +106,7 @@ export function PlaygroundPage({
   const isStudioMode = Boolean(studioMode);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [copiedMode, setCopiedMode] = useState<'none' | 'file' | 'all'>('none');
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false);
 
   const handleCopyActiveFile = async () => {
     const ok = await copyTextToClipboard(currentCode);
@@ -172,7 +175,7 @@ export function PlaygroundPage({
 
   const handleRun = useCallback(() => {
     if (isRunning) {
-      cancelRun();
+      // Execution locked: user must wait until it gets resolved!
       return;
     }
 
@@ -183,27 +186,27 @@ export function PlaygroundPage({
       entryPoint: entryFile?.name,
       timeoutMs: 25000,
     });
-  }, [isRunning, cancelRun, runCode, language, projectFiles]);
+  }, [isRunning, runCode, language, projectFiles]);
 
   // Keyboard shortcuts: Ctrl+Enter (Run code), Alt+Z (Toggle word wrap)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        handleRun();
+        if (!isRunning) handleRun();
       }
       if (e.altKey && (e.key === 'z' || e.key === 'Z')) {
         e.preventDefault();
-        toggleWordWrap();
+        if (!isRunning) toggleWordWrap();
       }
       if (e.key === 'F1') {
         e.preventDefault();
-        setIsGuideOpen((prev) => !prev);
+        if (!isRunning) setIsGuideOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRun, toggleWordWrap]);
+  }, [handleRun, toggleWordWrap, isRunning]);
 
   // 5. File Operations
   const handleUpdateCode = (newContent: string) => {
@@ -246,17 +249,16 @@ export function PlaygroundPage({
     );
   };
 
-  const handleResetProject = () => {
-    const title = pattern.id === BLANK_PROJECT_ID ? 'Blank Scratchpad' : `"${pattern.name}"`;
-    if (window.confirm(`Reset ${title} project files back to original template?`)) {
-      const resetFiles = createInitialFiles(pattern, language, activeSource);
-      setProjectFiles(resetFiles);
-      setActiveFileId(resetFiles[0]?.id || 'main');
-      clearOutput();
-    }
+  const handleConfirmReset = () => {
+    const resetFiles = createInitialFiles(pattern, language, activeSource);
+    setProjectFiles(resetFiles);
+    setActiveFileId(resetFiles[0]?.id || 'main');
+    clearOutput();
+    setIsResetDialogOpen(false);
   };
 
   const toggleLanguageMode = (newMode: 'java' | 'typescript') => {
+    if (isRunning) return;
     setMode(newMode);
   };
 
@@ -289,34 +291,47 @@ export function PlaygroundPage({
       </div>
 
       {/* 2. Playground Toolbar */}
-      <div className="playground-toolbar">
+      <div className={`playground-toolbar ${isRunning ? 'toolbar-executing' : ''}`}>
         {/* Pattern Search Combobox */}
         <PlaygroundPatternCombobox
           selectedPatternId={patternId}
           onSelectPattern={handleSelectPattern}
+          disabled={isRunning}
         />
 
         {/* Pattern Study Guide Direct Navigation Link */}
         {patternId !== BLANK_PROJECT_ID && (
-          <AppTooltip content={`Read ${pattern.name} architectural documentation & trade-offs`}>
-            <Link
-              to={`/pattern/${pattern.id}`}
-              className="subtle-btn playground-view-pattern-btn icon-only-btn"
-              data-testid="view-pattern-study-link"
-              aria-label={`Open ${pattern.name} study guide`}
-            >
-              <BookOpen size={15} />
-            </Link>
+          <AppTooltip content={isRunning ? "Disabled during code execution" : `Read ${pattern.name} architectural documentation & trade-offs`}>
+            {isRunning ? (
+              <button
+                type="button"
+                disabled
+                className="subtle-btn playground-view-pattern-btn icon-only-btn disabled-btn"
+                aria-label={`Open ${pattern.name} study guide`}
+              >
+                <BookOpen size={15} />
+              </button>
+            ) : (
+              <Link
+                to={`/pattern/${pattern.id}`}
+                className="subtle-btn playground-view-pattern-btn icon-only-btn"
+                data-testid="view-pattern-study-link"
+                aria-label={`Open ${pattern.name} study guide`}
+              >
+                <BookOpen size={15} />
+              </Link>
+            )}
           </AppTooltip>
         )}
 
         {/* Dedicated Blank Scratchpad Quick-Toggle Button */}
         {patternId !== BLANK_PROJECT_ID ? (
-          <AppTooltip content="Open blank scratchpad with default method calling to practice custom code">
+          <AppTooltip content={isRunning ? "Disabled during code execution" : "Open blank scratchpad with default method calling to practice custom code"}>
             <button
               type="button"
+              disabled={isRunning}
               className="subtle-btn playground-blank-btn icon-only-btn"
-              onClick={() => handleSelectPattern(BLANK_PROJECT_ID)}
+              onClick={() => !isRunning && handleSelectPattern(BLANK_PROJECT_ID)}
               aria-label="Switch to Blank Scratchpad"
               data-testid="switch-blank-editor-btn"
             >
@@ -338,13 +353,14 @@ export function PlaygroundPage({
         {/* Local Perspective Switcher: Canonical | Enterprise | Curated */}
         {patternId !== BLANK_PROJECT_ID && (
           <div className="playground-source-switch" role="radiogroup" aria-label="Code Perspective">
-            <AppTooltip content="Canonical GoF Reference (Academic / Refactoring Guru)">
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Canonical GoF Reference (Academic / Refactoring Guru)"}>
               <button
                 type="button"
                 role="radio"
+                disabled={isRunning}
                 aria-checked={activeSource === 'canonical'}
                 className={`source-pill icon-only-pill ${activeSource === 'canonical' ? 'active' : ''}`}
-                onClick={() => setLocalSource('canonical')}
+                onClick={() => !isRunning && setLocalSource('canonical')}
                 data-testid="playground-source-canonical"
                 aria-label="Canonical perspective"
               >
@@ -352,13 +368,14 @@ export function PlaygroundPage({
               </button>
             </AppTooltip>
 
-            <AppTooltip content="Enterprise Cloud Architecture (Production Distributed Systems)">
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Enterprise Cloud Architecture (Production Distributed Systems)"}>
               <button
                 type="button"
                 role="radio"
+                disabled={isRunning}
                 aria-checked={activeSource === 'enterprise'}
                 className={`source-pill icon-only-pill ${activeSource === 'enterprise' ? 'active' : ''}`}
-                onClick={() => setLocalSource('enterprise')}
+                onClick={() => !isRunning && setLocalSource('enterprise')}
                 data-testid="playground-source-enterprise"
                 aria-label="Enterprise perspective"
               >
@@ -366,13 +383,14 @@ export function PlaygroundPage({
               </button>
             </AppTooltip>
 
-            <AppTooltip content="Curated Modular Project (Multi-file OOP Architecture)">
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Curated Modular Project (Multi-file OOP Architecture)"}>
               <button
                 type="button"
                 role="radio"
+                disabled={isRunning}
                 aria-checked={activeSource === 'curated'}
                 className={`source-pill icon-only-pill ${activeSource === 'curated' ? 'active' : ''}`}
-                onClick={() => setLocalSource('curated')}
+                onClick={() => !isRunning && setLocalSource('curated')}
                 data-testid="playground-source-curated"
                 aria-label="Curated perspective"
               >
@@ -381,11 +399,12 @@ export function PlaygroundPage({
             </AppTooltip>
 
             {localSource !== null && (
-              <AppTooltip content={`Reset to global perspective (${globalPerspective === 'canonical' ? 'Canonical' : 'Enterprise'})`}>
+              <AppTooltip content={isRunning ? "Disabled during code execution" : `Reset to global perspective (${globalPerspective === 'canonical' ? 'Canonical' : 'Enterprise'})`}>
                 <button
                   type="button"
+                  disabled={isRunning}
                   className="source-reset-btn"
-                  onClick={() => setLocalSource(null)}
+                  onClick={() => !isRunning && setLocalSource(null)}
                   aria-label="Reset perspective to global default"
                   data-testid="reset-playground-source"
                 >
@@ -398,10 +417,11 @@ export function PlaygroundPage({
 
         {/* Language Switcher */}
         <div className="language-switch" role="group" aria-label="Code language">
-          <AppTooltip content="Switch to Java (JDK 25 LTS Sandbox)">
+          <AppTooltip content={isRunning ? "Disabled during code execution" : "Switch to Java (JDK 25 LTS Sandbox)"}>
             <button
               type="button"
-              onClick={() => toggleLanguageMode('java')}
+              disabled={isRunning}
+              onClick={() => !isRunning && toggleLanguageMode('java')}
               className={`lang-btn icon-only-btn ${language === 'java' ? 'active' : ''}`}
               data-testid="language-java"
               aria-label="Switch to Java 25 LTS"
@@ -409,10 +429,11 @@ export function PlaygroundPage({
               <Coffee size={15} />
             </button>
           </AppTooltip>
-          <AppTooltip content="Switch to TypeScript (Web Worker Sandbox)">
+          <AppTooltip content={isRunning ? "Disabled during code execution" : "Switch to TypeScript (Web Worker Sandbox)"}>
             <button
               type="button"
-              onClick={() => toggleLanguageMode('typescript')}
+              disabled={isRunning}
+              onClick={() => !isRunning && toggleLanguageMode('typescript')}
               className={`lang-btn icon-only-btn ${language === 'typescript' ? 'active' : ''}`}
               data-testid="language-typescript"
               aria-label="Switch to TypeScript"
@@ -422,17 +443,21 @@ export function PlaygroundPage({
           </AppTooltip>
         </div>
 
-        {/* Run Button */}
-        <AppTooltip content={isRunning ? "Stop execution" : "Execute code in sandbox"} shortcut="Ctrl+Enter">
+        {/* Run Button: Disabled during execution until resolved */}
+        <AppTooltip
+          content={isRunning ? "Executing sandbox code... please wait for completion" : "Execute code in sandbox"}
+          shortcut={isRunning ? undefined : "Ctrl+Enter"}
+        >
           <button
             type="button"
-            className={`run-btn playground-run-action icon-only-run-btn ${isRunning ? 'running' : ''}`}
+            disabled={isRunning}
+            className={`run-btn playground-run-action icon-only-run-btn ${isRunning ? 'running executing-locked' : ''}`}
             onClick={handleRun}
             data-testid="run-example"
-            aria-label={isRunning ? "Stop execution" : "Run code"}
+            aria-label={isRunning ? "Executing sandbox code..." : "Run code"}
           >
             {isRunning ? (
-              <Square size={14} fill="currentColor" />
+              <Loader2 size={15} className="spin-icon animate-spin" />
             ) : (
               <Play size={15} fill="currentColor" />
             )}
@@ -442,22 +467,24 @@ export function PlaygroundPage({
         {/* Layout Switcher (Stacked vs Side-by-Side Split) */}
         <div className="playground-view-controls">
           <div className="layout-toggle-group" role="group" aria-label="Editor layout mode">
-            <AppTooltip content="Stacked vertical flow (Full width, single scroll)">
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Stacked vertical flow (Full width, single scroll)"}>
               <button
                 type="button"
+                disabled={isRunning}
                 className={`layout-btn icon-only-btn ${layoutMode === 'stacked' ? 'active' : ''}`}
-                onClick={() => toggleLayoutMode('stacked')}
+                onClick={() => !isRunning && toggleLayoutMode('stacked')}
                 data-testid="layout-stacked"
                 aria-label="Stacked layout"
               >
                 <Rows size={15} />
               </button>
             </AppTooltip>
-            <AppTooltip content="Side-by-side resizable split view (Sliding window)">
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Side-by-side resizable split view (Sliding window)"}>
               <button
                 type="button"
+                disabled={isRunning}
                 className={`layout-btn icon-only-btn ${layoutMode === 'split' ? 'active' : ''}`}
-                onClick={() => toggleLayoutMode('split')}
+                onClick={() => !isRunning && toggleLayoutMode('split')}
                 data-testid="layout-split"
                 aria-label="Split layout"
               >
@@ -466,11 +493,12 @@ export function PlaygroundPage({
             </AppTooltip>
           </div>
 
-          <AppTooltip content="Open Playground Guide & Language Standards" shortcut="F1">
+          <AppTooltip content={isRunning ? "Disabled during code execution" : "Open Playground Guide & Language Standards"} shortcut={isRunning ? undefined : "F1"}>
             <button
               type="button"
+              disabled={isRunning}
               className="subtle-btn playground-guide-trigger icon-only-btn"
-              onClick={() => setIsGuideOpen(true)}
+              onClick={() => !isRunning && setIsGuideOpen(true)}
               aria-label="Open Playground Guide & Language Standards"
               data-testid="playground-guide-button"
             >
@@ -492,6 +520,7 @@ export function PlaygroundPage({
                   files={projectFiles}
                   activeFileId={activeFileId}
                   language={language}
+                  disabled={isRunning}
                   onSelectFile={(id) => {
                     setActiveFileId(id);
                     setTargetLine(null);
@@ -508,9 +537,10 @@ export function PlaygroundPage({
                     <span className="file-type-badge">{language.toUpperCase()}</span>
                   </div>
                   <div className="editor-tools">
-                    <AppTooltip content={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut="Alt+Z">
+                    <AppTooltip content={isRunning ? "Disabled during code execution" : `Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut={isRunning ? undefined : "Alt+Z"}>
                       <button
                         type="button"
+                        disabled={isRunning}
                         className={`subtle-btn icon-only-btn ${wordWrap ? 'active' : ''}`}
                         onClick={toggleWordWrap}
                         aria-label={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`}
@@ -518,9 +548,10 @@ export function PlaygroundPage({
                         <WrapText size={14} />
                       </button>
                     </AppTooltip>
-                    <AppTooltip content={copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
+                    <AppTooltip content={isRunning ? "Disabled during code execution" : copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
                       <button
                         type="button"
+                        disabled={isRunning}
                         className={`subtle-btn icon-only-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
                         onClick={handleCopyActiveFile}
                         data-testid="copy-code"
@@ -529,9 +560,10 @@ export function PlaygroundPage({
                         {copiedMode === 'file' ? <Check size={14} /> : <Copy size={14} />}
                       </button>
                     </AppTooltip>
-                    <AppTooltip content={copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
+                    <AppTooltip content={isRunning ? "Disabled during code execution" : copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
                       <button
                         type="button"
+                        disabled={isRunning}
                         className={`subtle-btn icon-only-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
                         onClick={handleCopyAllFiles}
                         data-testid="copy-all-code"
@@ -540,11 +572,12 @@ export function PlaygroundPage({
                         {copiedMode === 'all' ? <Check size={14} /> : <Files size={14} />}
                       </button>
                     </AppTooltip>
-                    <AppTooltip content="Reset project files to clean starter code">
+                    <AppTooltip content={isRunning ? "Disabled during code execution" : "Reset project files to clean starter code"}>
                       <button
                         type="button"
+                        disabled={isRunning}
                         className="subtle-btn icon-only-btn"
-                        onClick={handleResetProject}
+                        onClick={() => !isRunning && setIsResetDialogOpen(true)}
                         data-testid="reset-code"
                         aria-label="Reset files to default code"
                       >
@@ -563,6 +596,7 @@ export function PlaygroundPage({
                     wordWrap={wordWrap}
                     projectFiles={projectFiles}
                     theme={theme === 'dark' ? 'dark' : 'light'}
+                    readOnly={isRunning}
                     onSelectFile={handleSelectFileAndLine}
                     targetLine={targetLine}
                     onTargetLineHandled={() => setTargetLine(null)}
@@ -594,6 +628,7 @@ export function PlaygroundPage({
               files={projectFiles}
               activeFileId={activeFileId}
               language={language}
+              disabled={isRunning}
               onSelectFile={(id) => {
                 setActiveFileId(id);
                 setTargetLine(null);
@@ -610,9 +645,10 @@ export function PlaygroundPage({
                 <span className="file-type-badge">{language.toUpperCase()}</span>
               </div>
               <div className="editor-tools">
-                <AppTooltip content={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut="Alt+Z">
+                <AppTooltip content={isRunning ? "Disabled during code execution" : `Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut={isRunning ? undefined : "Alt+Z"}>
                   <button
                     type="button"
+                    disabled={isRunning}
                     className={`subtle-btn icon-only-btn ${wordWrap ? 'active' : ''}`}
                     onClick={toggleWordWrap}
                     aria-label={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`}
@@ -620,9 +656,10 @@ export function PlaygroundPage({
                     <WrapText size={14} />
                   </button>
                 </AppTooltip>
-                <AppTooltip content={copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
+                <AppTooltip content={isRunning ? "Disabled during code execution" : copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
                   <button
                     type="button"
+                    disabled={isRunning}
                     className={`subtle-btn icon-only-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
                     onClick={handleCopyActiveFile}
                     data-testid="copy-code"
@@ -631,9 +668,10 @@ export function PlaygroundPage({
                     {copiedMode === 'file' ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                 </AppTooltip>
-                <AppTooltip content={copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
+                <AppTooltip content={isRunning ? "Disabled during code execution" : copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
                   <button
                     type="button"
+                    disabled={isRunning}
                     className={`subtle-btn icon-only-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
                     onClick={handleCopyAllFiles}
                     data-testid="copy-all-code"
@@ -642,11 +680,12 @@ export function PlaygroundPage({
                     {copiedMode === 'all' ? <Check size={14} /> : <Files size={14} />}
                   </button>
                 </AppTooltip>
-                <AppTooltip content="Reset project files to clean starter code">
+                <AppTooltip content={isRunning ? "Disabled during code execution" : "Reset project files to clean starter code"}>
                   <button
                     type="button"
+                    disabled={isRunning}
                     className="subtle-btn icon-only-btn"
-                    onClick={handleResetProject}
+                    onClick={() => !isRunning && setIsResetDialogOpen(true)}
                     data-testid="reset-code"
                     aria-label="Reset files to default code"
                   >
@@ -665,6 +704,7 @@ export function PlaygroundPage({
                 wordWrap={wordWrap}
                 projectFiles={projectFiles}
                 theme={theme === 'dark' ? 'dark' : 'light'}
+                readOnly={isRunning}
                 onSelectFile={handleSelectFileAndLine}
                 targetLine={targetLine}
                 onTargetLineHandled={() => setTargetLine(null)}
@@ -721,6 +761,14 @@ export function PlaygroundPage({
           onSelectLanguage={(lang) => toggleLanguageMode(lang)}
         />
       </NotesDrawer>
+
+      {/* 6. Custom Radix-based Reset Confirmation Dialog */}
+      <PlaygroundResetConfirmDialog
+        isOpen={isResetDialogOpen}
+        title={pattern.id === BLANK_PROJECT_ID ? 'Blank Scratchpad' : `"${pattern.name}"`}
+        onCancel={() => setIsResetDialogOpen(false)}
+        onConfirm={handleConfirmReset}
+      />
     </div>
   );
 };
