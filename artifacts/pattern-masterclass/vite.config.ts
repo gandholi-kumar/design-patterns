@@ -38,8 +38,11 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, 'src'),
       '@workspace/api-client-react': path.resolve(import.meta.dirname, '../../lib/api-client-react/src/index.ts'),
       '@workspace/api-zod': path.resolve(import.meta.dirname, '../../lib/api-zod/src/index.ts'),
+      '@tanstack/react-query': path.resolve(import.meta.dirname, 'src/lib/tanstack-query-shim.ts'),
+      react: path.resolve(import.meta.dirname, 'node_modules/react'),
+      'react-dom': path.resolve(import.meta.dirname, 'node_modules/react-dom'),
     },
-    dedupe: ['react', 'react-dom'],
+    dedupe: ['react', 'react-dom', '@tanstack/react-query', 'zod'],
   },
   root: path.resolve(import.meta.dirname),
   build: {
@@ -90,6 +93,11 @@ export default defineConfig({
     },
     fs: {
       strict: true,
+      allow: [
+        path.resolve(import.meta.dirname),
+        path.resolve(import.meta.dirname, '../../lib'),
+        path.resolve(import.meta.dirname, '../../node_modules'),
+      ],
     },
   },
   preview: {

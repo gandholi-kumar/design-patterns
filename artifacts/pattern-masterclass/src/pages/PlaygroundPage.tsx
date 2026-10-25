@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'wouter';
 import {
   Code2,
   Play,
@@ -14,6 +15,11 @@ import {
   Check,
   Files,
   FileCode,
+  GraduationCap,
+  Building2,
+  Coffee,
+  FileCode2,
+  Loader2,
 } from 'lucide-react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { PATTERNS } from '../data';
@@ -21,10 +27,16 @@ import type { Pattern } from '../data';
 import { PlaygroundFileTabs, type ProjectFile } from '../components/PlaygroundFileTabs';
 import { PlaygroundTerminal } from '../components/PlaygroundTerminal';
 import { PlaygroundPatternCombobox } from '../components/PlaygroundPatternCombobox';
+import { PlaygroundResetConfirmDialog } from '../components/PlaygroundResetConfirmDialog';
 import { NotesDrawer } from '../components/NotesDrawer';
 import { PlaygroundDocContent } from '../components/PlaygroundDocContent';
 import { useCodeRunner } from '../hooks/useCodeRunner';
-import { buildProjectFiles, BLANK_PROJECT_ID, BLANK_PATTERN } from '../data/playground-starters';
+import {
+  buildProjectFiles,
+  BLANK_PROJECT_ID,
+  BLANK_PATTERN,
+  type PlaygroundCodeSource,
+} from '../data/playground-starters';
 import { AppTooltip } from '../components/ui/app-tooltip';
 import { PlaygroundCodeEditor } from '../components/PlaygroundCodeEditor';
 import { useWorkspacePreferencesStore, useLearningStore } from '../stores';
@@ -47,6 +59,7 @@ export function PlaygroundPage({
 
   const handleSelectPattern = useCallback((newId: string) => {
     setPatternId(newId);
+    setLocalSource(null); // Reset local override so newly selected pattern defaults to globalPerspective
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('pattern', newId);
@@ -63,6 +76,7 @@ export function PlaygroundPage({
       const qp = sp.get('pattern');
       if (qp && (PATTERNS.some((p) => p.id === qp) || qp === BLANK_PROJECT_ID)) {
         setPatternId(qp);
+        setLocalSource(null);
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -73,6 +87,11 @@ export function PlaygroundPage({
   const setMode = useLearningStore((s) => s.setMode);
   const studioMode = useLearningStore((s) => s.studioMode);
   const theme = useLearningStore((s) => s.theme);
+  const globalPerspective = useLearningStore((s) => s.perspective);
+
+  // Local perspective override ('canonical' | 'enterprise' | 'curated'), defaults to null (synced with global)
+  const [localSource, setLocalSource] = useState<PlaygroundCodeSource | null>(null);
+  const activeSource: PlaygroundCodeSource = localSource ?? globalPerspective;
 
   const language = (mode === 'java' ? 'java' : 'typescript') as 'typescript' | 'java';
 
@@ -87,6 +106,7 @@ export function PlaygroundPage({
   const isStudioMode = Boolean(studioMode);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [copiedMode, setCopiedMode] = useState<'none' | 'file' | 'all'>('none');
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false);
 
   const handleCopyActiveFile = async () => {
     const ok = await copyTextToClipboard(currentCode);
@@ -120,7 +140,7 @@ export function PlaygroundPage({
   }, [patternId]);
 
   const [projectFiles, setProjectFiles] = useState<ProjectFile[]>(() => {
-    return createInitialFiles(pattern, language);
+    return createInitialFiles(pattern, language, activeSource);
   });
 
   const [activeFileId, setActiveFileId] = useState<string>(() => {
@@ -136,14 +156,15 @@ export function PlaygroundPage({
     }
   }, []);
 
-
-  // Reload project files when pattern or language changes
+  // Reload project files when pattern, language, or perspective source changes
   useEffect(() => {
-    const initial = createInitialFiles(pattern, language);
-    setProjectFiles(initial);
-    setActiveFileId(initial[0]?.id || 'main');
+    const initial = createInitialFiles(pattern, language, activeSource);
+    // Ensure primary entrypoint file (Main.java / index.ts) is strictly pinned at starting tab (index 0)
+    const sorted = [...initial].sort((a, b) => (b.isEntryPoint ? 1 : 0) - (a.isEntryPoint ? 1 : 0));
+    setProjectFiles(sorted);
+    setActiveFileId(sorted[0]?.id || 'main');
     clearOutput();
-  }, [patternId, language]);
+  }, [patternId, language, activeSource]);
 
   const activeFile = useMemo(() => {
     return projectFiles.find((f) => f.id === activeFileId) || projectFiles[0];
@@ -167,7 +188,7 @@ export function PlaygroundPage({
     });
   }, [isRunning, cancelRun, runCode, language, projectFiles]);
 
-  // Keyboard shortcuts: Ctrl+Enter (Run code), Alt+Z (Toggle word wrap)
+  // Keyboard shortcuts: Ctrl+Enter (Run / Cancel code), Alt+Z (Toggle word wrap)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -176,16 +197,16 @@ export function PlaygroundPage({
       }
       if (e.altKey && (e.key === 'z' || e.key === 'Z')) {
         e.preventDefault();
-        toggleWordWrap();
+        if (!isRunning) toggleWordWrap();
       }
       if (e.key === 'F1') {
         e.preventDefault();
-        setIsGuideOpen((prev) => !prev);
+        if (!isRunning) setIsGuideOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRun, toggleWordWrap]);
+  }, [handleRun, toggleWordWrap, isRunning]);
 
   // 5. File Operations
   const handleUpdateCode = (newContent: string) => {
@@ -228,17 +249,16 @@ export function PlaygroundPage({
     );
   };
 
-  const handleResetProject = () => {
-    const title = pattern.id === BLANK_PROJECT_ID ? 'Blank Scratchpad' : `"${pattern.name}"`;
-    if (window.confirm(`Reset ${title} project files back to original template?`)) {
-      const resetFiles = createInitialFiles(pattern, language);
-      setProjectFiles(resetFiles);
-      setActiveFileId(resetFiles[0]?.id || 'main');
-      clearOutput();
-    }
+  const handleConfirmReset = () => {
+    const resetFiles = createInitialFiles(pattern, language, activeSource);
+    setProjectFiles(resetFiles);
+    setActiveFileId(resetFiles[0]?.id || 'main');
+    clearOutput();
+    setIsResetDialogOpen(false);
   };
 
   const toggleLanguageMode = (newMode: 'java' | 'typescript') => {
+    if (isRunning) return;
     setMode(newMode);
   };
 
@@ -271,71 +291,174 @@ export function PlaygroundPage({
       </div>
 
       {/* 2. Playground Toolbar */}
-      <div className="playground-toolbar">
+      <div className={`playground-toolbar ${isRunning ? 'toolbar-executing' : ''}`}>
         {/* Pattern Search Combobox */}
         <PlaygroundPatternCombobox
           selectedPatternId={patternId}
           onSelectPattern={handleSelectPattern}
+          disabled={isRunning}
         />
+
+        {/* Pattern Study Guide Direct Navigation Link */}
+        {patternId !== BLANK_PROJECT_ID && (
+          <AppTooltip content={isRunning ? "Disabled during code execution" : `Read ${pattern.name} architectural documentation & trade-offs`}>
+            {isRunning ? (
+              <button
+                type="button"
+                disabled
+                className="subtle-btn playground-view-pattern-btn icon-only-btn disabled-btn"
+                aria-label={`Open ${pattern.name} study guide`}
+              >
+                <BookOpen size={15} />
+              </button>
+            ) : (
+              <Link
+                to={`/pattern/${pattern.id}`}
+                className="subtle-btn playground-view-pattern-btn icon-only-btn"
+                data-testid="view-pattern-study-link"
+                aria-label={`Open ${pattern.name} study guide`}
+              >
+                <BookOpen size={15} />
+              </Link>
+            )}
+          </AppTooltip>
+        )}
 
         {/* Dedicated Blank Scratchpad Quick-Toggle Button */}
         {patternId !== BLANK_PROJECT_ID ? (
-          <AppTooltip content="Open blank editor with default method calling to practice your own code">
+          <AppTooltip content={isRunning ? "Disabled during code execution" : "Open blank scratchpad with default method calling to practice custom code"}>
             <button
               type="button"
-              className="subtle-btn playground-blank-btn"
-              onClick={() => handleSelectPattern(BLANK_PROJECT_ID)}
-              aria-label="Switch to Blank Editor"
+              disabled={isRunning}
+              className="subtle-btn playground-blank-btn icon-only-btn"
+              onClick={() => !isRunning && handleSelectPattern(BLANK_PROJECT_ID)}
+              aria-label="Switch to Blank Scratchpad"
               data-testid="switch-blank-editor-btn"
             >
-              <FileCode size={13} />
-              <span>Blank Scratchpad</span>
+              <FileCode size={15} />
             </button>
           </AppTooltip>
         ) : (
-          <div className="playground-scratchpad-pill">
-            <FileCode size={13} />
-            <span>Active Scratchpad</span>
+          <AppTooltip content="Active Scratchpad (Custom Blank Canvas)">
+            <div
+              className="playground-scratchpad-pill icon-only-pill"
+              aria-label="Active Scratchpad"
+              role="status"
+            >
+              <FileCode size={15} />
+            </div>
+          </AppTooltip>
+        )}
+
+        {/* Local Perspective Switcher: Canonical | Enterprise | Curated */}
+        {patternId !== BLANK_PROJECT_ID && (
+          <div className="playground-source-switch" role="radiogroup" aria-label="Code Perspective">
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Canonical GoF Reference (Academic / Refactoring Guru)"}>
+              <button
+                type="button"
+                role="radio"
+                disabled={isRunning}
+                aria-checked={activeSource === 'canonical'}
+                className={`source-pill icon-only-pill ${activeSource === 'canonical' ? 'active' : ''}`}
+                onClick={() => !isRunning && setLocalSource('canonical')}
+                data-testid="playground-source-canonical"
+                aria-label="Canonical perspective"
+              >
+                <GraduationCap size={15} />
+              </button>
+            </AppTooltip>
+
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Enterprise Cloud Architecture (Production Distributed Systems)"}>
+              <button
+                type="button"
+                role="radio"
+                disabled={isRunning}
+                aria-checked={activeSource === 'enterprise'}
+                className={`source-pill icon-only-pill ${activeSource === 'enterprise' ? 'active' : ''}`}
+                onClick={() => !isRunning && setLocalSource('enterprise')}
+                data-testid="playground-source-enterprise"
+                aria-label="Enterprise perspective"
+              >
+                <Building2 size={15} />
+              </button>
+            </AppTooltip>
+
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Curated Modular Project (Multi-file OOP Architecture)"}>
+              <button
+                type="button"
+                role="radio"
+                disabled={isRunning}
+                aria-checked={activeSource === 'curated'}
+                className={`source-pill icon-only-pill ${activeSource === 'curated' ? 'active' : ''}`}
+                onClick={() => !isRunning && setLocalSource('curated')}
+                data-testid="playground-source-curated"
+                aria-label="Curated perspective"
+              >
+                <Files size={15} />
+              </button>
+            </AppTooltip>
+
+            {localSource !== null && (
+              <AppTooltip content={isRunning ? "Disabled during code execution" : `Reset to global perspective (${globalPerspective === 'canonical' ? 'Canonical' : 'Enterprise'})`}>
+                <button
+                  type="button"
+                  disabled={isRunning}
+                  className="source-reset-btn"
+                  onClick={() => !isRunning && setLocalSource(null)}
+                  aria-label="Reset perspective to global default"
+                  data-testid="reset-playground-source"
+                >
+                  <RotateCcw size={13} />
+                </button>
+              </AppTooltip>
+            )}
           </div>
         )}
 
         {/* Language Switcher */}
         <div className="language-switch" role="group" aria-label="Code language">
-          <button
-            type="button"
-            onClick={() => toggleLanguageMode('java')}
-            className={language === 'java' ? 'active' : ''}
-            data-testid="language-java"
-          >
-            Java
-          </button>
-          <button
-            type="button"
-            onClick={() => toggleLanguageMode('typescript')}
-            className={language === 'typescript' ? 'active' : ''}
-            data-testid="language-typescript"
-          >
-            TypeScript
-          </button>
+          <AppTooltip content={isRunning ? "Disabled during code execution" : "Switch to Java (JDK 25 LTS Sandbox)"}>
+            <button
+              type="button"
+              disabled={isRunning}
+              onClick={() => !isRunning && toggleLanguageMode('java')}
+              className={`lang-btn icon-only-btn ${language === 'java' ? 'active' : ''}`}
+              data-testid="language-java"
+              aria-label="Switch to Java 25 LTS"
+            >
+              <Coffee size={15} />
+            </button>
+          </AppTooltip>
+          <AppTooltip content={isRunning ? "Disabled during code execution" : "Switch to TypeScript (Web Worker Sandbox)"}>
+            <button
+              type="button"
+              disabled={isRunning}
+              onClick={() => !isRunning && toggleLanguageMode('typescript')}
+              className={`lang-btn icon-only-btn ${language === 'typescript' ? 'active' : ''}`}
+              data-testid="language-typescript"
+              aria-label="Switch to TypeScript"
+            >
+              <FileCode2 size={15} />
+            </button>
+          </AppTooltip>
         </div>
 
-        {/* Run Button */}
-        <AppTooltip content="Execute code in browser sandbox" shortcut="Ctrl+Enter">
+        {/* Run / Cancel Button: Cancel is enabled at all times during execution */}
+        <AppTooltip
+          content={isRunning ? "Cancel execution (Stop running)" : "Execute code in sandbox"}
+          shortcut="Ctrl+Enter"
+        >
           <button
             type="button"
-            className={`run-btn playground-run-action ${isRunning ? 'running' : ''}`}
+            className={`run-btn playground-run-action icon-only-run-btn ${isRunning ? 'running' : ''}`}
             onClick={handleRun}
             data-testid="run-example"
-            aria-label="Run code"
+            aria-label={isRunning ? "Cancel execution" : "Run code"}
           >
             {isRunning ? (
-              <>
-                <Square size={13} fill="currentColor" /> Stop
-              </>
+              <Square size={14} fill="currentColor" />
             ) : (
-              <>
-                <Play size={14} fill="currentColor" /> Run code
-              </>
+              <Play size={15} fill="currentColor" />
             )}
           </button>
         </AppTooltip>
@@ -343,42 +466,42 @@ export function PlaygroundPage({
         {/* Layout Switcher (Stacked vs Side-by-Side Split) */}
         <div className="playground-view-controls">
           <div className="layout-toggle-group" role="group" aria-label="Editor layout mode">
-            <AppTooltip content="Stacked vertical flow (Full width, single scroll)">
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Stacked vertical flow (Full width, single scroll)"}>
               <button
                 type="button"
-                className={`layout-btn ${layoutMode === 'stacked' ? 'active' : ''}`}
-                onClick={() => toggleLayoutMode('stacked')}
+                disabled={isRunning}
+                className={`layout-btn icon-only-btn ${layoutMode === 'stacked' ? 'active' : ''}`}
+                onClick={() => !isRunning && toggleLayoutMode('stacked')}
                 data-testid="layout-stacked"
                 aria-label="Stacked layout"
               >
-                <Rows size={14} />
-                <span>Stacked</span>
+                <Rows size={15} />
               </button>
             </AppTooltip>
-            <AppTooltip content="Side-by-side resizable split view (Sliding window)">
+            <AppTooltip content={isRunning ? "Disabled during code execution" : "Side-by-side resizable split view (Sliding window)"}>
               <button
                 type="button"
-                className={`layout-btn ${layoutMode === 'split' ? 'active' : ''}`}
-                onClick={() => toggleLayoutMode('split')}
+                disabled={isRunning}
+                className={`layout-btn icon-only-btn ${layoutMode === 'split' ? 'active' : ''}`}
+                onClick={() => !isRunning && toggleLayoutMode('split')}
                 data-testid="layout-split"
                 aria-label="Split layout"
               >
-                <Columns size={14} />
-                <span>Split</span>
+                <Columns size={15} />
               </button>
             </AppTooltip>
           </div>
 
-          <AppTooltip content="Open Playground Guide & Language Standards" shortcut="F1">
+          <AppTooltip content={isRunning ? "Disabled during code execution" : "Open Playground Guide & Language Standards"} shortcut={isRunning ? undefined : "F1"}>
             <button
               type="button"
-              className="subtle-btn playground-guide-trigger"
-              onClick={() => setIsGuideOpen(true)}
+              disabled={isRunning}
+              className="subtle-btn playground-guide-trigger icon-only-btn"
+              onClick={() => !isRunning && setIsGuideOpen(true)}
               aria-label="Open Playground Guide & Language Standards"
               data-testid="playground-guide-button"
             >
-              <BookOpen size={13} />
-              <span>Guide & Rules</span>
+              <BookOpen size={15} />
             </button>
           </AppTooltip>
         </div>
@@ -388,14 +511,15 @@ export function PlaygroundPage({
       {layoutMode === 'split' ? (
         /* MODE B: SIDE-BY-SIDE RESIZABLE SPLIT (Sliding Window Divider) */
         <div className="playground-split-wrapper">
-          <PanelGroup direction="horizontal" autoSaveId="gof-playground-panel-sizes-v2">
+          <PanelGroup id="playground-split-group" direction="horizontal" autoSaveId="gof-playground-panel-sizes-v2">
             {/* Left Panel: Editor & Tabs (Threshold minSize=48 prevents tab bar shrink and horizontal scroll) */}
-            <Panel defaultSize={65} minSize={48} maxSize={80} className="playground-editor-panel">
+            <Panel id="playground-editor-panel" defaultSize={65} minSize={48} maxSize={80} className="playground-editor-panel">
               <div className="editor-card playground-editor-card split-editor-card">
                 <PlaygroundFileTabs
                   files={projectFiles}
                   activeFileId={activeFileId}
                   language={language}
+                  disabled={isRunning}
                   onSelectFile={(id) => {
                     setActiveFileId(id);
                     setTargetLine(null);
@@ -412,9 +536,10 @@ export function PlaygroundPage({
                     <span className="file-type-badge">{language.toUpperCase()}</span>
                   </div>
                   <div className="editor-tools">
-                    <AppTooltip content={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut="Alt+Z">
+                    <AppTooltip content={isRunning ? "Disabled during code execution" : `Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut={isRunning ? undefined : "Alt+Z"}>
                       <button
                         type="button"
+                        disabled={isRunning}
                         className={`subtle-btn icon-only-btn ${wordWrap ? 'active' : ''}`}
                         onClick={toggleWordWrap}
                         aria-label={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`}
@@ -422,9 +547,10 @@ export function PlaygroundPage({
                         <WrapText size={14} />
                       </button>
                     </AppTooltip>
-                    <AppTooltip content={copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
+                    <AppTooltip content={isRunning ? "Disabled during code execution" : copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
                       <button
                         type="button"
+                        disabled={isRunning}
                         className={`subtle-btn icon-only-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
                         onClick={handleCopyActiveFile}
                         data-testid="copy-code"
@@ -433,9 +559,10 @@ export function PlaygroundPage({
                         {copiedMode === 'file' ? <Check size={14} /> : <Copy size={14} />}
                       </button>
                     </AppTooltip>
-                    <AppTooltip content={copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
+                    <AppTooltip content={isRunning ? "Disabled during code execution" : copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
                       <button
                         type="button"
+                        disabled={isRunning}
                         className={`subtle-btn icon-only-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
                         onClick={handleCopyAllFiles}
                         data-testid="copy-all-code"
@@ -444,11 +571,12 @@ export function PlaygroundPage({
                         {copiedMode === 'all' ? <Check size={14} /> : <Files size={14} />}
                       </button>
                     </AppTooltip>
-                    <AppTooltip content="Reset project files to clean starter code">
+                    <AppTooltip content={isRunning ? "Disabled during code execution" : "Reset project files to clean starter code"}>
                       <button
                         type="button"
+                        disabled={isRunning}
                         className="subtle-btn icon-only-btn"
-                        onClick={handleResetProject}
+                        onClick={() => !isRunning && setIsResetDialogOpen(true)}
                         data-testid="reset-code"
                         aria-label="Reset files to default code"
                       >
@@ -467,6 +595,7 @@ export function PlaygroundPage({
                     wordWrap={wordWrap}
                     projectFiles={projectFiles}
                     theme={theme === 'dark' ? 'dark' : 'light'}
+                    readOnly={isRunning}
                     onSelectFile={handleSelectFileAndLine}
                     targetLine={targetLine}
                     onTargetLineHandled={() => setTargetLine(null)}
@@ -476,7 +605,7 @@ export function PlaygroundPage({
             </Panel>
 
             {/* Draggable Sliding Window Handle */}
-            <PanelResizeHandle className="playground-resize-handle">
+            <PanelResizeHandle id="playground-resize-handle" className="playground-resize-handle">
               <AppTooltip content="Drag to adjust editor/console width">
                 <div className="resize-handle-pill">
                   <span />
@@ -485,7 +614,7 @@ export function PlaygroundPage({
             </PanelResizeHandle>
 
             {/* Right Panel: Terminal Output */}
-            <Panel defaultSize={35} minSize={20} maxSize={52} className="playground-terminal-panel">
+            <Panel id="playground-terminal-panel" defaultSize={35} minSize={20} maxSize={52} className="playground-terminal-panel">
               <PlaygroundTerminal result={result} isRunning={isRunning} onClear={clearOutput} />
             </Panel>
           </PanelGroup>
@@ -498,6 +627,7 @@ export function PlaygroundPage({
               files={projectFiles}
               activeFileId={activeFileId}
               language={language}
+              disabled={isRunning}
               onSelectFile={(id) => {
                 setActiveFileId(id);
                 setTargetLine(null);
@@ -514,9 +644,10 @@ export function PlaygroundPage({
                 <span className="file-type-badge">{language.toUpperCase()}</span>
               </div>
               <div className="editor-tools">
-                <AppTooltip content={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut="Alt+Z">
+                <AppTooltip content={isRunning ? "Disabled during code execution" : `Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`} shortcut={isRunning ? undefined : "Alt+Z"}>
                   <button
                     type="button"
+                    disabled={isRunning}
                     className={`subtle-btn icon-only-btn ${wordWrap ? 'active' : ''}`}
                     onClick={toggleWordWrap}
                     aria-label={`Toggle Word Wrap (${wordWrap ? 'On' : 'Off'})`}
@@ -524,9 +655,10 @@ export function PlaygroundPage({
                     <WrapText size={14} />
                   </button>
                 </AppTooltip>
-                <AppTooltip content={copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
+                <AppTooltip content={isRunning ? "Disabled during code execution" : copiedMode === 'file' ? 'Active file copied to clipboard!' : `Copy active file (${activeFile?.name})`}>
                   <button
                     type="button"
+                    disabled={isRunning}
                     className={`subtle-btn icon-only-btn ${copiedMode === 'file' ? 'copied-active' : ''}`}
                     onClick={handleCopyActiveFile}
                     data-testid="copy-code"
@@ -535,9 +667,10 @@ export function PlaygroundPage({
                     {copiedMode === 'file' ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                 </AppTooltip>
-                <AppTooltip content={copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
+                <AppTooltip content={isRunning ? "Disabled during code execution" : copiedMode === 'all' ? 'All project files copied!' : 'Copy all project files combined'}>
                   <button
                     type="button"
+                    disabled={isRunning}
                     className={`subtle-btn icon-only-btn ${copiedMode === 'all' ? 'copied-active' : ''}`}
                     onClick={handleCopyAllFiles}
                     data-testid="copy-all-code"
@@ -546,11 +679,12 @@ export function PlaygroundPage({
                     {copiedMode === 'all' ? <Check size={14} /> : <Files size={14} />}
                   </button>
                 </AppTooltip>
-                <AppTooltip content="Reset project files to clean starter code">
+                <AppTooltip content={isRunning ? "Disabled during code execution" : "Reset project files to clean starter code"}>
                   <button
                     type="button"
+                    disabled={isRunning}
                     className="subtle-btn icon-only-btn"
-                    onClick={handleResetProject}
+                    onClick={() => !isRunning && setIsResetDialogOpen(true)}
                     data-testid="reset-code"
                     aria-label="Reset files to default code"
                   >
@@ -569,6 +703,7 @@ export function PlaygroundPage({
                 wordWrap={wordWrap}
                 projectFiles={projectFiles}
                 theme={theme === 'dark' ? 'dark' : 'light'}
+                readOnly={isRunning}
                 onSelectFile={handleSelectFileAndLine}
                 targetLine={targetLine}
                 onTargetLineHandled={() => setTargetLine(null)}
@@ -625,6 +760,14 @@ export function PlaygroundPage({
           onSelectLanguage={(lang) => toggleLanguageMode(lang)}
         />
       </NotesDrawer>
+
+      {/* 6. Custom Radix-based Reset Confirmation Dialog */}
+      <PlaygroundResetConfirmDialog
+        isOpen={isResetDialogOpen}
+        title={pattern.id === BLANK_PROJECT_ID ? 'Blank Scratchpad' : `"${pattern.name}"`}
+        onCancel={() => setIsResetDialogOpen(false)}
+        onConfirm={handleConfirmReset}
+      />
     </div>
   );
 };
@@ -661,8 +804,12 @@ async function copyTextToClipboard(text: string): Promise<boolean> {
 
 
 // Helper: Seed initial project files from pattern data
-function createInitialFiles(pattern: Pattern, language: 'typescript' | 'java'): ProjectFile[] {
-  return buildProjectFiles(pattern, language);
+function createInitialFiles(
+  pattern: Pattern,
+  language: 'typescript' | 'java',
+  source: PlaygroundCodeSource = 'canonical'
+): ProjectFile[] {
+  return buildProjectFiles(pattern, language, source);
 }
 
 export default PlaygroundPage;

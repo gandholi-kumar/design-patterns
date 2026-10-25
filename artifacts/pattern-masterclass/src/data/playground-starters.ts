@@ -2,9 +2,35 @@ import type { Pattern } from '../data';
 import type { ProjectFile } from '../components/PlaygroundFileTabs';
 import { CURATED_JAVA_PROJECTS } from './playground-starters-java';
 import { CURATED_TS_PROJECTS } from './playground-starters-ts';
+import {
+  CANONICAL_JAVA_PROJECTS,
+  CANONICAL_TS_PROJECTS,
+  buildCanonicalJavaProject,
+  buildCanonicalTsProject,
+} from './playground-starters-canonical';
+import {
+  ENTERPRISE_JAVA_PROJECTS,
+  ENTERPRISE_TS_PROJECTS,
+  buildEnterpriseJavaProject,
+  buildEnterpriseTsProject,
+} from './playground-starters-enterprise';
 
 export { CURATED_JAVA_PROJECTS } from './playground-starters-java';
 export { CURATED_TS_PROJECTS } from './playground-starters-ts';
+export {
+  CANONICAL_JAVA_PROJECTS,
+  CANONICAL_TS_PROJECTS,
+  buildCanonicalJavaProject,
+  buildCanonicalTsProject,
+} from './playground-starters-canonical';
+export {
+  ENTERPRISE_JAVA_PROJECTS,
+  ENTERPRISE_TS_PROJECTS,
+  buildEnterpriseJavaProject,
+  buildEnterpriseTsProject,
+} from './playground-starters-enterprise';
+
+export type PlaygroundCodeSource = 'canonical' | 'enterprise' | 'curated';
 
 export const BLANK_PROJECT_ID = 'blank-editor';
 
@@ -137,65 +163,58 @@ function cloneProjectFiles(files: ProjectFile[]): ProjectFile[] {
 }
 
 /**
- * Builds the initial multi-file project workspace for a given pattern and language.
- * Guarantees every GoF pattern has modular dedicated files for both Java and TypeScript.
+ * Builds the initial multi-file project workspace for a given pattern, language, and perspective source.
+ * Guarantees every GoF pattern has runnable code across Canonical, Enterprise, and Curated perspectives.
  */
-export function buildProjectFiles(pattern: Pattern, language: 'java' | 'typescript'): ProjectFile[] {
-  // 1. Java Projects
-  if (language === 'java') {
-    if (CURATED_JAVA_PROJECTS[pattern.id]) {
-      return cloneProjectFiles(CURATED_JAVA_PROJECTS[pattern.id]);
+export function buildProjectFiles(
+  pattern: Pattern,
+  language: 'java' | 'typescript',
+  source: PlaygroundCodeSource = 'canonical'
+): ProjectFile[] {
+  // 1. Blank Scratchpad (identical across all perspectives)
+  if (pattern.id === BLANK_PROJECT_ID) {
+    if (language === 'java') {
+      return [
+        {
+          id: 'blank-main-java',
+          name: 'Main.java',
+          isEntryPoint: true,
+          content: BLANK_JAVA_STARTER,
+        },
+      ];
     }
-
-    // Safety fallback for any dynamically added patterns:
-    const rawCode = pattern.javaImplementation?.code || '// Java implementation';
-    const baseName = (pattern.javaImplementation?.fileName || 'Pattern.java').replace(/\.java$/, '');
-
-    const sanitizedCode = rawCode.replace(
-      /public\s+(class|interface|abstract\s+class|enum)\s+([A-Za-z0-9_]+)/g,
-      (match, type, name) => {
-        if (name === baseName) return match;
-        return `${type} ${name}`;
-      }
-    );
-
     return [
       {
-        id: 'main-java',
-        name: 'Main.java',
+        id: 'blank-main-ts',
+        name: 'index.ts',
         isEntryPoint: true,
-        content: `public class Main {
-    public static void main(String[] args) {
-        System.out.println("=== ${pattern.name} Pattern (Java) ===");
-        System.out.println("Pattern Intent: ${pattern.intent.replace(/"/g, '\\"')}");
-    }
-}
-`,
-      },
-      {
-        id: 'pattern-java',
-        name: `${baseName}.java`,
-        content: sanitizedCode,
-        isEntryPoint: false,
+        content: BLANK_TS_STARTER,
       },
     ];
   }
 
-  // 2. TypeScript Projects
-  if (CURATED_TS_PROJECTS[pattern.id]) {
-    return cloneProjectFiles(CURATED_TS_PROJECTS[pattern.id]);
+  // 2. Curated Modular Multi-File Projects
+  if (source === 'curated') {
+    if (language === 'java' && CURATED_JAVA_PROJECTS[pattern.id]) {
+      return cloneProjectFiles(CURATED_JAVA_PROJECTS[pattern.id]);
+    }
+    if (language === 'typescript' && CURATED_TS_PROJECTS[pattern.id]) {
+      return cloneProjectFiles(CURATED_TS_PROJECTS[pattern.id]);
+    }
   }
 
-  // Safety fallback for any dynamically added patterns:
-  const rawCode = pattern.runnableCode || pattern.typeScriptImplementation?.code || '// TypeScript implementation';
-  const fileName = pattern.typeScriptImplementation?.fileName || 'index.ts';
+  // 3. Enterprise Perspective Modular Projects
+  if (source === 'enterprise') {
+    if (language === 'java') {
+      return buildEnterpriseJavaProject(pattern);
+    }
+    return buildEnterpriseTsProject(pattern);
+  }
 
-  return [
-    {
-      id: 'main-ts',
-      name: fileName,
-      content: rawCode,
-      isEntryPoint: true,
-    },
-  ];
+  // 4. Canonical Perspective Modular Projects (default)
+  if (language === 'java') {
+    return buildCanonicalJavaProject(pattern);
+  }
+  return buildCanonicalTsProject(pattern);
 }
+

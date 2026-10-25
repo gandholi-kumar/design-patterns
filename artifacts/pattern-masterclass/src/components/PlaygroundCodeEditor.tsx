@@ -12,6 +12,7 @@ interface PlaygroundCodeEditorProps {
   projectFiles?: ProjectFile[];
   height?: string;
   theme?: 'light' | 'dark';
+  readOnly?: boolean;
   onFormat?: () => void;
   onSelectFile?: (fileId: string, lineNumber?: number) => void;
   targetLine?: number | null;
@@ -129,6 +130,12 @@ function defineCustomThemes(monaco: typeof MonacoType) {
       'editorHoverWidget.border': '#353b47',
       'editorHoverWidget.foreground': '#ece8de',
       'editorHoverWidget.statusBarBackground': '#15181f',
+      'menu.background': '#161820',
+      'menu.foreground': '#ece8de',
+      'menu.selectionBackground': '#242a35',
+      'menu.selectionForeground': '#ffffff',
+      'menu.separatorBackground': '#353b47',
+      'menu.border': '#353b47',
     },
   });
 
@@ -180,6 +187,12 @@ function defineCustomThemes(monaco: typeof MonacoType) {
       'editorHoverWidget.border': '#dcd6c8',
       'editorHoverWidget.foreground': '#1f2328',
       'editorHoverWidget.statusBarBackground': '#f6f8fa',
+      'menu.background': '#ffffff',
+      'menu.foreground': '#1f2328',
+      'menu.selectionBackground': '#f4f0e6',
+      'menu.selectionForeground': '#0f141c',
+      'menu.separatorBackground': '#dcd6c8',
+      'menu.border': '#dcd6c8',
     },
   });
 }
@@ -247,6 +260,87 @@ function extractJavaSymbols(files: ProjectFile[]): Array<{
   return symbols;
 }
 
+interface SymbolLocation {
+  file: ProjectFile;
+  line: number;
+  col: number;
+}
+
+/**
+ * Resolves an import module specifier (e.g. './strategy', './Dialog') to a target project file.
+ */
+function findModuleTargetFile(specifier: string, files: ProjectFile[]): ProjectFile | null {
+  const clean = specifier.replace(/^\.\//, '').replace(/\.[a-z]+$/, '').toLowerCase();
+  return (
+    files.find((f) => {
+      const fClean = f.name.replace(/\.[a-z]+$/, '').toLowerCase();
+      return fClean === clean || f.name.toLowerCase() === specifier.toLowerCase();
+    }) || null
+  );
+}
+
+/**
+ * Robust symbol finder across all project files supporting:
+ * - Abstract classes, classes, interfaces, types, enums, records
+ * - Function declarations, methods, constructors, interface signatures
+ * - Exported constants, variables, and properties
+ */
+function findSymbolInProjectFiles(
+  term: string,
+  currentFileName: string,
+  files: ProjectFile[]
+): SymbolLocation | null {
+  if (!term || term.length < 2) return null;
+
+  // Prioritize external tabs to facilitate cross-tab navigation
+  const sorted = [...files].sort((a, b) => {
+    if (a.name === currentFileName) return 1;
+    if (b.name === currentFileName) return -1;
+    return 0;
+  });
+
+  const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // A. Class, Interface, Type, Enum, Struct, Record (TS & Java)
+  const typeRegex = new RegExp(
+    `(?:export\\s+)?(?:default\\s+)?(?:public\\s+|protected\\s+|private\\s+|static\\s+|abstract\\s+|final\\s+|sealed\\s+)*(?:class|interface|type|enum|record)\\s+(${escapedTerm})\\b`
+  );
+
+  // B. Function / Method declaration (TS & Java)
+  const funcRegex = new RegExp(
+    `(?:export\\s+)?(?:async\\s+)?(?:public\\s+|protected\\s+|private\\s+|static\\s+|abstract\\s+|final\\s+|override\\s+)*(?:function\\s+|[A-Za-z0-9_<>\\[\\],\\s]+\\s+)?(${escapedTerm})\\s*\\(`
+  );
+
+  // C. Variable / Constant declaration
+  const varRegex = new RegExp(
+    `(?:export\\s+)?(?:public\\s+|protected\\s+|private\\s+|readonly\\s+)*(?:const|let|var)\\s+(${escapedTerm})\\b`
+  );
+
+  // D. Interface / Object property or method signature (e.g. render(): void; or timeout: number;)
+  const sigRegex = new RegExp(`^\\s*(${escapedTerm})\\s*(?:\\(|:\\s*|\\?\\s*:)`);
+
+  for (const file of sorted) {
+    const lines = file.content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.includes(term)) continue;
+
+      if (
+        typeRegex.test(line) ||
+        (funcRegex.test(line) && !['if', 'for', 'while', 'switch', 'catch'].includes(term)) ||
+        varRegex.test(line) ||
+        sigRegex.test(line)
+      ) {
+        const col = line.indexOf(term) + 1;
+        return { file, line: i + 1, col };
+      }
+    }
+  }
+
+  return null;
+}
+
+
 interface MonacoTypeScriptDefaults {
   setCompilerOptions: (options: Record<string, unknown>) => void;
   setDiagnosticsOptions: (options: Record<string, unknown>) => void;
@@ -275,6 +369,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
   projectFiles = [],
   height = '100%',
   theme: themeProp,
+  readOnly = false,
   onSelectFile,
   targetLine,
   onTargetLineHandled,
@@ -311,6 +406,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
   const javaHoverRef = useRef<MonacoType.IDisposable | null>(null);
   const definitionProvidersRef = useRef<MonacoType.IDisposable[]>([]);
   const openerRef = useRef<MonacoType.IDisposable | null>(null);
+  const mouseDownRef = useRef<MonacoType.IDisposable | null>(null);
 
   // Keep latest refs for callbacks to avoid stale closures in Monaco language providers
   const projectFilesRef = useRef(projectFiles);
@@ -398,6 +494,16 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
           }
         } else if (file.name !== fileName && existingModel.getValue() !== file.content) {
           existingModel.setValue(file.content);
+        }
+
+        // Register extra library with compiler worker for instant cross-tab type resolution
+        if (file.name !== fileName) {
+          try {
+            const lib = ts.typescriptDefaults.addExtraLib(file.content, fileUri.toString());
+            extraLibsRef.current.push(lib);
+          } catch {
+            // ignore
+          }
         }
       }
     });
@@ -523,7 +629,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
     });
     definitionProvidersRef.current = [];
 
-    // 1. TypeScript Definition Provider (resolves './strategy', './navigator', exported classes/types/interfaces)
+    // 1. TypeScript Definition Provider (resolves './strategy', exported classes/types/interfaces, methods)
     const tsDefProvider = monaco.languages.registerDefinitionProvider('typescript', {
       provideDefinition: (model, position) => {
         const line = model.getLineContent(position.lineNumber);
@@ -537,13 +643,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
           const startCol = match.index + line.slice(match.index).indexOf(specifier) + 1;
           const endCol = startCol + specifier.length;
           if (position.column >= startCol && position.column <= endCol) {
-            const cleanModule = specifier.replace(/^\.\//, '');
-            const target = projectFilesRef.current.find(
-              (f) =>
-                f.name.replace(/\.tsx?$/, '') === cleanModule ||
-                f.name === cleanModule ||
-                f.name === `${cleanModule}.ts`
-            );
+            const target = findModuleTargetFile(specifier, projectFilesRef.current);
             if (target) {
               return {
                 uri: monaco.Uri.parse(`file:///${target.name}`),
@@ -553,31 +653,19 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
           }
         }
 
-        // B. Match identifier symbol declaration across other files (cross-file only, never duplicating active file)
+        // B. Match identifier symbol declaration across project files
         if (word) {
-          const term = word.word;
-          const otherFiles = projectFilesRef.current.filter((f) => f.name !== fileNameRef.current);
-
-          for (const file of otherFiles) {
-            const lines = file.content.split('\n');
-            for (let i = 0; i < lines.length; i++) {
-              const l = lines[i];
-              const declMatch = l.match(
-                new RegExp(`(?:export\\s+)?(?:class|interface|type|enum|function|const|let|var)\\s+(${term})\\b`)
-              );
-              if (declMatch) {
-                const col = l.indexOf(term) + 1;
-                return {
-                  uri: monaco.Uri.parse(`file:///${file.name}`),
-                  range: {
-                    startLineNumber: i + 1,
-                    startColumn: col,
-                    endLineNumber: i + 1,
-                    endColumn: col + term.length,
-                  },
-                };
-              }
-            }
+          const res = findSymbolInProjectFiles(word.word, fileNameRef.current, projectFilesRef.current);
+          if (res) {
+            return {
+              uri: monaco.Uri.parse(`file:///${res.file.name}`),
+              range: {
+                startLineNumber: res.line,
+                startColumn: res.col,
+                endLineNumber: res.line,
+                endColumn: res.col + word.word.length,
+              },
+            };
           }
         }
 
@@ -585,74 +673,23 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
       },
     });
 
-    // 2. Java Definition Provider (resolves RouteStrategy, PublicTransitStrategy, Navigator, methods)
+    // 2. Java Definition Provider (resolves classes, interfaces, records, methods, constructors)
     const javaDefProvider = monaco.languages.registerDefinitionProvider('java', {
       provideDefinition: (model, position) => {
         const word = model.getWordAtPosition(position);
         if (!word) return null;
 
-        const term = word.word;
-        const sortedFiles = [...projectFilesRef.current].sort((a, b) => {
-          if (a.name === fileNameRef.current) return 1;
-          if (b.name === fileNameRef.current) return -1;
-          return 0;
-        });
-
-        for (const file of sortedFiles) {
-          if (!file.name.endsWith('.java')) continue;
-          const lines = file.content.split('\n');
-          for (let i = 0; i < lines.length; i++) {
-            const l = lines[i];
-
-            // A. Class / Interface / Enum / Record declaration
-            const classMatch = l.match(
-              new RegExp(`(?:public\\s+|abstract\\s+|final\\s+)*(?:class|interface|enum|record)\\s+(${term})\\b`)
-            );
-            if (classMatch) {
-              const col = l.indexOf(term) + 1;
-              return {
-                uri: monaco.Uri.parse(`file:///${file.name}`),
-                range: {
-                  startLineNumber: i + 1,
-                  startColumn: col,
-                  endLineNumber: i + 1,
-                  endColumn: col + term.length,
-                },
-              };
-            }
-
-            // B. Method declaration
-            const methodMatch = l.match(
-              new RegExp(`(?:public|protected|private|static|abstract|final|\\s)+\\w+(?:<[^>]+>)?\\s+(${term})\\s*\\(`)
-            );
-            if (methodMatch && !['if', 'for', 'while', 'switch', 'catch'].includes(term)) {
-              const col = l.indexOf(term) + 1;
-              return {
-                uri: monaco.Uri.parse(`file:///${file.name}`),
-                range: {
-                  startLineNumber: i + 1,
-                  startColumn: col,
-                  endLineNumber: i + 1,
-                  endColumn: col + term.length,
-                },
-              };
-            }
-
-            // C. Constructor declaration
-            const ctorMatch = l.match(new RegExp(`(?:public|protected|private)\\s+(${term})\\s*\\(`));
-            if (ctorMatch) {
-              const col = l.indexOf(term) + 1;
-              return {
-                uri: monaco.Uri.parse(`file:///${file.name}`),
-                range: {
-                  startLineNumber: i + 1,
-                  startColumn: col,
-                  endLineNumber: i + 1,
-                  endColumn: col + term.length,
-                },
-              };
-            }
-          }
+        const res = findSymbolInProjectFiles(word.word, fileNameRef.current, projectFilesRef.current);
+        if (res && res.file.name.endsWith('.java')) {
+          return {
+            uri: monaco.Uri.parse(`file:///${res.file.name}`),
+            range: {
+              startLineNumber: res.line,
+              startColumn: res.col,
+              endLineNumber: res.line,
+              endColumn: res.col + word.word.length,
+            },
+          };
         }
 
         return null;
@@ -723,6 +760,8 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
         javaHoverRef.current.dispose();
         javaHoverRef.current = null;
       }
+      mouseDownRef.current?.dispose();
+      mouseDownRef.current = null;
       definitionProvidersRef.current.forEach((d) => {
         try {
           d.dispose();
@@ -755,6 +794,59 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
       }
     }
     setupDefinitionProviders();
+
+    // 4. Attach instant Ctrl+Click / Cmd+Click mouse navigation across tabs & symbols
+    if (mouseDownRef.current) {
+      mouseDownRef.current.dispose();
+      mouseDownRef.current = null;
+    }
+
+    mouseDownRef.current = editor.onMouseDown((e) => {
+      if (!(e.event.ctrlKey || e.event.metaKey)) return;
+      const target = e.target;
+      if (!target || !target.position) return;
+      const model = editor.getModel();
+      if (!model) return;
+
+      const position = target.position;
+      const lineContent = model.getLineContent(position.lineNumber);
+
+      // Check if clicking inside import path quotes: e.g. from './strategy';
+      const importRegex = /(?:import|from)\s+['"](\.[^'"]+)['"]/g;
+      let match;
+      while ((match = importRegex.exec(lineContent)) !== null) {
+        const specifier = match[1];
+        const startCol = match.index + lineContent.slice(match.index).indexOf(specifier) + 1;
+        const endCol = startCol + specifier.length;
+        if (position.column >= startCol && position.column <= endCol) {
+          const targetFile = findModuleTargetFile(specifier, projectFilesRef.current);
+          if (targetFile && targetFile.name !== fileNameRef.current) {
+            e.event.preventDefault();
+            e.event.stopPropagation();
+            onSelectFileRef.current?.(targetFile.id, 1);
+            return;
+          }
+        }
+      }
+
+      // Check word under cursor
+      const word = model.getWordAtPosition(position);
+      if (!word) return;
+      const term = word.word;
+
+      const result = findSymbolInProjectFiles(term, fileNameRef.current, projectFilesRef.current);
+      if (result) {
+        e.event.preventDefault();
+        e.event.stopPropagation();
+        if (result.file.name !== fileNameRef.current) {
+          onSelectFileRef.current?.(result.file.id, result.line);
+        } else {
+          editor.revealLineInCenter(result.line);
+          editor.setPosition({ lineNumber: result.line, column: result.col });
+          editor.focus();
+        }
+      }
+    });
   };
 
   // Clear any rogue diagnostics on Java files whenever active file or language changes
@@ -843,8 +935,9 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
         showSnippets: true,
       },
       padding: { top: 12, bottom: 12 },
+      readOnly,
     }),
-    [language, wordWrap]
+    [language, wordWrap, readOnly]
   );
 
   // Model URI path: Guarantees TypeScript compiler recognizes .ts files as pure TypeScript
