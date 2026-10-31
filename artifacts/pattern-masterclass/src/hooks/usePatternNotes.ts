@@ -20,12 +20,15 @@ interface UsePatternNotesReturn {
 const DEBOUNCE_DELAY_MS = 2000;
 const SAVED_FADE_DELAY_MS = 4000;
 
-export function usePatternNotes(patternId: string): UsePatternNotesReturn {
+export function usePatternNotes(
+  patternId: string,
+  onSaveSuccess?: () => void
+): UsePatternNotesReturn {
   const repository = useNoteRepository();
 
+  const [loadedPatternId, setLoadedPatternId] = useState<string | null>(null);
   const [note, setNote] = useState<PatternNote | null>(null);
   const [blocks, setBlocks] = useState<NoteBlock[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -35,6 +38,9 @@ export function usePatternNotes(patternId: string): UsePatternNotesReturn {
   const latestBlocksRef = useRef<NoteBlock[]>([]);
   const isDirtyRef = useRef<boolean>(false);
 
+  // Synchronously compute isLoading so stale blocks from previous pattern are never exposed during pattern transitions
+  const isLoading = loadedPatternId !== patternId;
+
   // Sync ref with state
   useEffect(() => {
     latestBlocksRef.current = blocks;
@@ -43,7 +49,6 @@ export function usePatternNotes(patternId: string): UsePatternNotesReturn {
   // Load note for patternId
   useEffect(() => {
     let isCancelled = false;
-    setIsLoading(true);
     setSaveStatus("idle");
     setErrorMessage(null);
     isDirtyRef.current = false;
@@ -63,13 +68,13 @@ export function usePatternNotes(patternId: string): UsePatternNotesReturn {
           latestBlocksRef.current = [];
           setLastSavedAt(null);
         }
-        setIsLoading(false);
+        setLoadedPatternId(patternId);
       })
       .catch((err) => {
         if (isCancelled) return;
         console.error(`Failed to load note for ${patternId}:`, err);
         setErrorMessage(err instanceof Error ? err.message : "Failed to load note");
-        setIsLoading(false);
+        setLoadedPatternId(patternId);
       });
 
     return () => {
@@ -110,6 +115,7 @@ export function usePatternNotes(patternId: string): UsePatternNotesReturn {
         setLastSavedAt(now);
         setSaveStatus("saved");
         isDirtyRef.current = false;
+        onSaveSuccess?.();
 
         if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
         fadeTimerRef.current = setTimeout(() => {
@@ -123,7 +129,7 @@ export function usePatternNotes(patternId: string): UsePatternNotesReturn {
         );
       }
     },
-    [patternId, repository]
+    [patternId, repository, onSaveSuccess]
   );
 
   const handleBlocksChange = useCallback(
@@ -149,8 +155,31 @@ export function usePatternNotes(patternId: string): UsePatternNotesReturn {
   }, [performSave]);
 
   const retrySave = useCallback(async () => {
-    await performSave(latestBlocksRef.current);
-  }, [performSave]);
+    if (errorMessage && loadedPatternId !== patternId) {
+      setErrorMessage(null);
+      try {
+        const existingNote = await repository.get(patternId);
+        if (existingNote) {
+          setNote(existingNote);
+          setBlocks(existingNote.blocks);
+          latestBlocksRef.current = existingNote.blocks;
+          setLastSavedAt(new Date(existingNote.lastModified));
+        } else {
+          setNote(null);
+          setBlocks([]);
+          latestBlocksRef.current = [];
+          setLastSavedAt(null);
+        }
+        setLoadedPatternId(patternId);
+      } catch (err) {
+        console.error(`Failed to load note for ${patternId}:`, err);
+        setErrorMessage(err instanceof Error ? err.message : "Failed to load note");
+        setLoadedPatternId(patternId);
+      }
+    } else {
+      await performSave(latestBlocksRef.current);
+    }
+  }, [errorMessage, loadedPatternId, patternId, performSave, repository]);
 
   const uploadMedia = useCallback(
     async (file: File | Blob) => {
@@ -160,11 +189,11 @@ export function usePatternNotes(patternId: string): UsePatternNotesReturn {
   );
 
   return {
-    note,
-    blocks,
+    note: loadedPatternId === patternId ? note : null,
+    blocks: loadedPatternId === patternId ? blocks : [],
     isLoading,
-    saveStatus,
-    lastSavedAt,
+    saveStatus: loadedPatternId === patternId ? saveStatus : "idle",
+    lastSavedAt: loadedPatternId === patternId ? lastSavedAt : null,
     errorMessage,
     handleBlocksChange,
     saveImmediately,

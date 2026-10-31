@@ -185,7 +185,15 @@ export function PatternDetailPage({
   // Keyboard navigation shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.closest('[contenteditable="true"]') ||
+          target.closest('.monaco-editor'))
+      ) {
         return;
       }
       if (e.key === 'Escape') {
@@ -694,6 +702,7 @@ export function PatternDetailPage({
             >
               <ErrorBoundary resetKey={pattern.id}>
                 <PatternNotesPanel
+                  key={pattern.id}
                   patternId={pattern.id}
                   patternName={pattern.name}
                   category={pattern.category}
@@ -704,6 +713,7 @@ export function PatternDetailPage({
                     setNotesDirection(next);
                   }}
                   onClose={() => setNotesPanelOpen(false)}
+                  onNoteSaved={() => setHasNote(true)}
                 />
               </ErrorBoundary>
             </Panel>

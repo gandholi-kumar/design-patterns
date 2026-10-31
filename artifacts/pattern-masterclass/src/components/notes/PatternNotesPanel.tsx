@@ -19,6 +19,7 @@ interface PatternNotesPanelProps {
   theme?: "light" | "dark";
   onToggleOrientation: () => void;
   onClose: () => void;
+  onNoteSaved?: () => void;
 }
 
 export function PatternNotesPanel({
@@ -29,6 +30,7 @@ export function PatternNotesPanel({
   theme = "dark",
   onToggleOrientation,
   onClose,
+  onNoteSaved,
 }: PatternNotesPanelProps) {
   const [, setLoc] = useLocation();
 
@@ -42,7 +44,7 @@ export function PatternNotesPanel({
     uploadMedia,
     retrySave,
     saveImmediately,
-  } = usePatternNotes(patternId);
+  } = usePatternNotes(patternId, onNoteSaved);
 
   // Keyboard shortcut Ctrl+S / Cmd+S to save immediately
   useEffect(() => {
@@ -224,7 +226,7 @@ export function PatternNotesPanel({
             </button>
           </div>
         ) : (
-          <NotesErrorBoundary resetKey={blocks} onReset={retrySave}>
+          <NotesErrorBoundary resetKey={patternId} onReset={retrySave}>
             <Suspense
               fallback={
                 <div className="p-4 text-xs text-muted-foreground flex items-center gap-2">
@@ -234,6 +236,7 @@ export function PatternNotesPanel({
               }
             >
               <NotesEditor
+                key={patternId}
                 initialBlocks={blocks}
                 patternName={patternName}
                 theme={theme}
