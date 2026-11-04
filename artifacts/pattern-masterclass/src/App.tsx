@@ -22,6 +22,7 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Sparkles,
   Sun,
   Terminal,
   X,
@@ -37,7 +38,8 @@ import { AppTooltip } from './components/ui/app-tooltip';
 import { AppToaster } from './components/ui/app-toaster';
 import { useSession } from './lib/auth-client';
 import { UserProfileDropdown } from './components/auth/UserProfileDropdown';
-import { useLearningStore, useWorkspacePreferencesStore } from './stores';
+import { useLearningStore, useWorkspacePreferencesStore, useTourStore } from './stores';
+import { TourManager } from './components/tour/TourManager';
 import { ENABLE_FULL_FEATURES } from './config/features';
 
 // Lazy-loaded pages and heavy modal components for minimum initial bundle & fast FCP/LCP
@@ -95,6 +97,7 @@ export function App() {
 
   const sidebarCollapsed = useWorkspacePreferencesStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useWorkspacePreferencesStore((s) => s.toggleSidebar);
+  const startTour = useTourStore((s) => s.startTour);
 
   const isMobile = useIsMobile();
 
@@ -257,6 +260,17 @@ export function App() {
                   <span>Backup & settings</span>
                   <ArrowUpRight size={14} className="nav-trailing" />
                 </button>
+                <button
+                  type="button"
+                  className="nav-item hidden lg:flex"
+                  onClick={() => startTour()}
+                  data-testid="open-tour-guide"
+                  aria-label="Start interactive application tour"
+                >
+                  <Sparkles size={17} />
+                  <span>Tour Guide</span>
+                  <ArrowUpRight size={14} className="nav-trailing" />
+                </button>
               </>
             )}
             <div className="side-footer">
@@ -409,6 +423,19 @@ export function App() {
               )}
 
               <AppTooltip
+                content="Take application tour">
+                <button
+                  type="button"
+                  className="icon-btn topbar-action-btn hidden lg:flex"
+                  onClick={() => startTour()}
+                  aria-label="Take application tour"
+                  data-testid="topbar-tour-btn"
+                >
+                  <Sparkles size={16} />
+                </button>
+              </AppTooltip>
+
+              <AppTooltip
                 content={studioMode ? 'Exit Studio Focus Mode' : 'Enter Studio Focus Mode'}
                 shortcut="Alt+F"
               >
@@ -555,6 +582,7 @@ export function App() {
 
           <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
         </Suspense>
+        <TourManager />
         <AppToaster />
       </div>
     </NoteRepositoryProvider>
