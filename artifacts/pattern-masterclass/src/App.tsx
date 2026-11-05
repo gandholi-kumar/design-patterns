@@ -32,7 +32,7 @@ import type { Perspective } from './pattern-types';
 import { useIsMobile } from './hooks/use-mobile';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useBackupExport } from './hooks/useBackupExport';
-import { usePageTitle } from './hooks/usePageTitle';
+import { useSEO } from './hooks/useSEO';
 import { NoteRepositoryProvider } from './lib/notes/NoteRepositoryContext';
 import { AppTooltip } from './components/ui/app-tooltip';
 import { AppToaster } from './components/ui/app-toaster';
@@ -129,22 +129,104 @@ export function App() {
   const page = isPatternPage ? 'catalog' : (nav.find((n) => n.path === loc)?.id || 'catalog');
   const progressList = Object.values(progress);
 
-  // Dynamic Document Title
-  const dynamicTitle = isPatternPage && activePattern
-    ? `${activePattern.name} (${activePattern.category})`
-    : page === 'playground'
-    ? 'Interactive Code Playground'
-    : page === 'decision'
-    ? 'AI Decision Engine & Pattern Advisor'
-    : page === 'notes'
-    ? 'Architectural Notes & Annotations'
-    : page === 'simulators'
-    ? 'Pattern Studio (Alpha)'
-    : page === 'quiz'
-    ? 'Scenario Lab & Diagnostic Quizzes'
-    : 'Catalog & Pattern Directory';
+  // Dynamic SEO Configuration
+  const seoConfig = useMemo(() => {
+    if (isPatternPage && activePattern) {
+      return {
+        title: `${activePattern.name} Pattern (${activePattern.category}) - Implementation & UML`,
+        description: `${activePattern.intent} Explore the ${activePattern.name} pattern with interactive Java and TypeScript implementations, UML diagrams, and trade-offs.`,
+        canonicalPath: `/pattern/${activePattern.id}`,
+        type: 'article' as const,
+        structuredData: [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Catalog',
+                item: 'https://design-patterns.app/',
+              },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: activePattern.category,
+                item: `https://design-patterns.app/?category=${activePattern.category}`,
+              },
+              {
+                '@type': 'ListItem',
+                position: 3,
+                name: activePattern.name,
+                item: `https://design-patterns.app/pattern/${activePattern.id}`,
+              },
+            ],
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'TechArticle',
+            headline: `${activePattern.name} Design Pattern`,
+            description: activePattern.intent,
+            about: `${activePattern.category} Software Design Pattern`,
+            proficiencyLevel: 'Intermediate',
+            programmingLanguage: ['Java', 'TypeScript'],
+            author: {
+              '@type': 'Organization',
+              name: 'GoF Design Patterns Masterclass',
+            },
+          },
+        ],
+      };
+    }
 
-  usePageTitle(dynamicTitle);
+    switch (page) {
+      case 'playground':
+        return {
+          title: 'Interactive Design Patterns Code Playground',
+          description:
+            'Run, edit, and experiment with Java and TypeScript implementations of Gang of Four design patterns in an interactive in-browser playground.',
+          canonicalPath: '/playground',
+        };
+      case 'decision':
+        return {
+          title: 'GoF Decision Engine & Architecture Pattern Advisor',
+          description:
+            'Find the right Gang of Four design pattern for your architectural requirements with trade-off matrices and decision guidance.',
+          canonicalPath: '/decision',
+        };
+      case 'notes':
+        return {
+          title: 'Study Notes & Architecture Workspace',
+          description:
+            'Organize your notes, pattern annotations, and system design takeaways in a private workspace.',
+          canonicalPath: '/notes',
+        };
+      case 'simulators':
+        return {
+          title: 'Design Pattern Visual Simulators & Studio',
+          description:
+            'Observe state changes, structural relations, and behavioral event dispatching through interactive visual simulators.',
+          canonicalPath: '/simulators',
+        };
+      case 'quiz':
+        return {
+          title: 'Design Patterns Scenario Lab & Diagnostic Quizzes',
+          description:
+            'Test and reinforce your software architecture knowledge with real-world scenarios, diagnostic quizzes, and spaced-repetition practice.',
+          canonicalPath: '/quiz',
+        };
+      case 'catalog':
+      default:
+        return {
+          title: 'Catalog & Pattern Directory - 23 GoF Design Patterns',
+          description:
+            'Explore all 23 Gang of Four design patterns categorized by Creational, Structural, and Behavioral with Java/TypeScript examples and UML diagrams.',
+          canonicalPath: '/',
+        };
+    }
+  }, [isPatternPage, activePattern, page]);
+
+  useSEO(seoConfig);
 
   return (
     <NoteRepositoryProvider>
