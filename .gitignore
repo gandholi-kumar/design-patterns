@@ -44,7 +44,7 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
+# Local development caches
 .cache/
 .local/
 
@@ -65,4 +65,3 @@ PRIVATE_*.md
 scratch/
 test-results/
 .tempmediaStorage/
-

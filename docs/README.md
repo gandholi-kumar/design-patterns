@@ -103,7 +103,6 @@ design-patterns/
 │   ├── api-client-react/       # Auto-generated TanStack React Query hooks
 │   └── db/                     # Drizzle ORM schema and PostgreSQL connection pool
 ├── docs/                       # Categorized technical documentation
-├── scripts/                    # Workspace automation scripts
 ├── package.json                # Root build and dev scripts
 └── pnpm-workspace.yaml         # Monorepo configuration and dependency catalog
 ```
@@ -114,7 +113,7 @@ design-patterns/
 # Start the primary frontend application (React + Vite)
 pnpm --filter @workspace/pattern-masterclass run dev
 
-# Run full TypeScript check across all 9 packages in workspace
+# Run full TypeScript check across all 8 packages in workspace
 pnpm run typecheck
 
 # Build all packages in the workspace

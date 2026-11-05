@@ -265,7 +265,7 @@ server: {
 | ---------- | --------- | ------------- |
 | `PORT` | `5173` | Port for the Vite dev server |
 | `BASE_PATH` | `/` | Base URL path prefix for subdirectory deployments |
-| `NODE_ENV` | `development` | Enables/disables Replit dev plugins |
+| `NODE_ENV` | `development` | Controls development vs production mode |
 
 ### Backend (`api-server`)
 
@@ -287,7 +287,7 @@ Run these before committing or raising a pull request:
 
 **With npm (from monorepo root):**
 ```bash
-# Typecheck all libraries, apps, and scripts:
+# Typecheck all libraries and apps:
 npm run typecheck
 ```
 
