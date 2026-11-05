@@ -1,21 +1,10 @@
-import { useEffect } from 'react';
+import { useSEO, type SEOProps } from './useSEO';
+
+export { useSEO, type SEOProps };
 
 /**
- * Dynamically updates document.title and optional meta description per route.
+ * Backwards compatibility wrapper for usePageTitle.
  */
 export function usePageTitle(title: string, description?: string) {
-  useEffect(() => {
-    const fullTitle = title.includes('GoF') ? title : `${title} | GoF Design Patterns Masterclass`;
-    document.title = fullTitle;
-
-    if (description) {
-      let metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-      if (!metaDesc) {
-        metaDesc = document.createElement('meta');
-        metaDesc.name = 'description';
-        document.head.appendChild(metaDesc);
-      }
-      metaDesc.content = description;
-    }
-  }, [title, description]);
+  useSEO({ title, description });
 }

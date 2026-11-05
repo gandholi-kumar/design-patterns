@@ -6,20 +6,116 @@
     <meta name="theme-color" content="#090d16" />
     <title>GoF Design Patterns Masterclass</title>
     <meta name="description" content="Master all 23 Gang of Four design patterns with interactive code playgrounds, AI architectural guidance, UML diagrams, and spaced-repetition quizzes." />
+    <meta name="keywords" content="design patterns, gang of four, gof patterns, software architecture, java design patterns, typescript design patterns, creational patterns, structural patterns, behavioral patterns, uml diagrams, system design" />
     <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://design-patterns.app/" />
+
+    <!-- OpenGraph Metadata -->
+    <meta property="og:site_name" content="GoF Design Patterns Masterclass" />
     <meta property="og:title" content="GoF Design Patterns Masterclass" />
     <meta property="og:description" content="Master all 23 Gang of Four design patterns with interactive code playgrounds, AI architectural guidance, UML diagrams, and spaced-repetition quizzes." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://design-patterns.app/" />
+    <meta property="og:image" content="https://design-patterns.app/og-image.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GoF Design Patterns Masterclass Overview Card" />
+
+    <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="GoF Design Patterns Masterclass" />
     <meta name="twitter:description" content="Master all 23 Gang of Four design patterns with interactive code playgrounds, AI architectural guidance, UML diagrams, and spaced-repetition quizzes." />
+    <meta name="twitter:image" content="https://design-patterns.app/og-image.svg" />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "GoF Design Patterns Masterclass",
+      "url": "https://design-patterns.app/",
+      "description": "An interactive learning platform for exploring the 23 Gang of Four design patterns with live code playgrounds, UML diagrams, decision guidance, and diagnostic quizzes.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://design-patterns.app/?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Semantic Crawler Fallback for Search Engines and Non-JS Clients -->
+    <noscript>
+      <header>
+        <h1>GoF Design Patterns Masterclass</h1>
+        <p>An interactive guide to the 23 Gang of Four software design patterns with Java &amp; TypeScript implementations, architectural trade-offs, and UML diagrams.</p>
+      </header>
+      <main>
+        <nav aria-label="Feature Hubs">
+          <h2>Learning Hubs</h2>
+          <ul>
+            <li><a href="/">Pattern Catalog</a> - Search and filter 23 patterns</li>
+            <li><a href="/decision">AI Decision Engine</a> - Interactive pattern selection matrix</li>
+            <li><a href="/playground">Code Playground</a> - Run Java and TypeScript patterns in browser</li>
+            <li><a href="/simulators">Pattern Studio</a> - Visual pattern simulators</li>
+            <li><a href="/quiz">Scenario Lab</a> - Architectural quizzes and spaced-repetition questions</li>
+            <li><a href="/notes">Study Notes</a> - Private architecture workspace</li>
+          </ul>
+        </nav>
+
+        <section aria-labelledby="creational-heading">
+          <h2 id="creational-heading">Creational Design Patterns</h2>
+          <p>Mechanisms for creating objects in a manner suitable to the situation:</p>
+          <ul>
+            <li><a href="/pattern/factory-method">Factory Method Pattern</a> - Delegate instantiation to subclasses.</li>
+            <li><a href="/pattern/abstract-factory">Abstract Factory Pattern</a> - Produce families of related objects.</li>
+            <li><a href="/pattern/builder">Builder Pattern</a> - Construct complex objects step by step.</li>
+            <li><a href="/pattern/prototype">Prototype Pattern</a> - Clone existing objects without depending on their concrete classes.</li>
+            <li><a href="/pattern/singleton">Singleton Pattern</a> - Ensure a class has only one instance with a global access point.</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="structural-heading">
+          <h2 id="structural-heading">Structural Design Patterns</h2>
+          <p>How classes and objects are composed to form larger structures:</p>
+          <ul>
+            <li><a href="/pattern/adapter">Adapter Pattern</a> - Allow incompatible interfaces to collaborate.</li>
+            <li><a href="/pattern/bridge">Bridge Pattern</a> - Decouple an abstraction from its implementation.</li>
+            <li><a href="/pattern/composite">Composite Pattern</a> - Compose objects into tree structures to represent part-whole hierarchies.</li>
+            <li><a href="/pattern/decorator">Decorator Pattern</a> - Attach new responsibilities to objects dynamically.</li>
+            <li><a href="/pattern/facade">Facade Pattern</a> - Provide a simplified interface to a complex library or subsystem.</li>
+            <li><a href="/pattern/flyweight">Flyweight Pattern</a> - Fit more objects into available RAM by sharing common state.</li>
+            <li><a href="/pattern/proxy">Proxy Pattern</a> - Provide a placeholder or surrogate to control access to another object.</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="behavioral-heading">
+          <h2 id="behavioral-heading">Behavioral Design Patterns</h2>
+          <p>Algorithms and the assignment of responsibilities between objects:</p>
+          <ul>
+            <li><a href="/pattern/chain-of-responsibility">Chain of Responsibility Pattern</a> - Pass requests along a handler chain.</li>
+            <li><a href="/pattern/command">Command Pattern</a> - Encapsulate requests as stand-alone objects.</li>
+            <li><a href="/pattern/interpreter">Interpreter Pattern</a> - Define a grammar representation and interpreter for a language.</li>
+            <li><a href="/pattern/iterator">Iterator Pattern</a> - Traverse elements of a collection without exposing underlying representation.</li>
+            <li><a href="/pattern/mediator">Mediator Pattern</a> - Restrict direct communications between objects and force them to collaborate via a mediator.</li>
+            <li><a href="/pattern/memento">Memento Pattern</a> - Save and restore previous states of an object without revealing implementation details.</li>
+            <li><a href="/pattern/observer">Observer Pattern</a> - Subscription mechanism to notify multiple observers about state changes.</li>
+            <li><a href="/pattern/state">State Pattern</a> - Alter object behavior when its internal state changes.</li>
+            <li><a href="/pattern/strategy">Strategy Pattern</a> - Define a family of interchangeable algorithms.</li>
+            <li><a href="/pattern/template-method">Template Method Pattern</a> - Skeleton of an algorithm in the superclass, letting subclasses override steps.</li>
+            <li><a href="/pattern/visitor">Visitor Pattern</a> - Separate algorithms from the objects on which they operate.</li>
+          </ul>
+        </section>
+      </main>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
