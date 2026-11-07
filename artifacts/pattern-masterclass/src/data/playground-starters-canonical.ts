@@ -104,12 +104,32 @@ function splitTsPattern(rawCode: string, moduleBaseName: string) {
 
   const moduleContent = exportedDeclLines.join('\n');
   const matches = [...moduleContent.matchAll(/export\s+(?:abstract\s+class|class|interface|type|enum|function)\s+([A-Za-z0-9_]+)/g)];
-  const exportedNames = Array.from(new Set(matches.map((m) => m[1]))).join(',\n  ');
+  const allExported = Array.from(new Set(matches.map((m) => m[1])));
 
   const clientContent = clientLines.join('\n').trim();
+
+  // Filter exported symbols to only those actually referenced in clientContent
+  // to avoid unused variable declarations in index.ts imports
+  const strippedClient = clientContent
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/.*/g, ' ')
+    .replace(/'(?:\\.|[^'\\])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/`(?:\\[\s\S]|(?!\$\{)[^\\`])*`/g, '``');
+
+  const usedExported = allExported.filter((name) => {
+    const wordRegex = new RegExp(`\\b${name}\\b`);
+    return wordRegex.test(strippedClient);
+  });
+
+  const importedSymbols = usedExported.length > 0 ? usedExported : allExported;
+  const exportedNames = importedSymbols.join(',\n  ');
+
   const indexContent = clientContent
-    ? `import {\n  ${exportedNames}\n} from './${moduleBaseName}';\n\n${clientContent}\n`
-    : `import {\n  ${exportedNames}\n} from './${moduleBaseName}';\n\nconsole.log("=== ${moduleBaseName} Loaded ===");\n`;
+    ? (usedExported.length > 0
+        ? `import {\n  ${exportedNames}\n} from './${moduleBaseName}';\n\n${clientContent}\n`
+        : `import './${moduleBaseName}';\n\n${clientContent}\n`)
+    : `import './${moduleBaseName}';\n\nconsole.log("=== ${moduleBaseName} Loaded ===");\n`;
 
   return {
     indexContent,

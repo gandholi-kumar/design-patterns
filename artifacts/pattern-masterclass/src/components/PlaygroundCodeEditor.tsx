@@ -341,6 +341,21 @@ function findSymbolInProjectFiles(
 }
 
 
+/**
+ * Accurately determines the Monaco language ID from the file extension.
+ * Guarantees .ts/.tsx files are recognized as TypeScript and .java files as Java.
+ */
+export function getLanguageForFile(
+  fileName: string | undefined,
+  fallbackLanguage: 'typescript' | 'java' = 'typescript'
+): 'typescript' | 'java' {
+  if (!fileName) return fallbackLanguage;
+  const lower = fileName.toLowerCase().trim();
+  if (lower.endsWith('.ts') || lower.endsWith('.tsx')) return 'typescript';
+  if (lower.endsWith('.java')) return 'java';
+  return fallbackLanguage;
+}
+
 interface MonacoTypeScriptDefaults {
   setCompilerOptions: (options: Record<string, unknown>) => void;
   setDiagnosticsOptions: (options: Record<string, unknown>) => void;
@@ -396,8 +411,12 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
 
   const activeTheme = themeProp ?? domTheme;
   const isDarkMode = activeTheme === 'dark';
-  const monacoTheme = isDarkMode ? 'pm-dark' : 'pm-light';
-  const monacoLanguage = language === 'java' ? 'java' : 'typescript';
+
+  // Strictly infer the active Monaco language mode from file extension
+  const monacoLanguage = useMemo(
+    () => getLanguageForFile(fileName, language),
+    [fileName, language]
+  );
 
   const editorRef = useRef<MonacoType.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof MonacoType | null>(null);
@@ -417,6 +436,9 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
 
   const fileNameRef = useRef(fileName);
   fileNameRef.current = fileName;
+
+  const monacoLanguageRef = useRef(monacoLanguage);
+  monacoLanguageRef.current = monacoLanguage;
 
   // Reveal target line after file navigation or cross-file Go-to-Definition
   useEffect(() => {
@@ -463,12 +485,11 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
     }
   };
 
-  // Register cross-file TypeScript extra libraries and models whenever project files change
-  const syncTypeScriptCrossFileDefs = useCallback(() => {
-    if (!monacoRef.current || monacoLanguage !== 'typescript') return;
+  // Synchronize cross-file models for both TypeScript and Java
+  const syncProjectModels = useCallback(() => {
+    if (!monacoRef.current) return;
     const monaco = monacoRef.current;
     const ts = getTypeScriptService(monaco);
-    if (!ts) return;
 
     // Dispose old extra libs
     extraLibsRef.current.forEach((lib) => {
@@ -480,154 +501,145 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
     });
     extraLibsRef.current = [];
 
-    // Synchronize or pre-create models for all project files with file:/// URIs for cross-file imports
+    // Ensure models exist with correct language for all project files
     projectFiles.forEach((file) => {
-      if (file.name.endsWith('.ts') || file.name.endsWith('.tsx')) {
-        const clean = file.name.replace(/^\/+/, '');
-        const fileUri = monaco.Uri.parse(`file:///${clean}`);
-        const existingModel = monaco.editor.getModel(fileUri);
-        if (!existingModel) {
-          try {
-            monaco.editor.createModel(file.content, 'typescript', fileUri);
-          } catch {
-            // ignore if model already initialized
-          }
-        } else if (file.name !== fileName && existingModel.getValue() !== file.content) {
+      const fileLang = getLanguageForFile(file.name, monacoLanguage);
+      const clean = file.name.replace(/^\/+/, '');
+      const fileUri = monaco.Uri.parse(`file:///${clean}`);
+      const existingModel = monaco.editor.getModel(fileUri);
+
+      if (!existingModel) {
+        try {
+          monaco.editor.createModel(file.content, fileLang, fileUri);
+        } catch {
+          // ignore if model already initialized
+        }
+      } else {
+        // Enforce the correct language corresponding to file extension
+        if (existingModel.getLanguageId() !== fileLang) {
+          monaco.editor.setModelLanguage(existingModel, fileLang);
+        }
+        if (file.name !== fileName && existingModel.getValue() !== file.content) {
           existingModel.setValue(file.content);
         }
+      }
 
-        // Register extra library with compiler worker for instant cross-tab type resolution
-        if (file.name !== fileName) {
-          try {
-            const lib = ts.typescriptDefaults.addExtraLib(file.content, fileUri.toString());
-            extraLibsRef.current.push(lib);
-          } catch {
-            // ignore
-          }
+      // If TypeScript and not the active file, register extra library with compiler worker
+      if (fileLang === 'typescript' && file.name !== fileName && ts) {
+        try {
+          const lib = ts.typescriptDefaults.addExtraLib(file.content, fileUri.toString());
+          extraLibsRef.current.push(lib);
+        } catch {
+          // ignore
         }
       }
     });
   }, [projectFiles, fileName, monacoLanguage]);
 
-  // Register Java Completion Item Provider with Standard Library + Cross-Tab Symbols
-  const syncJavaCompletions = useCallback(() => {
-    if (!monacoRef.current || monacoLanguage !== 'java') return;
+  // Register Java Completion & Hover Providers with dynamic symbol resolution
+  const setupJavaProviders = useCallback(() => {
+    if (!monacoRef.current) return;
     const monaco = monacoRef.current;
 
-    if (javaCompletionRef.current) {
-      javaCompletionRef.current.dispose();
-      javaCompletionRef.current = null;
+    if (!javaCompletionRef.current) {
+      javaCompletionRef.current = monaco.languages.registerCompletionItemProvider('java', {
+        triggerCharacters: ['.', ' ', '@', '('],
+        provideCompletionItems: (model, position) => {
+          const word = model.getWordUntilPosition(position);
+          const range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn,
+          };
+
+          const suggestions: MonacoType.languages.CompletionItem[] = [];
+
+          // 1. Standard Library completions
+          for (const item of JAVA_STDLIB_COMPLETIONS) {
+            suggestions.push({
+              label: item.label,
+              kind: item.label.includes('(')
+                ? monaco.languages.CompletionItemKind.Method
+                : monaco.languages.CompletionItemKind.Function,
+              documentation: {
+                value: `**${item.detail}**\n\n${item.doc}`,
+              },
+              detail: item.detail,
+              insertText: item.insertText,
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              range,
+            });
+          }
+
+          // 2. Cross-file symbols dynamically from latest projectFilesRef
+          const symbols = extractJavaSymbols(projectFilesRef.current);
+          for (const sym of symbols) {
+            let kind = monaco.languages.CompletionItemKind.Method;
+            if (sym.kind === 'class') kind = monaco.languages.CompletionItemKind.Class;
+            if (sym.kind === 'interface') kind = monaco.languages.CompletionItemKind.Interface;
+
+            suggestions.push({
+              label: sym.name,
+              kind,
+              detail: `${sym.signature} (${sym.sourceFile})`,
+              documentation: {
+                value: `Defined in playground file **${sym.sourceFile}**\n\`\`\`java\n${sym.signature}\n\`\`\``,
+              },
+              insertText: sym.kind === 'method' ? `${sym.name}()` : sym.name,
+              range,
+            });
+          }
+
+          return { suggestions };
+        },
+      });
     }
 
-    const symbols = extractJavaSymbols(projectFiles);
+    if (!javaHoverRef.current) {
+      javaHoverRef.current = monaco.languages.registerHoverProvider('java', {
+        provideHover: (model, position) => {
+          const word = model.getWordAtPosition(position);
+          if (!word) return null;
+          const term = word.word;
 
-    javaCompletionRef.current = monaco.languages.registerCompletionItemProvider('java', {
-      triggerCharacters: ['.', ' ', '@', '('],
-      provideCompletionItems: (model, position) => {
-        const word = model.getWordUntilPosition(position);
-        const range = {
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-          startColumn: word.startColumn,
-          endColumn: word.endColumn,
-        };
+          // 1. Check Standard Library completions
+          const stdLib = JAVA_STDLIB_COMPLETIONS.find((c) => c.label === term || c.label.endsWith(`.${term}`));
+          if (stdLib) {
+            return {
+              range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+              contents: [
+                { value: `\`\`\`java\n${stdLib.detail}\n\`\`\`` },
+                { value: stdLib.doc },
+              ],
+            };
+          }
 
-        const suggestions: MonacoType.languages.CompletionItem[] = [];
+          // 2. Check cross-file symbols dynamically from latest projectFilesRef
+          const symbols = extractJavaSymbols(projectFilesRef.current);
+          const sym = symbols.find((s) => s.name === term);
+          if (sym) {
+            return {
+              range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+              contents: [
+                { value: `\`\`\`java\n(${sym.kind}) ${sym.signature}\n\`\`\`` },
+                { value: `Defined in playground file **${sym.sourceFile}**` },
+              ],
+            };
+          }
 
-        // 1. Standard Library completions
-        for (const item of JAVA_STDLIB_COMPLETIONS) {
-          suggestions.push({
-            label: item.label,
-            kind: item.label.includes('(')
-              ? monaco.languages.CompletionItemKind.Method
-              : monaco.languages.CompletionItemKind.Function,
-            documentation: {
-              value: `**${item.detail}**\n\n${item.doc}`,
-            },
-            detail: item.detail,
-            insertText: item.insertText,
-            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-            range,
-          });
-        }
-
-        // 2. Cross-file symbols from other playground tabs
-        for (const sym of symbols) {
-          let kind = monaco.languages.CompletionItemKind.Method;
-          if (sym.kind === 'class') kind = monaco.languages.CompletionItemKind.Class;
-          if (sym.kind === 'interface') kind = monaco.languages.CompletionItemKind.Interface;
-
-          suggestions.push({
-            label: sym.name,
-            kind,
-            detail: `${sym.signature} (${sym.sourceFile})`,
-            documentation: {
-              value: `Defined in playground file **${sym.sourceFile}**\n\`\`\`java\n${sym.signature}\n\`\`\``,
-            },
-            insertText: sym.kind === 'method' ? `${sym.name}()` : sym.name,
-            range,
-          });
-        }
-
-        return { suggestions };
-      },
-    });
-
-    // Also register Java Hover Provider for rich symbol documentation tooltips
-    if (javaHoverRef.current) {
-      javaHoverRef.current.dispose();
-      javaHoverRef.current = null;
+          return null;
+        },
+      });
     }
-
-    javaHoverRef.current = monaco.languages.registerHoverProvider('java', {
-      provideHover: (model, position) => {
-        const word = model.getWordAtPosition(position);
-        if (!word) return null;
-        const term = word.word;
-
-        // 1. Check Standard Library completions
-        const stdLib = JAVA_STDLIB_COMPLETIONS.find((c) => c.label === term || c.label.endsWith(`.${term}`));
-        if (stdLib) {
-          return {
-            range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
-            contents: [
-              { value: `\`\`\`java\n${stdLib.detail}\n\`\`\`` },
-              { value: stdLib.doc },
-            ],
-          };
-        }
-
-        // 2. Check cross-file symbols
-        const sym = symbols.find((s) => s.name === term);
-        if (sym) {
-          return {
-            range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
-            contents: [
-              { value: `\`\`\`java\n(${sym.kind}) ${sym.signature}\n\`\`\`` },
-              { value: `Defined in playground file **${sym.sourceFile}**` },
-            ],
-          };
-        }
-
-        return null;
-      },
-    });
-  }, [projectFiles, monacoLanguage]);
+  }, []);
 
   // Setup Definition Providers for Ctrl+Click / F12 (Go to Definition) in TS & Java
   const setupDefinitionProviders = useCallback(() => {
     if (!monacoRef.current) return;
     const monaco = monacoRef.current;
 
-    // Dispose previous definition providers
-    definitionProvidersRef.current.forEach((d) => {
-      try {
-        d.dispose();
-      } catch {
-        // ignore
-      }
-    });
-    definitionProvidersRef.current = [];
+    if (definitionProvidersRef.current.length > 0) return;
 
     // 1. TypeScript Definition Provider (resolves './strategy', exported classes/types/interfaces, methods)
     const tsDefProvider = monaco.languages.registerDefinitionProvider('typescript', {
@@ -733,16 +745,39 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
     }
   }, []);
 
-  // Synchronize on mount and updates
+  // Synchronize on mount and file/language updates
   useEffect(() => {
-    if (monacoLanguage === 'typescript') {
-      syncTypeScriptCrossFileDefs();
-    } else if (monacoLanguage === 'java') {
-      syncJavaCompletions();
-    }
-
+    syncProjectModels();
+    setupJavaProviders();
     setupDefinitionProviders();
+  }, [syncProjectModels, setupJavaProviders, setupDefinitionProviders]);
 
+  // Ensure the active Monaco model language strictly matches the file extension
+  useEffect(() => {
+    if (!monacoRef.current || !editorRef.current) return;
+    const monaco = monacoRef.current;
+    const editor = editorRef.current;
+    const model = editor.getModel();
+    if (model) {
+      if (model.getLanguageId() !== monacoLanguage) {
+        monaco.editor.setModelLanguage(model, monacoLanguage);
+      }
+      if (monacoLanguage === 'java') {
+        monaco.editor.setModelMarkers(model, 'typescript', []);
+        monaco.editor.setModelMarkers(model, 'javascript', []);
+      }
+    }
+  }, [fileName, monacoLanguage]);
+
+  // Sync theme changes dynamically
+  useEffect(() => {
+    if (monacoRef.current) {
+      monacoRef.current.editor.setTheme(isDarkMode ? 'pm-dark' : 'pm-light');
+    }
+  }, [isDarkMode]);
+
+  // Global cleanup when editor unmounts
+  useEffect(() => {
     return () => {
       extraLibsRef.current.forEach((lib) => {
         try {
@@ -752,6 +787,7 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
         }
       });
       extraLibsRef.current = [];
+
       if (javaCompletionRef.current) {
         javaCompletionRef.current.dispose();
         javaCompletionRef.current = null;
@@ -760,8 +796,6 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
         javaHoverRef.current.dispose();
         javaHoverRef.current = null;
       }
-      mouseDownRef.current?.dispose();
-      mouseDownRef.current = null;
       definitionProvidersRef.current.forEach((d) => {
         try {
           d.dispose();
@@ -770,8 +804,16 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
         }
       });
       definitionProvidersRef.current = [];
+      if (openerRef.current) {
+        openerRef.current.dispose();
+        openerRef.current = null;
+      }
+      if (mouseDownRef.current) {
+        mouseDownRef.current.dispose();
+        mouseDownRef.current = null;
+      }
     };
-  }, [monacoLanguage, syncTypeScriptCrossFileDefs, syncJavaCompletions, setupDefinitionProviders]);
+  }, []);
 
   const handleMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
@@ -781,21 +823,27 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
     // Set active theme
     monaco.editor.setTheme(isDarkMode ? 'pm-dark' : 'pm-light');
 
-    // Trigger initial multi-file symbol synchronization & definition providers
-    if (monacoLanguage === 'typescript') {
-      syncTypeScriptCrossFileDefs();
-    } else {
-      syncJavaCompletions();
-      // Ensure no rogue language diagnostics attach to Java models
+    // Attach model change listener to guarantee active model language is always accurate
+    editor.onDidChangeModel(() => {
       const model = editor.getModel();
-      if (model) {
-        monaco.editor.setModelMarkers(model, 'typescript', []);
-        monaco.editor.setModelMarkers(model, 'javascript', []);
+      if (model && monacoRef.current) {
+        const lang = getLanguageForFile(model.uri.path, monacoLanguageRef.current);
+        if (model.getLanguageId() !== lang) {
+          monacoRef.current.editor.setModelLanguage(model, lang);
+        }
+        if (lang === 'java') {
+          monacoRef.current.editor.setModelMarkers(model, 'typescript', []);
+          monacoRef.current.editor.setModelMarkers(model, 'javascript', []);
+        }
       }
-    }
+    });
+
+    // Trigger initial multi-file symbol synchronization & definition providers
+    syncProjectModels();
+    setupJavaProviders();
     setupDefinitionProviders();
 
-    // 4. Attach instant Ctrl+Click / Cmd+Click mouse navigation across tabs & symbols
+    // Attach instant Ctrl+Click / Cmd+Click mouse navigation across tabs & symbols
     if (mouseDownRef.current) {
       mouseDownRef.current.dispose();
       mouseDownRef.current = null;
@@ -848,17 +896,6 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
       }
     });
   };
-
-  // Clear any rogue diagnostics on Java files whenever active file or language changes
-  useEffect(() => {
-    if (monacoRef.current && editorRef.current && monacoLanguage === 'java') {
-      const model = editorRef.current.getModel();
-      if (model) {
-        monacoRef.current.editor.setModelMarkers(model, 'typescript', []);
-        monacoRef.current.editor.setModelMarkers(model, 'javascript', []);
-      }
-    }
-  }, [fileName, monacoLanguage]);
 
   // Sync theme changes dynamically
   useEffect(() => {
@@ -942,10 +979,10 @@ export const PlaygroundCodeEditor: React.FC<PlaygroundCodeEditorProps> = ({
 
   // Model URI path: Guarantees TypeScript compiler recognizes .ts files as pure TypeScript
   const modelPath = useMemo(() => {
-    const raw = fileName || (language === 'java' ? 'Main.java' : 'index.ts');
+    const raw = fileName || (monacoLanguage === 'java' ? 'Main.java' : 'index.ts');
     const clean = raw.replace(/^\/+/, '');
     return `file:///${clean}`;
-  }, [fileName, language]);
+  }, [fileName, monacoLanguage]);
 
   return (
     <div
