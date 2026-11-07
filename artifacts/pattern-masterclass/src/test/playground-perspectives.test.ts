@@ -18,6 +18,17 @@ describe('Playground Perspectives (Canonical, Enterprise, Curated) Unit Tests', 
       assert.equal(files[0].name, 'index.ts', `Tab 0 must be index.ts for ${pattern.id}`);
       assert.equal(files[0].isEntryPoint, true, `Tab 0 must be entry point for ${pattern.id}`);
       assert.ok(files[0].content.includes(`from './`), `index.ts must import from module for ${pattern.id}`);
+
+      // Verify no unused imported variables in index.ts
+      const importMatch = files[0].content.match(/import\s*\{\s*([\s\S]*?)\s*\}\s*from/);
+      if (importMatch) {
+        const importedSymbols = importMatch[1].split(',').map((s) => s.trim()).filter(Boolean);
+        const body = files[0].content.slice((importMatch.index ?? 0) + importMatch[0].length);
+        for (const symbol of importedSymbols) {
+          const isUsed = new RegExp(`\\b${symbol}\\b`).test(body);
+          assert.ok(isUsed, `Canonical ${pattern.id} imports '${symbol}' in index.ts but never uses it`);
+        }
+      }
     }
   });
 
@@ -31,6 +42,17 @@ describe('Playground Perspectives (Canonical, Enterprise, Curated) Unit Tests', 
       assert.equal(files[0].name, 'index.ts', `Tab 0 must be index.ts for ${pattern.id}`);
       assert.equal(files[0].isEntryPoint, true, `Tab 0 must be entry point for ${pattern.id}`);
       assert.ok(files[0].content.includes(`from './`), `index.ts must import from module for ${pattern.id}`);
+
+      // Verify no unused imported variables in index.ts
+      const importMatch = files[0].content.match(/import\s*\{\s*([\s\S]*?)\s*\}\s*from/);
+      if (importMatch) {
+        const importedSymbols = importMatch[1].split(',').map((s) => s.trim()).filter(Boolean);
+        const body = files[0].content.slice((importMatch.index ?? 0) + importMatch[0].length);
+        for (const symbol of importedSymbols) {
+          const isUsed = new RegExp(`\\b${symbol}\\b`).test(body);
+          assert.ok(isUsed, `Enterprise ${pattern.id} imports '${symbol}' in index.ts but never uses it`);
+        }
+      }
     }
   });
 
