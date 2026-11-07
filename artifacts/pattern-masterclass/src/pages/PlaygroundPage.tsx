@@ -167,8 +167,17 @@ export function PlaygroundPage({
   }, [patternId, language, activeSource]);
 
   const activeFile = useMemo(() => {
-    return projectFiles.find((f) => f.id === activeFileId) || projectFiles[0];
-  }, [projectFiles, activeFileId]);
+    const found = projectFiles.find((f) => f.id === activeFileId);
+    if (found) {
+      const isJava = found.name.toLowerCase().endsWith('.java');
+      if (language === 'java' && isJava) return found;
+      if (language === 'typescript' && !isJava) return found;
+    }
+    const matching = projectFiles.find((f) =>
+      language === 'java' ? f.name.toLowerCase().endsWith('.java') : !f.name.toLowerCase().endsWith('.java')
+    );
+    return matching || projectFiles[0];
+  }, [projectFiles, activeFileId, language]);
 
   // 4. Code Execution Hook
   const { result, isRunning, runCode, cancelRun, clearOutput } = useCodeRunner();
@@ -259,6 +268,11 @@ export function PlaygroundPage({
 
   const toggleLanguageMode = (newMode: 'java' | 'typescript') => {
     if (isRunning) return;
+    const initial = createInitialFiles(pattern, newMode, activeSource);
+    const sorted = [...initial].sort((a, b) => (b.isEntryPoint ? 1 : 0) - (a.isEntryPoint ? 1 : 0));
+    setProjectFiles(sorted);
+    setActiveFileId(sorted[0]?.id || 'main');
+    clearOutput();
     setMode(newMode);
   };
 

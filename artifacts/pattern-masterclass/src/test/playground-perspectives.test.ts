@@ -6,6 +6,7 @@ import {
   BLANK_PATTERN,
   type PlaygroundCodeSource,
 } from '../data/playground-starters';
+import { getLanguageForFile } from '../components/PlaygroundCodeEditor';
 
 describe('Playground Perspectives (Canonical, Enterprise, Curated) Unit Tests', () => {
   it('generates canonical TypeScript code as modular multi-file projects for all 23 GoF patterns', () => {
@@ -137,6 +138,43 @@ describe('Playground Perspectives (Canonical, Enterprise, Curated) Unit Tests', 
       assert.equal(javaFiles.length, 1);
       assert.equal(javaFiles[0].name, 'Main.java');
       assert.ok(javaFiles[0].content.includes('public static void run()'));
+    }
+  });
+
+  it('accurately identifies file type language via getLanguageForFile to prevent IntelliSense loss', () => {
+    // TypeScript files
+    assert.equal(getLanguageForFile('index.ts', 'java'), 'typescript');
+    assert.equal(getLanguageForFile('Dialog.ts', 'java'), 'typescript');
+    assert.equal(getLanguageForFile('Component.tsx', 'java'), 'typescript');
+    assert.equal(getLanguageForFile('/src/models/item.ts', 'java'), 'typescript');
+
+    // Java files
+    assert.equal(getLanguageForFile('Main.java', 'typescript'), 'java');
+    assert.equal(getLanguageForFile('House.java', 'typescript'), 'java');
+    assert.equal(getLanguageForFile('/app/Dialog.java', 'typescript'), 'java');
+
+    // Fallback when extension absent
+    assert.equal(getLanguageForFile('scratchpad', 'typescript'), 'typescript');
+    assert.equal(getLanguageForFile('scratchpad', 'java'), 'java');
+    assert.equal(getLanguageForFile(undefined, 'typescript'), 'typescript');
+  });
+
+  it('guarantees all project files across all 23 patterns in all perspectives resolve to their matching language', () => {
+    const sources: PlaygroundCodeSource[] = ['canonical', 'enterprise', 'curated'];
+    for (const pattern of PATTERNS) {
+      for (const source of sources) {
+        const tsFiles = buildProjectFiles(pattern, 'typescript', source);
+        for (const file of tsFiles) {
+          const lang = getLanguageForFile(file.name, 'typescript');
+          assert.equal(lang, 'typescript', `File ${file.name} in ${pattern.id} (${source}) must resolve to typescript`);
+        }
+
+        const javaFiles = buildProjectFiles(pattern, 'java', source);
+        for (const file of javaFiles) {
+          const lang = getLanguageForFile(file.name, 'java');
+          assert.equal(lang, 'java', `File ${file.name} in ${pattern.id} (${source}) must resolve to java`);
+        }
+      }
     }
   });
 });
